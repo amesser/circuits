@@ -21,52 +21,181 @@
 import sys
 import struct
 
-def readblock(file):
-    type,length = struct.unpack("<2B",file.read(2))
-    
-    if type == 2:
-        length = length - 3
-        
-    content = file.read(length)
-    checksum = file.read(1)
-    
-    return type,length,content,checksum
+import matplotlib.pyplot as plt
+import numpy as np
+import argparse
 
-def main():
-  action = sys.argv[1]
-  
-  if action.lower() == 'dump':
-      file = open(sys.argv[2],'rb')
-      
-      config = readblock(file)
-      
-      if config[0] != 1:
-          raise Exception('Bad block type')
-      
-      channels = config[1] - 2
-      
-      values = struct.unpack('H %uB' % channels, config[2])
-      
-      sys.stdout.write('# Interval: %ums, ' % values[0] +
-                       ', '.join(['channel %u' % x for x in values[1:]])+
-                       '\n')
-      
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('action', type=str)
+parser.add_argument('file', type=str)
+parser.add_argument('--channel', '-c', type=int, action='append')
+
+args = parser.parse_args()
+
+class Container(): pass
+
+
+def readConfig(file):
+    container = Container()
+    
+    container.type,container.length = \
+        struct.unpack("<2B",file.read(2))
+    
+    if (container.type != 1):
+        raise Exception('Invalid block type %u' % container.type)
+        
+    nchan = (container.length - 2) / 1
+          
+    x = struct.unpack("<H %uB x" % nchan, file.read(container.length + 1))
+    
+    container.interval = x[0]
+    container.channels = x[1:]
+    
+    return container
+
+def readCalibration(file):
+    container = Container()
+    
+    container.type,container.length = \
+        struct.unpack("<2B",file.read(2))
+    
+    if (container.type != 3):
+        raise Exception('Invalid block type %u' % container.type)
+        
+          
+    container.reference, = struct.unpack("<H x", file.read(container.length + 1))
+    
+    return container
+
+def readData(file, channels, blocksize):
+    container = DataBlockFactory(channels, blocksize)
+    
+    return arr
+
+class Dumper(object):
+    def dump(self, file):
+      config = readConfig(file)
+       
+      self.dumpConfig(config)
+                  
       file.seek(512)
       
-      while True:
-          data = readblock(file)
-          
-          if data[0] != 2:
-              raise Exception('Bad block type')
+      calibration = readCalibration(file)
+      
+      self.dumpCalibration(calibration)
+            
+      nchan = len(config.channels)      
+      
+      dtype = '<u1,<u1,<u4,<%uu2,<u1' % nchan
+      shape = (512,)
 
-          if data[1] != (channels * 2 + 4):
-              raise Exception('Bad block length')
+      done = False
+      
+      selection = args.channel or range(nchan)
+      
+      while not done:
+          arr = np.ndarray(shape=shape,dtype=dtype)
           
-          values = struct.unpack('<L %uH' % channels,data[2])
+          file.readinto(arr)
+          
+          container = Container()
 
-          sys.stdout.write('%u' % values[0] +
-                           ''.join([' %u' % (x & 0xFFF) for x in values[1:]]) +
-                           '\n')
+          done = np.any(arr['f0'] != 2)
+          
+          
+          if (done):
+              valid = np.nonzero(arr['f0'] == 2)[0]
+              container.ts   = arr['f2'][valid]
+              container.data = [arr['f3'][valid,x] & 0xFFF for x in selection]
+          else:    
+              container.ts   = arr['f2']
+              container.data = [arr['f3'][:,x] & 0xFFF for x in selection]
+                      
+          self.dumpData(container)
+          
+      self.dumpDone()    
+                
+
+class StdoutDumper(Dumper):
+    count = 0
+    
+    def dumpConfig(self,config):
+        sys.stdout.write('# Interval: %ums, ' % config.interval +
+                         ', '.join(['channel %u' % x for x in config.channels])+
+                         '\n')
+        
+    def dumpCalibration(self,calibration):
+        self.reference = float(calibration.reference) / 1000.    
+        sys.stdout.write('# Calibration: %fV\n' % self.reference)
+        
+    def dumpData(self,data):
+        arr = np.zeros(shape=(len(data.ts),),dtype=('u4' + ',d' * len(data.data)))
+            
+        arr['f0'] = data.ts
+        
+        for x in range(len(data.data)):
+            arr['f%u' % (x+1)] = data.data[x] * self.reference / 4096.    
+
+        np.savetxt(sys.stdout.buffer, arr, fmt=("%u" + " %f" * len(data.data)))
+        
+        # for x in np.nditer([data.ts] + data.data):
+        #    sys.stdout.write('%u ' % x[0] + ' '.join(map(lambda x : '%f' % (self.reference * x / 4096.) ,x[1:])) + '\n')
+            
+        sys.stderr.write('Read %u records\n' % self.count)
+        
+    def dumpDone(self):
+        pass        
+
+class PlotDumper(Dumper):
+    count = 0
+    
+    def dumpConfig(self,config):
+        self.nchan = len(config.channels)
+        
+        sys.stdout.write('# Interval: %ums, ' % config.interval +
+                         ', '.join(['channel %u' % x for x in config.channels])+
+                         '\n')
+        
+    def dumpCalibration(self,calibration):
+        self.reference = float(calibration.reference) / 1000.    
+        
+    def dumpData(self,data):
+        data.data = list((self.reference * x / 4096.) for x in data.data)
+        try:
+            self.block.append(data)
+        except AttributeError:
+            self.block = [data] 
+            
+        self.count = self.count + data.ts.shape[0]       
+        
+        sys.stderr.write('Read %u records\n' % self.count)    
+
+    def dumpDone(self):
+        ts = np.hstack(x.ts for x in self.block)
+        
+        nchan = len(self.block[0].data)               
+        data = [np.hstack(x.data[y] for x in self.block) for y in range(nchan)]
+
+        del self.block
+        
+        formats = ['r,','g,','b,','y,']
+
+        flat = sum(((ts, data[x], formats[x]) for x in range(nchan)),tuple())
+      
+        plt.plot(*flat)
+        plt.show()
+
+         
+def main():
+  action = args.action
+  
+  if action.lower() == 'dump':
+      file = open(args.file,'rb')
+      StdoutDumper().dump(file)
+
+  elif action.lower() == 'plot':
+      file = open(args.file,'rb')
+      PlotDumper().dump(file)      
 
 if __name__ == '__main__':
   main()
