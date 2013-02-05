@@ -1,0 +1,9 @@
+.project
+.cproject
+.settings
+.pydevproject
+board/*.bak
+board/*.000
+board/*-cache.lib
+firmware/build
+firmware/.lock-waf*
