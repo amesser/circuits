@@ -23,9 +23,10 @@
 
 namespace Interface {
   enum {
-    BLOCK_TYPE_INVALID = 0,
-    BLOCK_TYPE_CONFIG  = 1,
-    BLOCK_TYPE_DATA    = 2,
+    BLOCK_TYPE_INVALID     = 0,
+    BLOCK_TYPE_CONFIG      = 1,
+    BLOCK_TYPE_DATA        = 2,
+    BLOCK_TYPE_CALIBRATION = 3,
   };
 
   enum {
@@ -50,19 +51,13 @@ namespace Interface {
   public:
     uint8_t getType() const {return _Type;}
     uint8_t getLen()  const {return _Len;}
-
-    template<typename STOR> void write(STOR &ctx) const {ctx.write(*this);}
-    template<typename STOR> int8_t read (STOR &ctx)     {return ctx.read (*this);}
   } __attribute__((packed));
 
 
   class BlockEnd {
   private:
     uint8_t _Checksum;
-
   public:
-    template<typename STOR> void write(STOR &ctx) const {ctx.write(*this);}
-    template<typename STOR> int8_t read (STOR &ctx)     {return ctx.read (*this);}
   } __attribute__((packed));
 
   class BlockConfigA {
@@ -71,8 +66,6 @@ namespace Interface {
   public:
     uint16_t getMeasureInterval() const {return _MeasureInterval;}
 
-    template<typename STOR> void write(STOR &ctx) const {ctx.write(*this);}
-    template<typename STOR> int8_t read (STOR &ctx)     {return ctx.read (*this);}
   } __attribute__((packed));
 
   class BlockConfigB {
@@ -81,26 +74,25 @@ namespace Interface {
   public:
     uint8_t getChannel() const { return _Channel;}
 
-    template<typename STOR> void write(STOR &ctx) const {ctx.write(*this);}
-    template<typename STOR> int8_t read (STOR &ctx)     {return ctx.read (*this);}
   } __attribute__((packed));
 
   class BlockDataA {
   private:
     uint32_t _Timestamp;
   public:
-    template<typename STOR> void write(STOR &ctx) const {ctx.write(*this);}
-    template<typename STOR> int8_t read (STOR &ctx)     {return ctx.read (*this);}
   } __attribute__((packed));
 
   class BlockDataB {
   private:
     uint16_t _Data;
   public:
-    template<typename STOR> void write(STOR &ctx) const {ctx.write(*this);}
-    template<typename STOR> int8_t read (STOR &ctx)     {return ctx.read (*this);}
   } __attribute__((packed));
 
+  class BlockCalibration {
+  private:
+    uint16_t _u16ReferenceVoltage1mV;
+  public:
+  };
 };
 
 #endif /* INTERFACE_H_ */
