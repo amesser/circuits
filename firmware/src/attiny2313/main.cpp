@@ -46,36 +46,77 @@ public:
 class SPISlaveB
 {
 public:
-  __attribute__((always_inline)) static void selectChip()         {DDRD  |= _BV(PIN2);}
-  __attribute__((always_inline)) static void deselectChip()       {DDRD  &= ~_BV(PIN2);}
+  __attribute__((always_inline)) static void selectChip()         {PORTD &= ~_BV(PIN2);}
+  __attribute__((always_inline)) static void deselectChip()       {PORTD |=  _BV(PIN2);}
 
   USISPIMaster<400000> getTransport(const unsigned long) { return USISPIMaster<400000>(); }
 };
 
-#if 0
-  static constexpr uint8_t _MaxConfigSize = sizeof(Interface::BlockHead) +
-                                         sizeof(Interface::BlockConfigA) +
-                                         sizeof(Interface::BlockConfigB) * Interface::CHANNEL_MAX +
-                                         sizeof(Interface::BlockEnd);
-  inline void checkTimeout();
-  inline void sleep();
 
-  inline void ClockTimerTick();
-  inline void LedTimerTick();
+uint8_t readEEPROM(const uint8_t *ptr) {
+  EEAR = static_cast<uint8_t>(reinterpret_cast<uint16_t>(ptr));
+  EECR |= _BV(EERE);
+  return EEDR;
+}
 
-  inline void startTimer(uint16_t u16Interval1ms);
-  inline void stopTimer();
+class RegisterConfig {
+public:
+  uint8_t _u8RegNr;
+  uint8_t _u8RegValue;
+
+  constexpr RegisterConfig(volatile uint8_t &reg, const uint8_t value) :
+       _u8RegNr{static_cast<uint8_t>(_SFR_IO_ADDR(reg))}, _u8RegValue{value} {}
+
+  void writeRegister() const{
+    const uint8_t *addr = reinterpret_cast<const uint8_t*>(this);
+    const uint8_t ioreg = readEEPROM(addr);
+    const uint8_t value = readEEPROM(addr+1);
+
+    _SFR_IO8(ioreg) = value;
+  }
+};
 
 
-  inline void     main() __attribute__((noreturn)) ;
+constexpr uint8_t  timer0_max = ((F_CPU / 8) / 20000);
+constexpr uint16_t timer1_max = static_cast<uint16_t>(0.001 * (F_CPU / 256.));
 
-  template<typename SIZET>
-  inline uint8_t* readConfiguration(const SIZET len);
-  template<typename SIZET>
-  inline bool     canWrite(const SIZET len);
-  template<typename TYPE>
-  inline void     writeData(const TYPE& data) __attribute__((allways_inline));
-#endif
+constexpr struct RegisterConfig RegisterSettings[] EEMEM = {
+
+  /* enable output port pins */
+  {PORTD,_BV(PIN2) | _BV(PIN4) | _BV(PIN6)},
+  {DDRD, _BV(PIN2) | _BV(PIN4) | _BV(PIN5) | _BV(PIN6)},
+
+  {PORTB, _BV(PIN2) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7)},
+  {DDRB,  _BV(PIN2) | _BV(PIN6) | _BV(PIN7)},
+
+  /* configure timer 0 to generate 20khz square */
+  {OCR0A, timer0_max},
+  {OCR0B, timer0_max / 2},
+
+  {TCCR0A, _BV(COM0B1) | _BV(WGM00) | _BV(WGM01)},
+  {TCCR0B, _BV(CS01) | _BV(WGM02)},
+
+  /* activate watchdog timer (used for led timing) */
+  // WDTCSR = _BV(WDIE);
+
+  /* use timer1 for 1ms clock */
+  {TCNT1H, 0},
+  {TCNT1L, 0},
+  {OCR1AH, timer1_max / 256},
+  {OCR1AL, timer1_max % 256},
+  {TIMSK, _BV(OCIE1A)},
+  {TCCR1B, _BV(WGM12) | _BV(CS12)},
+};
+
+constexpr uint8_t CalibrationData [] EEMEM = {
+    Interface::BLOCK_TYPE_CALIBRATION,
+    0x02,
+    (3300) % 256,
+    (3300) / 256,
+    0xFF,
+};
+
+ISR(TIMER1_COMPA_vect);
 
 class Application {
 private:
@@ -87,14 +128,11 @@ private:
 
     uint32_t                _u32Clock1msEvent; /* interrupt routine actually changes this var
                                                   unfortunately gcc is still very stupid, see irq handler below */
+    uint16_t                _u16Clock1msEvent; /* interrupt routine actually changes this var
+                                                  unfortunately gcc is still very stupid, see irq handler below */
   };
 
-  union {
-    uint32_t                _u32Timeout1ms;
-    uint16_t                _u16Timeout1ms;
-  };
-
-  uint8_t                 _u8LedTimeout1ms;
+  uint16_t                _u16Timeout1ms;
   uint8_t                 _u8LedSequence;
 
   uint8_t                 _channels;
@@ -109,48 +147,23 @@ private:
 
   Ringbuffer<uint8_t, 64> _buf;
 
-  enum LedState {
-    LED_SEQUENCE_NOSDCARD     = 0x0F,
-    LED_SEQUENCE_SDCARD_RDERR = 0x03,
-    LED_SEQUENCE_SDCARD_WRERR = 0x05,
-    LED_SEQUENCE_SDCARD_FULL  = 0x11,
-    LED_SEQUENCE_CONFIG_ERR   = 0x30,
-    LED_SEQUENCE_NOERR        = 0x00,
+  enum ApplicationState {
+    APP_STATE_NOSDCARD = 0,
+    APP_STATE_ERR_CFG,
+    APP_STATE_ERR_WR,
+    APP_STATE_ERR_RD,
+    APP_STATE_RUN,
+    APP_STATE_FULL,
   };
 
-  void setLedState(const enum LedState state) {
-    _u8LedSequence = state;
-  }
-
   static void inititalize() {
-    /* set clockdivider to 1 */
+    /* set clockdivider to 1 
+     * this must be done within four cycles */
     CLKPR = _BV(CLKPCE);
-    CLKPR = 0;
+    CLKPR =  0;
 
-    /* enable output port pins */
-    PORTD = _BV(PIN4) | _BV(PIN6);
-    DDRD  = _BV(PIN4) | _BV(PIN5) | _BV(PIN6);
-
-    PORTB = _BV(PIN2) | _BV(PIN5) | _BV(PIN6) | _BV(PIN7);
-    DDRB  = _BV(PIN2) | _BV(PIN6) | _BV(PIN7);
-
-    /* configure timer 0 to generate 20khz square */
-    const uint8_t timer0_max = ((F_CPU / 8) / 20000);
-
-    OCR0A  = timer0_max;
-    OCR0B  = timer0_max/2;
-
-    TCCR0A = _BV(COM0B1) | _BV(WGM00) | _BV(WGM01);
-    TCCR0B = _BV(CS01) | _BV(WGM02);
-
-    /* activate watchdog timer (used for led timing) */
-    WDTCSR = _BV(WDIE);
-
-    /* use timer1 for 1ms clock */
-    TCNT1  = 0;
-    OCR1A  = 0.001 * (F_CPU / 256.);
-    TIMSK  = _BV(OCIE1A);
-    TCCR1B = _BV(WGM12) | _BV(CS12);
+    for(uint8_t index = 0; index < ElementCount(RegisterSettings); index++)
+      RegisterSettings[index].writeRegister();
 
     USISPIMaster<0>::initialize(0);
   }
@@ -158,13 +171,17 @@ private:
   __attribute__((always_inline))
   inline int8_t readConfiguration() {
     uint8_t *ptr = reinterpret_cast<uint8_t*>(&(this->_config));
+    uint8_t index;
 
     auto blk = reinterpret_cast<Interface::BlockHead*>(ptr);
 
     if (0 != _sdcard.startMultipleRead(0))
       return -1;
 
-    if(SizeOf(*blk) != _sdcard.read(ptr,SizeOf(*blk)))
+    for(index = 0; index < SizeOf(*blk);index++)
+      ptr[index] = _sdcard.readByte();
+
+    if (_sdcard.getError())
       return -1;
 
     if (blk->getType() != Interface::BLOCK_TYPE_CONFIG)
@@ -180,10 +197,16 @@ private:
 
     this->_channels = (contensize - SizeOf(this->_config.a)) / SizeOf(this->_config.b[0]);
 
-    if(contensize != _sdcard.read(ptr,contensize))
+    for(index = 0; index < contensize;index++)
+      ptr[index] = _sdcard.readByte();
+
+    if (_sdcard.getError())
       return -1;
 
     _sdcard.stopMultipleRead();
+
+    if (this->_config.a.getMeasureInterval() > 60000)
+      return -2;
 
     return 0;
   }
@@ -245,6 +268,49 @@ private:
     return 0;
   }
 
+  bool checkTimeout() {
+    const uint16_t u16Shift1ms = 62000;
+    const uint16_t u16Delta1ms = u16Shift1ms + this->u16getClock1ms() - this->_u16Timeout1ms;
+
+    return (u16Delta1ms > u16Shift1ms);
+  }
+
+  bool checkTimeoutNoLock() {
+    const uint16_t u16Shift1ms = 62000;
+    const uint16_t u16Delta1ms = u16Shift1ms + this->_u16Clock1ms - this->_u16Timeout1ms;
+
+    return (u16Delta1ms > u16Shift1ms);
+  }
+
+  void setTimeoutDelay(const uint16_t u16Delay1ms) {
+    this->_u16Timeout1ms = this->u16getClock1ms() + u16Delay1ms;
+  }
+
+  void setTimeoutInc(const uint16_t u16Interval1ms) {
+    this->_u16Timeout1ms += u16Interval1ms;
+  }
+
+
+  void setLedState(const enum ApplicationState state) {
+    static constexpr uint8_t sequences[] PROGMEM = {
+        0x0F /* APP_STATE_NOSDCARD */,
+        0x30 /* APP_STATE_ERR_CFG  */,
+        0x05 /* APP_STATE_ERR_WR   */,
+        0x03 /* APP_STATE_ERR_RD   */,
+        0x00 /* APP_STATE_RUN      */,
+        0x11 /* APP_STATE_FULL     */,
+    };
+
+    uint8_t sequence;
+
+    asm volatile (
+        "lpm %0, %a1"
+        : "=&r" (sequence)
+        : "b"   (&sequences[state]));
+
+    _u8LedSequence = sequence;
+  }
+
   __attribute__((always_inline)) static void enableLed0()  {PORTD &= ~(_BV(PIN4));}
   __attribute__((always_inline)) static void disableLed0() {PORTD |=  (_BV(PIN4));}
 
@@ -252,96 +318,112 @@ private:
   __attribute__((always_inline)) static void disableLed1() {PORTD |=  (_BV(PIN6));}
 
 public:
-  void eventLedTimer() {
-    const uint16_t u16Clock1ms = this->_u16Clock1ms;
-
-    const uint8_t shift = ((u16Clock1ms / 256) % 4);
-    const uint8_t mask  = 0x11;
-    const uint8_t state = _u8LedSequence & (mask << shift);
-
-    if(state & 0x0F)
-      this->enableLed0();
-    else
-      this->disableLed0();
-
-    if(state & 0xF0)
-      this->enableLed1();
-    else
-      this->disableLed1();
-
-  }
 
   __attribute__((noreturn))
   void main() {
-    enum LedState state;
+    enum ApplicationState state = APP_STATE_NOSDCARD;
 
     inititalize();
-
-    state = LED_SEQUENCE_NOSDCARD;
 
     sei();
     while(1) {
         this->setLedState(state);
 
-        if (state == LED_SEQUENCE_NOERR) {
-            while(state == LED_SEQUENCE_NOERR) {
-                cli();
-                if (static_cast<int32_t>(this->_u32Clock1ms - this->_u32Timeout1ms) >= 0) {
-                    sei();
-                    this->_u32Timeout1ms += _config.a.getMeasureInterval();
-                    this->measure();
-                } else if (this->_buf.getCount() > 0) {
-                    sei();
+        switch(state)
+        {
+        case APP_STATE_NOSDCARD:
+          {
+            int8_t result;
 
-                    if(this->store() < 0)
-                    {
-                      this->_u32Timeout1ms = this->u32getClock1ms() + 1024;
-                      state = LED_SEQUENCE_SDCARD_FULL;
-                    }
-                } else {
-                    sleep_enable();
-                    sei();
-                    sleep_cpu();
-                    sleep_disable();
-                }
-            }
-        } else if (state == LED_SEQUENCE_SDCARD_FULL) {
-            cli();
-            if (static_cast<int32_t>(this->_u16Clock1ms - this->_u16Timeout1ms) >= 0) {
-                sei();
-                this->_u32Timeout1ms += 1024;
-
-                if ( 0 != _sdcard.initCard(*this))
-                  state = LED_SEQUENCE_NOSDCARD;
+            if (0 != _sdcard.initCard(*this)) {
+                state = APP_STATE_NOSDCARD;
+            } else if ( 0 != (result = this->readConfiguration())) {
+                if (result == -1)
+                  state = APP_STATE_ERR_RD;
+                else
+                  state = APP_STATE_ERR_CFG;
+            } else if ( 0 != _sdcard.startMultipleWrite(_sdcard.getBlockSize())) {
+                state = APP_STATE_ERR_WR;
             } else {
-                sleep_enable();
-                sei();
-                sleep_cpu();
-                sleep_disable();
-            }
-        } else {
-          int8_t result;
+                _buf.reset();
 
-          if (0 != _sdcard.initCard(*this)) {
-              state = LED_SEQUENCE_NOSDCARD;
-          } else if ( 0 != (result = this->readConfiguration())) {
-              if (result == -1)
-                state = LED_SEQUENCE_SDCARD_RDERR;
-              else
-                state = LED_SEQUENCE_CONFIG_ERR;
-          } else if ( 0 != _sdcard.startMultipleWrite(_sdcard.getBlockSize())) {
-              state = LED_SEQUENCE_SDCARD_WRERR;
-          } else {
-              _buf.reset();
-              state = LED_SEQUENCE_NOERR;
-              this->_u32Timeout1ms = this->u32getClock1ms();
+                for(uint8_t index = 0; index < ElementCount(CalibrationData); index++)
+                  _buf.pushForced(readEEPROM(CalibrationData + index));
+
+                state = APP_STATE_RUN;
+                this->setTimeoutDelay(0);
+                continue;
+            }
+            break;
           }
+        case APP_STATE_RUN:
+          {
+            if (this->checkTimeout()) {
+                this->setTimeoutInc(_config.a.getMeasureInterval());
+                this->measure();
+            }
+
+            if (this->_buf.getCount() > 0)
+            {
+              if(this->store() < 0)
+              {
+                this->setTimeoutDelay(4096);
+                state = APP_STATE_FULL;
+              }
+
+              continue; /* jump to beginning of while */
+            }
+            break;
+          }
+        case APP_STATE_ERR_CFG:
+        case APP_STATE_ERR_RD:
+        case APP_STATE_ERR_WR:
+        case APP_STATE_FULL:
+          if (this->checkTimeout()) {
+              this->setTimeoutInc(4096);
+
+              if ( 0 != _sdcard.initCard(*this)) {
+                state = APP_STATE_NOSDCARD;
+                continue;
+              }
+          }
+          break;
+        }
+
+        cli();
+        if (this->checkTimeoutNoLock() == false) {
+            sleep_enable();
+            sei();
+            sleep_cpu();
+            sleep_disable();
         }
     }
   }
 
-  void eventClockTimer() {
-    _u32Clock1msEvent += 1;
+
+  inline void eventClockTimer() {
+    _u32Clock1msEvent = _u32Clock1msEvent + 1;
+    updateLed();
+  }
+
+  inline void updateLed() const {
+    uint16_t u16Clock1ms = _u16Clock1ms;
+
+    if ((u16Clock1ms % 256) == 0) {
+      const uint8_t shift = ((u16Clock1ms / 256) % 4);
+      const uint8_t mask  = 0x11;
+      const uint8_t state = _u8LedSequence & (mask << shift);
+
+      if(state & 0x0F)
+        enableLed0();
+      else
+        disableLed0();
+
+      if(state & 0xF0)
+        enableLed1();
+      else
+        disableLed1();
+    }
   }
 
   uint32_t u32getClock1ms() const {
@@ -358,6 +440,8 @@ public:
     CriticalSectionGuard guard;
     return this->_u8Clock1ms;
   }
+
+  friend void TIMER1_COMPA_vect ();
 };
 
 
@@ -366,12 +450,57 @@ static Application app;
 ISR(TIMER1_COMPA_vect) {
   /* gcc is very stupid in optimizing this
    * actually the irq handler takes 9 bytes of the stack
-   */
-  app.eventClockTimer();
-}
+   * and uses a lot of 4byte instructions.
+   * Therefore, use assembler here */
+  // app.eventClockTimer();
 
-ISR(WDT_OVERFLOW_vect) {
-  app.eventLedTimer();
+  uint16_t u16;
+  asm volatile (
+      "ld  %A0, %a1"          "\n\t"
+      "ldd %B0, %a1+1"        "\n\t"
+      "adiw %A0, 0x1"         "\n\t"
+      "st  %a1, %A0"          "\n\t"
+      "std  %a1+1, %B0"        "\n\t"
+      "ldd  %A0, %a1+2"        "\n\t"
+      "ldd  %B0, %a1+3"        "\n\t"
+      "adc %A0,__zero_reg__"  "\n\t"
+      "adc %B0,__zero_reg__"  "\n\t"
+      "std  %a1+2, %A0"        "\n\t"
+      "std  %a1+3, %B0"          "\n\t"
+      "ld  %A0, %a1"             "\n\t"
+      "cpse %A0, __zero_reg__"   "\n\t"
+      "rjmp 1f"                  "\n\t"
+      "ldd  %A0, %a1+1"          "\n\t"
+      "andi %A0, 0x03"           "\n\t"
+      "ldi  %B0, 0x11"           "\n\t"
+      "rjmp 3f"                  "\n\t"
+      "2:"                       "\n\t"
+      "add %B0, %B0"             "\n\t"
+      "3:"                       "\n\t"
+      "dec %A0"                  "\n\t"
+      "brpl 2b"                  "\n\t"
+      "ldd %A0, %a1+%2"          "\n\t"
+      "and %A0, %B0"             "\n\t"
+      "mov %B0, %A0"             "\n\t"
+      "andi %B0, 0x0F"           "\n\t"
+      "breq 4f"                  "\n\t"
+      "cbi  0x12, 4"             "\n\t"
+      "rjmp 5f"                  "\n\t"
+      "4:"                       "\n\t"
+      "sbi  0x12, 4"             "\n\t"
+      "5:"                       "\n\t"
+      "andi %A0, 0xF0"           "\n\t"
+      "breq 6f"                  "\n\t"
+      "cbi  0x12, 6"             "\n\t"
+      "rjmp 7f"                  "\n\t"
+      "6:"                       "\n\t"
+      "sbi  0x12, 6"             "\n\t"
+      "7:"                       "\n\t"
+      "1:"
+      : "=&w" (u16)
+      : "b" (&app._u32Clock1ms) , "I" (&app._u8LedSequence - reinterpret_cast<uint8_t*>(&app))
+      : "memory"
+      );
 }
 
 int main(void) {
