@@ -21,18 +21,35 @@
 import sys
 import struct
 
-import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 
-parser = argparse.ArgumentParser(description='')
-parser.add_argument('action', type=str)
-parser.add_argument('file', type=str)
-parser.add_argument('--channel', '-c', type=int, action='append')
 
-args = parser.parse_args()
+class SDLoggerPDU(object):
+    blocktypes = 'invalid config data calibration'.split()
+    channelids = 'ch0 ch1 ch2 ch3 ch0-ch1 ch1-ch0 ch2-ch3 ch3-ch2 di'.split()
+    
+    @classmethod
+    def getBlockId(cls, name):
+        return cls.blocktypes.index(name)
+
+    @classmethod
+    def getChannelId(cls, name):
+        return cls.channelids.index(name)
+    
+    def writeConfigPdu(self,file):
+        fields = '<2B H %uB B' % len(self.channels)
+        values = (self.getBlockId('config'), struct.calcsize(fields) - 3, self.interval) \
+                 + tuple(map(self.getChannelId, self.channels)) \
+                 + (0xFF,)
+                 
+        return file.write(struct.pack(fields,*values))
 
 class Container(): pass
+
+        
+        
+
 
 
 def readConfig(file):
@@ -73,7 +90,7 @@ def readData(file, channels, blocksize):
     return arr
 
 class Dumper(object):
-    def dump(self, file):
+    def dump(self, file,channels):
       config = readConfig(file)
        
       self.dumpConfig(config)
@@ -91,7 +108,7 @@ class Dumper(object):
 
       done = False
       
-      selection = args.channel or range(nchan)
+      selection = channels or range(nchan)
       
       while not done:
           arr = np.ndarray(shape=shape,dtype=dtype)
@@ -181,21 +198,79 @@ class PlotDumper(Dumper):
         formats = ['r,','g,','b,','y,']
 
         flat = sum(((ts, data[x], formats[x]) for x in range(nchan)),tuple())
+
+        import matplotlib.pyplot as plt
       
         plt.plot(*flat)
         plt.show()
 
-         
-def main():
-  action = args.action
+def dump(file, channel):
+  StdoutDumper().dump(file,channel)
+
+def plot(file, channel):
+  PlotDumper().dump(file,channel)
   
-  if action.lower() == 'dump':
-      file = open(args.file,'rb')
-      StdoutDumper().dump(file)
+def config(file, interval, channels):
+    file.seek(0,2)
+    filesize = file.tell()
+    file.seek(0,0)
 
-  elif action.lower() == 'plot':
-      file = open(args.file,'rb')
-      PlotDumper().dump(file)      
+    sys.stdout.write('Card Size is %0.1f MB.\n' % (filesize/1024./1024.))
+    
+    pdu = SDLoggerPDU()
+    pdu.interval = interval
+    pdu.channels = channels
+    
+    sys.stdout.write('Writing Configuration...')
+    blocksize = 4096
+    len = pdu.writeConfigPdu(file)
+    
+    empty = b'\xff' * blocksize
+    
+    len += file.write(empty[0:blocksize - len])
 
+    sys.stdout.write(' done.\n')
+    
+    sys.stdout.write('Initializing Card... ')
+    sys.stdout.flush()
+    
+    progress = 0
+    while len < filesize:
+      len += file.write(empty[0:min(blocksize,filesize-len)])
+      if int(10 * len / filesize) > progress:
+        progress = int(10 * len / filesize)
+        sys.stdout.write('#')
+        sys.stdout.flush()
+
+    file.close()
+      
+    sys.stdout.write(' done.\n')
+             
+def main():
+  parser = argparse.ArgumentParser(description='SDLogger Image File Tool')
+  subparsers = parser.add_subparsers(help='sub-command help')
+  
+  p = subparsers.add_parser('dump', help='dump records')
+  p.add_argument('file', type=argparse.FileType('rb'))
+  p.add_argument('--channel', '-c', type=int, action='append')
+  p.set_defaults(func=dump)
+  
+  p = subparsers.add_parser('plot', help='plot records')
+  p.add_argument('file', type=argparse.FileType('rb'))
+  p.add_argument('--channel', '-c', type=int, action='append')
+  p.set_defaults(func=plot)
+  
+  p = subparsers.add_parser('config', help='generate configuration')
+  p.add_argument('file', type=argparse.FileType('wb'))
+  p.add_argument('interval', type=int, help='sample interval in ms. (1 to 60000)')
+  p.add_argument('channels', metavar='channel', type=str, nargs='+', help='channel to sample. (%s)' % ', '. join(SDLoggerPDU.channelids))
+  p.set_defaults(func=config)
+  
+  args   = parser.parse_args()
+  kwargs = dict(vars(args))
+  del kwargs['func']
+
+  args.func(**kwargs)
+  
 if __name__ == '__main__':
   main()
