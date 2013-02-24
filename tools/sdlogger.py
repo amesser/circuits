@@ -140,10 +140,12 @@ class StdoutDumper(Dumper):
         sys.stdout.write('# Interval: %ums, ' % config.interval +
                          ', '.join(['channel %u' % x for x in config.channels])+
                          '\n')
+        sys.stdout.flush()
         
     def dumpCalibration(self,calibration):
         self.reference = float(calibration.reference) / 1000.    
         sys.stdout.write('# Calibration: %fV\n' % self.reference)
+        sys.stdout.flush()
         
     def dumpData(self,data):
         arr = np.zeros(shape=(len(data.ts),),dtype=('u4' + ',d' * len(data.data)))
@@ -155,6 +157,8 @@ class StdoutDumper(Dumper):
 
         np.savetxt(sys.stdout.buffer, arr, fmt=("%u" + " %f" * len(data.data)))
         
+        self.count = self.count + data.ts.shape[0]       
+
         # for x in np.nditer([data.ts] + data.data):
         #    sys.stdout.write('%u ' % x[0] + ' '.join(map(lambda x : '%f' % (self.reference * x / 4096.) ,x[1:])) + '\n')
             

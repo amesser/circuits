@@ -1,0 +1,37 @@
+ADC Input Filter
+*
+* SPICE circuit description for
+* ADC Low-Pass Filter
+*
+* Copyright (c) 2013 by Andreas Messer. This work is licensed under the 
+* Creative Commons Attribution-ShareAlike 3.0 Unported License. To view 
+* a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/.
+*
+* 0 GND
+* 1 Output
+* 2 +5V
+* 3 -0.5V
+* 4 OPAMP Input
+* 5 Sallen Key Fillter point
+* 6 Input
+
+* .INCLUDE tlc08x.mod
+.INCLUDE lm324.mod
+
+VDD 2 0 DC 5
+VSS 3 0 DC -1
+
+C1 4 0 1NF
+C2 5 1 1NF
+
+R1 6 5 10K
+R2 5 4 10K
+
+X1 4 1 2 3 1 LM324
+
+VIN 6 0 DC 1.5 AC .1 
+
+.DC VIN 0 3.3 0.1 vss 0 -1.5 -0.2
+.AC dec 100 1 10MEG
+
+.END

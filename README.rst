@@ -43,7 +43,14 @@ Enter the firmware directory and execute::
 
   waf configure build
 
-The firmware is located in the ``build`` subdirectory afterwards.
+The firmware is located in the ``build`` subdirectory afterwards. As
+an crystal is used for clocking the ATTiny2313 the following fuse settings
+shall be applied::
+
+  Low Fuse:      0x7D
+  High Fuse:     0xDF
+  Extended Fuse: 0xFF
+
 
 Author
 ------
