@@ -23,12 +23,23 @@ import struct
 
 import numpy as np
 import argparse
+import tempfile
+
+from operator import itemgetter
 
 
 class SDLoggerPDU(object):
     blocktypes = 'invalid config data calibration'.split()
     channelids = 'ch0 ch1 ch2 ch3 ch0-ch1 ch1-ch0 ch2-ch3 ch3-ch2 di'.split()
-    
+
+    class InvalidPduType(Exception):
+      def __init__(self,got, expected):
+        super(SDLoggerPDU.InvalidPduType,self).__init__()
+        self.got, self.expected = got,expected
+      
+      def __str__(self):
+        return 'Invalid Pdu Type %u. Expected %u' % (got, expected)
+        
     @classmethod
     def getBlockId(cls, name):
         return cls.blocktypes.index(name)
@@ -37,6 +48,24 @@ class SDLoggerPDU(object):
     def getChannelId(cls, name):
         return cls.channelids.index(name)
     
+    @classmethod
+    def readPduHead(cls,file,pdu = None):
+      type,length = struct.unpack("<2B",file.read(2))
+      
+      if type != cls.getBlockId(pdu):
+        raise cls.InvalidPduType(type,cls.getBlockId(pdu))
+    
+      return type,length
+
+    @classmethod
+    def writePduHead(cls,file,pdu, length):
+      return file.write(struct.pack("<2B", cls.getBlockId(pdu), length))  
+
+    
+    def __init__(self,**kwargs):
+      super(SDLoggerPDU,self).__init__()  
+      self.__dict__.update(kwargs)  
+      
     def writeConfigPdu(self,file):
         fields = '<2B H %uB B' % len(self.channels)
         values = (self.getBlockId('config'), struct.calcsize(fields) - 3, self.interval) \
@@ -45,63 +74,45 @@ class SDLoggerPDU(object):
                  
         return file.write(struct.pack(fields,*values))
 
+    def writeCalibrationPdu(self,file):
+      return self.writePduHead(file, 'calibration',2) + file.write(struct.pack('<HB',self.reference,0xFF))
+    
+    def readConfigPdu(self,file):
+      type,length = self.readPduHead(file, 'config')    
+        
+      nchan = (length - 2) / 1
+          
+      x = struct.unpack("<H %uB x" % nchan, file.read(length + 1))
+    
+      self.interval = x[0]
+      self.channels = itemgetter(*x[1:])(self.channelids)
+    
+      return length + 3
+    
+    def readCalibrationPdu(self,file):
+      type,length = self.readPduHead(file, 'calibration')    
+        
+      self.reference, = struct.unpack("<H x", file.read(length + 1))
+    
+      return length + 3
+  
 class Container(): pass
-
         
-        
-
-
-
-def readConfig(file):
-    container = Container()
-    
-    container.type,container.length = \
-        struct.unpack("<2B",file.read(2))
-    
-    if (container.type != 1):
-        raise Exception('Invalid block type %u' % container.type)
-        
-    nchan = (container.length - 2) / 1
-          
-    x = struct.unpack("<H %uB x" % nchan, file.read(container.length + 1))
-    
-    container.interval = x[0]
-    container.channels = x[1:]
-    
-    return container
-
-def readCalibration(file):
-    container = Container()
-    
-    container.type,container.length = \
-        struct.unpack("<2B",file.read(2))
-    
-    if (container.type != 3):
-        raise Exception('Invalid block type %u' % container.type)
-        
-          
-    container.reference, = struct.unpack("<H x", file.read(container.length + 1))
-    
-    return container
-
-def readData(file, channels, blocksize):
-    container = DataBlockFactory(channels, blocksize)
-    
-    return arr
-
 class Dumper(object):
     def dump(self, file,channels):
-      config = readConfig(file)
+      pdu = SDLoggerPDU()
+        
+      pdu.readConfigPdu(file)
        
-      self.dumpConfig(config)
+      self.dumpConfig(pdu)
                   
       file.seek(512)
       
-      calibration = readCalibration(file)
+      pdu.readCalibrationPdu(file)
       
-      self.dumpCalibration(calibration)
+      self.dumpCalibration(pdu)
             
-      nchan = len(config.channels)      
+      nchan = len(pdu.channels)      
       
       dtype = '<u1,<u1,<u4,<%uu2,<u1' % nchan
       shape = (512,)
@@ -129,8 +140,8 @@ class Dumper(object):
               container.data = [arr['f3'][:,x] & 0xFFF for x in selection]
                       
           self.dumpData(container)
-          
-      self.dumpDone()    
+    
+      self.dumpDone(file.tell())    
                 
 
 class StdoutDumper(Dumper):
@@ -138,7 +149,7 @@ class StdoutDumper(Dumper):
     
     def dumpConfig(self,config):
         sys.stdout.write('# Interval: %ums, ' % config.interval +
-                         ', '.join(['channel %u' % x for x in config.channels])+
+                         ', '.join(['channel %s' % x for x in config.channels])+
                          '\n')
         sys.stdout.flush()
         
@@ -164,8 +175,8 @@ class StdoutDumper(Dumper):
             
         sys.stderr.write('Read %u records\n' % self.count)
         
-    def dumpDone(self):
-        pass        
+    def dumpDone(self, size):
+        sys.stderr.write('Read %0.1f MB\n' % (size/1024./1024.))
 
 class PlotDumper(Dumper):
     count = 0
@@ -174,7 +185,7 @@ class PlotDumper(Dumper):
         self.nchan = len(config.channels)
         
         sys.stdout.write('# Interval: %ums, ' % config.interval +
-                         ', '.join(['channel %u' % x for x in config.channels])+
+                         ', '.join(['channel %s' % x for x in config.channels])+
                          '\n')
         
     def dumpCalibration(self,calibration):
@@ -191,7 +202,9 @@ class PlotDumper(Dumper):
         
         sys.stderr.write('Read %u records\n' % self.count)    
 
-    def dumpDone(self):
+    def dumpDone(self,size):
+        sys.stderr.write('Read %0.1f MB\n' % (size/1024./1024.))
+
         ts = np.hstack(x.ts for x in self.block)
         
         nchan = len(self.block[0].data)               
@@ -238,6 +251,7 @@ def config(file, interval, channels):
     sys.stdout.write('Initializing Card... ')
     sys.stdout.flush()
     
+    filesize = min(filesize,1024)
     progress = 0
     while len < filesize:
       len += file.write(empty[0:min(blocksize,filesize-len)])
@@ -246,10 +260,41 @@ def config(file, interval, channels):
         sys.stdout.write('#')
         sys.stdout.flush()
 
-    file.close()
-      
+    file.flush()
+    
     sys.stdout.write(' done.\n')
              
+def test():
+  handle, name = tempfile.mkstemp()
+  f = open(handle,'wb+')
+  f.truncate(1024*1024)
+  f.seek(0,0)
+  
+  config(f,10,['ch1', 'ch2'])
+  
+  f.seek(0,0)
+
+  try:
+    dump(f,[])
+  except SDLoggerPDU.InvalidPduType:
+    pass
+  else:
+    raise Exception('Test failed')    
+  f.seek(0,0)
+  try:
+    plot(f,[])
+  except SDLoggerPDU.InvalidPduType:
+    pass
+  else:
+    raise Exception('Test failed')
+
+  f.seek(512,0)
+  SDLoggerPDU(reference=2500).writeCalibrationPdu(f)  
+  f.seek(0,0)
+  dump(f,[])
+  f.seek(0,0)
+  plot(f,[])
+
 def main():
   parser = argparse.ArgumentParser(description='SDLogger Image File Tool')
   subparsers = parser.add_subparsers(help='sub-command help')
@@ -269,10 +314,18 @@ def main():
   p.add_argument('interval', type=int, help='sample interval in ms. (1 to 60000)')
   p.add_argument('channels', metavar='channel', type=str, nargs='+', help='channel to sample. (%s)' % ', '. join(SDLoggerPDU.channelids))
   p.set_defaults(func=config)
-  
+
+  p = subparsers.add_parser('test', help='run tests')
+  p.set_defaults(func=test)
+
   args   = parser.parse_args()
   kwargs = dict(vars(args))
-  del kwargs['func']
+  
+  try:
+    del kwargs['func']
+  except KeyError:
+    parser.print_help()
+    sys.exit(-1)
 
   args.func(**kwargs)
   
