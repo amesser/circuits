@@ -1,9 +1,6 @@
 #! /usr/bin/env python
 # encoding: utf-8
 
-def options(opt):
-    opt.recurse('attiny2313')
-
 def configure(conf):
     conf.recurse('attiny2313')
   

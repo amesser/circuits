@@ -3,7 +3,7 @@
 TOP = '.'
   
 def options(opt):
-    opt.recurse(['../externals/ecpp','src'])
+    opt.recurse(['../externals/ecpp'])
 
 def configure(conf):
     conf.recurse(['../externals/ecpp','src'])
