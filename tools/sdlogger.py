@@ -24,6 +24,7 @@ import struct
 import numpy as np
 import argparse
 import tempfile
+import re
 
 from operator import itemgetter
 
@@ -95,138 +96,189 @@ class SDLoggerPDU(object):
       self.reference, = struct.unpack("<H x", file.read(length + 1))
     
       return length + 3
-  
-class Container(): pass
-        
-class Dumper(object):
-    def dump(self, file,channels):
-      pdu = SDLoggerPDU()
-        
-      pdu.readConfigPdu(file)
-       
-      self.dumpConfig(pdu)
-                  
-      file.seek(512)
-      
-      pdu.readCalibrationPdu(file)
-      
-      self.dumpCalibration(pdu)
-            
-      nchan = len(pdu.channels)      
-      
-      dtype = '<u1,<u1,<u4,<%uu2,<u1' % nchan
-      shape = (512,)
 
-      done = False
-      
-      selection = channels or range(nchan)
-      
-      while not done:
-          arr = np.ndarray(shape=shape,dtype=dtype)
-          
-          file.readinto(arr)
-          
-          container = Container()
 
-          done = np.any(arr['f0'] != 2)
-          
-          
-          if (done):
-              valid = np.nonzero(arr['f0'] == 2)[0]
-              container.ts   = arr['f2'][valid]
-              container.data = [arr['f3'][valid,x] & 0xFFF for x in selection]
-          else:    
-              container.ts   = arr['f2']
-              container.data = [arr['f3'][:,x] & 0xFFF for x in selection]
-                      
-          self.dumpData(container)
-    
-      self.dumpDone(file.tell())    
-                
+class DatasetEvaluatorIterator(object):
+    blocksize = 4096
 
-class StdoutDumper(Dumper):
-    count = 0
-    
-    def dumpConfig(self,config):
-        sys.stdout.write('# Interval: %ums, ' % config.interval +
-                         ', '.join(['channel %s' % x for x in config.channels])+
-                         '\n')
-        sys.stdout.flush()
-        
-    def dumpCalibration(self,calibration):
-        self.reference = float(calibration.reference) / 1000.    
-        sys.stdout.write('# Calibration: %fV\n' % self.reference)
-        sys.stdout.flush()
-        
-    def dumpData(self,data):
-        arr = np.zeros(shape=(len(data.ts),),dtype=('u4' + ',d' * len(data.data)))
-            
-        arr['f0'] = data.ts
-        
-        for x in range(len(data.data)):
-            arr['f%u' % (x+1)] = data.data[x] * self.reference / 4096.    
+    def __init__(self,file, columns, tstep, tstart = None, tend = None):
 
-        np.savetxt(sys.stdout.buffer, arr, fmt=("%u" + " %f" * len(data.data)))
-        
-        self.count = self.count + data.ts.shape[0]       
+        pdu = SDLoggerPDU()
+        pdu.readConfigPdu(file)
+        file.seek(512)
+        pdu.readCalibrationPdu(file)
 
-        # for x in np.nditer([data.ts] + data.data):
-        #    sys.stdout.write('%u ' % x[0] + ' '.join(map(lambda x : '%f' % (self.reference * x / 4096.) ,x[1:])) + '\n')
-            
-        sys.stderr.write('Read %u records\n' % self.count)
-        
-    def dumpDone(self, size):
-        sys.stderr.write('Read %0.1f MB\n' % (size/1024./1024.))
+        dtype = np.dtype ([
+          ('type',   '<u1'),
+          ('length', '<u1'),
+          ('ts',     '<u4'),
+          ('data',   '<u2', (len(pdu.channels),)),
+          ('end',    '<u1'),
+        ])
 
-class PlotDumper(Dumper):
-    count = 0
-    
-    def dumpConfig(self,config):
-        self.nchan = len(config.channels)
-        
-        sys.stdout.write('# Interval: %ums, ' % config.interval +
-                         ', '.join(['channel %s' % x for x in config.channels])+
-                         '\n')
-        
-    def dumpCalibration(self,calibration):
-        self.reference = float(calibration.reference) / 1000.    
-        
-    def dumpData(self,data):
-        data.data = list((self.reference * x / 4096.) for x in data.data)
+        self.file      = file
+        self.tstep     = np.uint32(tstep)
+        self.tend      = np.uint32(tend or 0xFFFFFFFF)
+        self.dtype     = dtype
+        self.reference = np.float32(pdu.reference) / np.float32(1000)
+        self.channels  = pdu.channels
+        self.interval  = np.uint16(pdu.interval)
+        self.chunklist   = []
+        self.columns   = columns
+        self.cache     = {}
+
+        # read data until first aligned block boundary
+        bytes_to_read = ((file.tell() / self.blocksize) + 1) * self.blocksize - file.tell()
+        while bytes_to_read % dtype.itemsize:
+            bytes_to_read += self.blocksize
+
+        self.bufshape = (bytes_to_read / dtype.itemsize)
+        self.readChunk()
+
+        # calculate read chunk size
+        chunksize = self.blocksize
+        while chunksize <  (tstep * dtype.itemsize / int(self.interval)):
+            chunksize += self.blocksize
+
+        while chunksize % dtype.itemsize:
+            chunksize += self.blocksize
+
+        self.bufshape = (chunksize / dtype.itemsize)
+
+        if not self.chunklist:
+            self.readChunk()
+
+        self.tstart = np.uint32(tstart or ((np.min(self.chunklist[0]['ts'][0,...]) / self.tstep) * self.tstep))
+
+
+    def readChunk(self):
+        buf = np.ndarray(shape=self.bufshape, dtype=self.dtype)
+        bytes_read = self.file.readinto(buf)
+
+        buf = buf[0:bytes_read / self.dtype.itemsize]
+
         try:
-            self.block.append(data)
-        except AttributeError:
-            self.block = [data] 
+            last_index = np.min(np.nonzero(buf['type'] != 2))
+            buf = buf[0:last_index]
+            del self.file
+        except ValueError:
+            pass
+        
+        ts            = buf['ts']
+        data          = np.atleast_2d(np.transpose(buf['data']))
+        ts_correction = (data & 0xF000) >> 12
+        
+        mask_overflow = ts_correction < (ts & 0xF)
+        ts_correction[np.nonzero(mask_overflow)] += 0x10
+
+        chunk = { 
+            'ts'       : ts_correction | (ts & 0xFFFFFFF0),
+            'data'     : data & 0x0FFF,
+        }
+
+        self.chunklist.append(chunk)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+
+        # drop all outdated chunks
+        l = self.chunklist
+        while True:
+            if l and np.all(l[0]['ts'][:,-1] < self.tstart):
+                l.pop(0)
+            elif l and np.all(l[-1]['ts'][:,-1] >= (self.tstart + self.tstep)):
+                break
+            elif getattr(self,'file',None):
+               self.readChunk()
+            else:
+               break
             
-        self.count = self.count + data.ts.shape[0]       
-        
-        sys.stderr.write('Read %u records\n' % self.count)    
+        if not self.chunklist or self.tstart >= self.tend:
+            raise StopIteration()
 
-    def dumpDone(self,size):
-        sys.stderr.write('Read %0.1f MB\n' % (size/1024./1024.))
+        result     = tuple(eval(x,{},self) for x in self.columns)
+        self.cache = {}
 
-        ts = np.hstack(x.ts for x in self.block)
-        
-        nchan = len(self.block[0].data)               
-        data = [np.hstack(x.data[y] for x in self.block) for y in range(nchan)]
+        # advance to next time step
+        self.tstart = self.tstart + self.tstep
 
-        del self.block
-        
-        formats = ['r,','g,','b,','y,']
+        return result
 
-        flat = sum(((ts, data[x], formats[x]) for x in range(nchan)),tuple())
+    def __getitem__(self,key):
+        m = re.match(r"^(ts|data)(\d+)?$", key)
 
-        import matplotlib.pyplot as plt
-      
-        plt.plot(*flat)
-        plt.show()
+        if key in self.cache:
+            obj = self.cache[key]
+        elif m:
+            field, lane = m.group(1,2)
 
-def dump(file, channel):
-  StdoutDumper().dump(file,channel)
+            arrlist = []
+            
+            if lane:
+                getSlice = lambda inp : inp[int(lane),:][np.newaxis,...]
+            else:
+                getSlice = lambda inp : inp
 
-def plot(file, channel):
-  PlotDumper().dump(file,channel)
-  
+            tstart_last = self.tstart
+
+            if not self.chunklist:
+                raise Exception()
+
+            for x in self.chunklist:
+                ts        = getSlice(x['ts'])
+                cond      = (ts >= self.tstart) & (ts < (self.tstart + self.tstep))
+                values    = np.compress(np.any(cond,axis=0), getSlice(x[field]), axis=1)
+
+                arrlist.append(values)
+
+            obj = np.hstack(arrlist)
+
+            if field == 'ts':
+                obj = np.asarray(obj,dtype=np.float32) / np.float32(1000) 
+            elif field == 'data':
+                obj = np.asarray(obj,dtype=np.float32) * self.reference / np.float32(4096)
+
+            self.cache[key] = obj
+        elif key == 'tstart':
+            obj = self.tstart / np.float32(1000)
+        elif key == 'tstep':
+            obj = self.tstep / np.float32(1000)
+        else:
+            try:
+                obj = getattr(np, key)
+            except AttributeError:
+                raise KeyError()
+
+        return obj
+
+def dump(file, columns, **kw):
+    for cols in DatasetEvaluatorIterator(file, columns, **kw):
+        chunk = np.transpose(np.vstack(np.atleast_2d(x) for x in cols))
+        np.savetxt(sys.stdout, chunk, fmt="%.4f")
+
+def plot(file, items, **kw):
+    import matplotlib.pyplot as plt
+    
+    colors   = "rgby"
+    linetype = "-"
+
+    data = tuple(x for x in DatasetEvaluatorIterator(file, items, **kw))
+
+    plotlist = []
+
+    for index, expr in enumerate(items):
+        xdata = np.atleast_2d(np.hstack(tuple(chunk[index][0] for chunk in data)))
+        ydata = np.atleast_2d(np.hstack(tuple(chunk[index][1] for chunk in data)))
+       
+        plotlist += [xdata[0,:],ydata[0,:], colors[index] + linetype]
+
+    del data
+
+    plt.plot(*tuple(plotlist))
+    plt.show()
+
 def config(file, interval, channels):
     file.seek(0,2)
     filesize = file.tell()
@@ -263,50 +315,25 @@ def config(file, interval, channels):
     file.flush()
     
     sys.stdout.write(' done.\n')
-             
-def test():
-  handle, name = tempfile.mkstemp()
-  f = open(handle,'wb+')
-  f.truncate(1024*1024)
-  f.seek(0,0)
-  
-  config(f,10,['ch1', 'ch2'])
-  
-  f.seek(0,0)
-
-  try:
-    dump(f,[])
-  except SDLoggerPDU.InvalidPduType:
-    pass
-  else:
-    raise Exception('Test failed')    
-  f.seek(0,0)
-  try:
-    plot(f,[])
-  except SDLoggerPDU.InvalidPduType:
-    pass
-  else:
-    raise Exception('Test failed')
-
-  f.seek(512,0)
-  SDLoggerPDU(reference=2500).writeCalibrationPdu(f)  
-  f.seek(0,0)
-  dump(f,[])
-  f.seek(0,0)
-  plot(f,[])
-
+        
 def main():
   parser = argparse.ArgumentParser(description='SDLogger Image File Tool')
   subparsers = parser.add_subparsers(help='sub-command help')
   
   p = subparsers.add_parser('dump', help='dump records')
-  p.add_argument('file', type=argparse.FileType('rb'))
-  p.add_argument('--channel', '-c', type=int, action='append')
+  p.add_argument('--tstep',   type=int, default=1000, help='stepping time in ms')
+  p.add_argument('--tstart',  type=int, help='stepping start time in ms')
+  p.add_argument('--tend',  type=int, help='stepping end time in ms')
+  p.add_argument('file',    type=argparse.FileType('rb'))
+  p.add_argument('columns', metavar='column', type=str, nargs='+', help='column definition')
   p.set_defaults(func=dump)
-  
-  p = subparsers.add_parser('plot', help='plot records')
-  p.add_argument('file', type=argparse.FileType('rb'))
-  p.add_argument('--channel', '-c', type=int, action='append')
+
+  p = subparsers.add_parser('plot', help='generate a plot')
+  p.add_argument('--tstep',   type=int, default=1000, help='stepping time in ms')
+  p.add_argument('--tstart',  type=int, help='stepping start time in ms')
+  p.add_argument('--tend',  type=int, help='stepping end time in ms')
+  p.add_argument('file',    type=argparse.FileType('rb'))
+  p.add_argument('items', metavar='item', type=str, nargs='+', help='plot definition')
   p.set_defaults(func=plot)
   
   p = subparsers.add_parser('config', help='generate configuration')
@@ -314,9 +341,6 @@ def main():
   p.add_argument('interval', type=int, help='sample interval in ms. (1 to 60000)')
   p.add_argument('channels', metavar='channel', type=str, nargs='+', help='channel to sample. (%s)' % ', '. join(SDLoggerPDU.channelids))
   p.set_defaults(func=config)
-
-  p = subparsers.add_parser('test', help='run tests')
-  p.set_defaults(func=test)
 
   args   = parser.parse_args()
   kwargs = dict(vars(args))
