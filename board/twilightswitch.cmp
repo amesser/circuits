@@ -1,0 +1,164 @@
+Cmp-Mod V01 Created by CvPcb (2013-may-01)-stable date = Di 06 Aug 2013 12:43:48 CEST
+
+BeginCmp
+TimeStamp = /51E13277;
+Reference = C1;
+ValeurCmp = 470µ/16V;
+IdModule  = C2V8;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E13A7C;
+Reference = C2;
+ValeurCmp = 100n;
+IdModule  = C2;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E13A89;
+Reference = C3;
+ValeurCmp = 220µ/40V;
+IdModule  = C2V8;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E132DA;
+Reference = D1;
+ValeurCmp = DIODE;
+IdModule  = D3;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E136BC;
+Reference = D2;
+ValeurCmp = 12V;
+IdModule  = D4;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E14132;
+Reference = D3;
+ValeurCmp = DIODE;
+IdModule  = DO-41;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E13A91;
+Reference = D4;
+ValeurCmp = LPD;
+IdModule  = DO-41;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E41B4A;
+Reference = D5;
+ValeurCmp = DIODE;
+IdModule  = D3;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E1345A;
+Reference = JP1;
+ValeurCmp = JUMPER3;
+IdModule  = PIN_ARRAY_3X1;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E1356A;
+Reference = JP2;
+ValeurCmp = CONN_3X2;
+IdModule  = pin_array_3x2;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E13AAA;
+Reference = L1;
+ValeurCmp = 47µ;
+IdModule  = R5;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E13213;
+Reference = LDR1;
+ValeurCmp = R;
+IdModule  = CV3-30PF;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E13D75;
+Reference = P1;
+ValeurCmp = CONN_4;
+IdModule  = RIACON_007-4;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E136DB;
+Reference = Q1;
+ValeurCmp = MOS_N;
+IdModule  = TO220GDS;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E13206;
+Reference = R1;
+ValeurCmp = 57k;
+IdModule  = R5;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E132B2;
+Reference = R2;
+ValeurCmp = 57k;
+IdModule  = R5;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E141DA;
+Reference = R3;
+ValeurCmp = 57k;
+IdModule  = R5;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E1328D;
+Reference = R4;
+ValeurCmp = 1k;
+IdModule  = R5;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E136C9;
+Reference = R5;
+ValeurCmp = 100;
+IdModule  = R5;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E13AB7;
+Reference = R6;
+ValeurCmp = 100;
+IdModule  = R5;
+EndCmp
+
+BeginCmp
+TimeStamp = /5200DBB2;
+Reference = RV1;
+ValeurCmp = 3M;
+IdModule  = RV2;
+EndCmp
+
+BeginCmp
+TimeStamp = /5200DBCB;
+Reference = SW1;
+ValeurCmp = Reset;
+IdModule  = SW_PUSH-12mm;
+EndCmp
+
+BeginCmp
+TimeStamp = /51E131F7;
+Reference = U1;
+ValeurCmp = 40106;
+IdModule  = DIP-14__300_ELL;
+EndCmp
+
+EndListe
