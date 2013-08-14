@@ -21,6 +21,9 @@ Copyright (c) 2013 by Andreas Messer. This work is licensed under the
 Creative Commons Attribution-ShareAlike 3.0 Unported License. To view 
 a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/.
 
+The spice models in subdirectory ``simulation`` come with their own
+licenses any copyrights. For more detail see the file content.
+
 Besides that the external modules located in ``externals``
 subdirectory ship with their own licensing conditions.
 
