@@ -1,0 +1,36 @@
+Twilight Switch with CMOS 4007 and Bipolar Transistors
+
+.INCLUDE cd4007.mod
+.INCLUDE bc557.mod
+
+* Powersupply
+VDD  99 0 DC 12V
+
+R3 3   0 220k
+R4 99  2  10k
+R5 4   0  57k
+
+*M1BP 3 1 2 99 CD4007P
+Q1   3 1 2 bc557b
+Q2   4 3 2 bc557b
+
+C2 4   5  100n
+R6 5   0  220k
+D1 5   6
+
+R9  6  9 220k
+R10 8 99 3Meg
+C5  6  0 10n
+D2  8 99
+C4  7  8 1000u
+
+M1AP 7 6 99 99 CD4007P
+M1AN 7 6 0 0 CD4007N
+M1CP 9 8 99 99 CD4007P
+M1CN 9 8 0 0 CD4007N
+
+
+VIN 98  0 SIN(6V 6V 0.000011574 0V 0 0)
+RIN 98  1 100k
+
+

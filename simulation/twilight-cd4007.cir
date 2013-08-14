@@ -1,0 +1,41 @@
+Twilight Switch with CMOS 4007
+
+.INCLUDE cd4007.mod
+
+* Powersupply
+VDD  99 0 DC 12V
+
+R1   0  3 100k
+R2   0  4 57k
+R3   5  99 10k
+
+R4   3  7 100k
+R5   10  2 1Meg
+
+M1 3 2 5 99 CD4007P
+M2 4 7 5 99 CD4007P
+
+C1   4  11 1u
+R6   11  0 100k
+
+M3 12 14 0 0 CD4007N
+M4 13 15 0 0 CD4007N
+
+R8 13  99 57k
+R9 12  99 100k
+
+R7 14 13 100k
+D1 11 14
+
+C2  12 15 1000u
+D2  15  99
+R10 15  99 10Meg
+
+C3  14  0  100n
+
+M5 16 12 99 99 CD4007P
+M6 16 12  0  0 CD4007N
+
+VIN 10  0 SIN(6V 6V 0.000011574 0V 0 0)
+
+
