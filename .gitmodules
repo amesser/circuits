@@ -1,0 +1,6 @@
+[submodule "externals/kicadlib"]
+	path = externals/kicadlib
+	url = https://github.com/amesser/kicadlib.git
+[submodule "externals/ecpp"]
+	path = externals/ecpp
+	url = https://github.com/amesser/ecpp.git
