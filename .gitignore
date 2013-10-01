@@ -1,0 +1,3 @@
+firmware/build
+firmware/.lock-waf*
+

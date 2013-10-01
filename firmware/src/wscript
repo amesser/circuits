@@ -1,0 +1,16 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def configure(conf):
+    conf.ecpp_setupbuild(id='sdlogger-attiny2313', 
+                         device='attiny2313', arch='avr8')
+    conf.env.append_value('DEFINES', 'F_CPU=7680000UL')
+  
+def build(bld):
+    bld.ecpp_build(
+        id= 'sdlogger-attiny2313',
+        source   = 'main.cpp',
+        target   = 'attiny2313.elf',
+        features = 'cxx cxxprogram',  
+        includes = ['.'],
+    )  
