@@ -2,14 +2,17 @@
 # encoding: utf-8
 
 def configure(conf):
-    conf.ecpp_setupbuild(id='sdlogger-attiny2313', 
+    conf.ecpp_setupbuild(id='usb-display-attiny2313', 
                          device='attiny2313', arch='avr8')
-    conf.env.append_value('DEFINES', 'F_CPU=7680000UL')
-  
+    conf.env.append_value('DEFINES', 'F_CPU=1000000UL')
+    conf.env.append_value('CFLAGS', '-fwhole-program')
+    conf.env.append_value('CXXFLAGS', ['-fno-threadsafe-statics', '-fwhole-program'])
+
+    # conf.env.append_value('INCLUDES',[ "/usr/lib/avr/include", "/usr/lib/gcc/avr/4.7.2/include", "/usr/include", "/usr/include/c++/4.7"])
 def build(bld):
     bld.ecpp_build(
-        id= 'sdlogger-attiny2313',
-        source   = 'main.cpp',
+        id= 'usb-display-attiny2313',
+        source   = 'main.cc',
         target   = 'attiny2313.elf',
         features = 'cxx cxxprogram',  
         includes = ['.'],
