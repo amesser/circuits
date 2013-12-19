@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2
+EESchema Schematic File Version 2  date So 01 Dez 2013 18:50:25 CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -36,7 +36,6 @@ LIBS:amesser-discrete
 LIBS:amesser-linear
 LIBS:amesser-power
 LIBS:amesser-usb
-LIBS:usb-display-cache
 EELAYER 27 0
 EELAYER END
 $Descr A4 11693 8268
