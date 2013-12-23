@@ -79,6 +79,28 @@ static constexpr auto repDescriptor PROGMEM = join(
 
       ReportSize(1),
       Feature(Constant, Variable, Absolute),
+
+      Usage(CursorBlink),
+      Usage(CursorEnable),
+      Feature(Data, Variable, Absolute, NoPreferredState),
+
+      ReportSize(6),
+      Feature(Data, Variable, Absolute, NoPreferredState),
+    EndCollection(),
+
+    Usage(DisplayControlReport),
+    Collection(Logical),
+      ReportID(4),
+      ReportSize(1),
+      Usage(ClearDisplay),
+      Feature(Data, Variable, Absolute, NoPreferredState),
+
+      Usage(DisplayEnable),
+      Feature(Data, Variable, Absolute, NoPreferredState),
+
+      ReportSize(6),
+      Feature(Data, Variable, Absolute, NoPreferredState),
+
     EndCollection(),
 
     ReportSize(8),
@@ -91,7 +113,17 @@ static constexpr auto repDescriptor PROGMEM = join(
       Input(Data,Array, Absolute, NoNullPosition),
     EndCollection(),
 
-    ReportCount(4),
+    Usage(FontReport),
+    Collection(Logical),
+      ReportID(5),
+
+      Feature(Data, Variable, Absolute, NoPreferredState),
+
+      ReportCount(8),
+      Usage(FontData),
+      Feature(Data, Variable, Absolute, BufferedBytes),
+    EndCollection(),
+
 
     Usage(CharacterReport),
     Collection(Logical),
@@ -149,7 +181,7 @@ trigLed()
 
 static void lcd_delay_clock()
 {
-  //_delay_us(1);
+  _delay_us(2);
 }
 
 static void lcd_enable()
@@ -686,6 +718,8 @@ public:
   };
 
   uint8_t state;
+  uint8_t id;
+  uint8_t offset;
 
 
   template<size_t size>
@@ -761,6 +795,7 @@ public:
       }
       else if (status & (1<< RXS_SETUP))
       {
+          offset = 0;
           state = STATE_CTRL_NODATA;
 
           it       = itend;
@@ -872,6 +907,7 @@ public:
             case SET_REPORT:
               if (0x0300 == (wValue & 0xFF00))
               { /* set feature, disable in token, wait for next out tokens */
+                  id    = wValue & 0xFF;
                   state = STATE_CTRL_WRITE;
               }
               else
@@ -919,34 +955,100 @@ public:
         txtoggle = (1 << TXC_TOGGLE_SRT) |
                    (1 << TXC_TX_EN_SRT);
 
+        /* reuse NODATA queue in token for ack */
+        state = STATE_CTRL_NODATA;
+
         if (status & 0xF)
         {
-          uint8_t reportid = read(REG_RXD0);
+          uint8_t reportid = id;
+
+          /* skip report id */
+          if (offset == 0)
+          {
+            read(REG_RXD0);
+            offset ++;
+            status--;
+          }
 
           switch(reportid)
           {
           case 2:
             {
-            uint8_t loc = read(REG_RXD0);
+            uint8_t loc   = read(REG_RXD0);
             lcd_write_ins(0x80 | loc);
+
+            uint8_t flags = read(REG_RXD0) & 0x03;
+            lcd_write_ins(0x0C | flags);
             break;
             }
           case 3:
             {
-              uint8_t count = 4;
-              while(count--)
+              while(status & 0xF)
+              {
                 lcd_write_data(read(REG_RXD0));
+                status--;
+                offset++;
+              }
+
+              if (offset < 9)
+                state = STATE_CTRL_WRITE;
+            }
+            break;
+          case 4:
+            {
+            uint8_t flags = read(REG_RXD0);
+
+            if (flags & 0x1)
+              lcd_write_ins(0x01);
+
+            if (flags & 0x2)
+              lcd_write_ins(0x08);
+
+            break;
+            }
+          case 5:
+            {
+              if (1 == offset && (status & 0xF))
+              {
+                uint8_t code = 0x3F & (read(REG_RXD0) * 8);
+                lcd_write_ins(0x40 | code);
+                status--;
+                offset++;
+              }
+
+              while(status & 0xF)
+              {
+                lcd_write_data(read(REG_RXD0));
+                status--;
+                offset++;
+              }
+
+              if (offset < 10)
+                state = STATE_CTRL_WRITE;
+              else
+                lcd_write_ins(0x80);
+
             }
             break;
           }
         }
 
-        write(REG_TXC0, 1 << RXC_FLUSH_SRT);
 
-        /* reuse NODATA queue in token for ack */
-        state = STATE_CTRL_NODATA;
 
-        fillTX0();
+        if (state == STATE_CTRL_WRITE)
+        {
+          write(REG_RXC0, (1 << RXC_FLUSH_SRT));
+          write(REG_RXC0, (1 << RXC_RX_EN_SRT));
+        }
+        else
+        {
+          write(REG_TXC0, 1 << TXC_FLUSH_SRT);
+          fillTX0();
+
+          offset = 0;
+          id     = 0;
+        }
+
       }
 
 
