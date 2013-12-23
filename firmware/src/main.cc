@@ -120,8 +120,7 @@ const static auto cfgDescriptor PROGMEM =
         ).in<FlashBuffer>();
 
 
-static constexpr uint8_t registers[] =
-{
+static constexpr FlashBuffer<18> registers PROGMEM ({
     _SFR_IO_ADDR(PORTA),  0x01,
     _SFR_IO_ADDR(PORTB),  0x00,
     _SFR_IO_ADDR(PORTD),  0x00,
@@ -132,10 +131,8 @@ static constexpr uint8_t registers[] =
     _SFR_IO_ADDR(TCCR1A), (0x2 << COM1B0) | (0x1 << WGM10),
     _SFR_IO_ADDR(TCCR1B), (0x1 << WGM12) |  (0x3 << CS10),
 
-};
+});
 
-static constexpr auto registerInit PROGMEM =
-    FlashBuffer<sizeof(registers)>(registers);
 
 static void
 trigLed()
@@ -152,7 +149,7 @@ trigLed()
 
 static void lcd_delay_clock()
 {
-  _delay_us(1);
+  //_delay_us(1);
 }
 
 static void lcd_enable()
@@ -226,17 +223,8 @@ static void lcd_write_data(uint8_t value)
 
 static void lcd_init()
 {
-  _delay_ms(20);
-  PORTD = (PORTD & 0xF0) | 0x3;
-  lcd_enable();
-  _delay_ms(5);
-  lcd_enable();
-  _delay_ms(5);
-  lcd_enable();
-  _delay_ms(5);
-  PORTD = (PORTD & 0xF0) | 0x2;
-  lcd_enable();
-  _delay_ms(5);
+  lcd_write(0x33);
+  lcd_write(0x32);
   lcd_write_ins(0x28);
   lcd_write_ins(0x08);
   lcd_write_ins(0x06);
@@ -250,10 +238,11 @@ static void lcd_init()
 class SPISlaveA
 {
 public:
-  __attribute__((always_inline)) static void selectChip()         {PORTB  &= ~_BV(PIN2);}
-  __attribute__((always_inline)) static void deselectChip()       {PORTB  |= _BV(PIN2);}
-
   static USISPIMaster<15000000> getTransport(const unsigned long speed = 1500000) { return {}; }
+
+  __attribute__((always_inline)) static void    selectChip()                  {PORTB  &= ~_BV(PIN2);}
+  __attribute__((always_inline)) static void    deselectChip()                {PORTB  |= _BV(PIN2);}
+
 };
 
 template<typename DEVICE>
@@ -332,291 +321,265 @@ enum {
   SET_REPORT        = 9,
 };
 
+
+enum {
+  SPI_CMD_READ         = 0 << 6,
+  SPI_CMD_NOP          = 1 << 6,
+  SPI_CMD_WRITE        = 2 << 6,
+  SPI_CMD_BURST_WRITE  = 3 << 6,
+};
+
+enum {
+  REG_MCNTRL = 0x00,
+  REG_CCONF  = 0x01,
+  REG_RID    = 0x03,
+  REG_FAR    = 0x04,
+  REG_NFSR   = 0x05,
+  REG_MAEV   = 0x06,
+  REG_MAMSK  = 0x07,
+  REG_ALTEV  = 0x08,
+  REG_ALTMSK = 0x09,
+  REG_TXEV   = 0x0A,
+  REG_TXMSK  = 0x0B,
+  REG_RXEV   = 0x0C,
+  REG_RXMSK  = 0x0D,
+  REG_NAKEV  = 0x0E,
+  REG_NAKMSK = 0x0F,
+  REG_FWEV   = 0x10,
+  REG_FWMSK  = 0x11,
+  REG_FNH    = 0x12,
+  REG_FNL    = 0x13,
+  REG_DMACNTRL = 0x14,
+  REG_DMAEV    = 0x15,
+  REG_DMAMSK   = 0x16,
+  REG_MIR      = 0x17,
+  REG_DMACNT   = 0x18,
+  REG_DMAERR   = 0x19,
+  REG_WKUP     = 0x1B,
+  REG_EPC0     = 0x20,
+  REG_TXD0     = 0x21,
+  REG_TXS0     = 0x22,
+  REG_TXC0     = 0x23,
+  REG_RXD0     = 0x25,
+  REG_RXS0     = 0x26,
+  REG_RXC0     = 0x27,
+  REG_EPC1     = 0x28,
+  REG_TXD1     = 0x29,
+  REG_TXS1     = 0x2A,
+  REG_TXC1     = 0x2B,
+  REG_EPC2     = 0x2C,
+  REG_RXD1     = 0x2D,
+  REG_RXS1     = 0x2E,
+  REG_RXC1     = 0x2F,
+  REG_EPC3     = 0x30,
+  REG_TXD2     = 0x31,
+  REG_TXS2     = 0x32,
+  REG_TXC2     = 0x33,
+  REG_EPC4     = 0x34,
+  REG_RXD2     = 0x35,
+  REG_RXS2     = 0x36,
+  REG_RXC2     = 0x37,
+  REG_EPC5     = 0x38,
+  REG_TXD3     = 0x39,
+  REG_TXS3     = 0x3a,
+  REG_TXC3     = 0x3b,
+  REG_EPC6     = 0x3c,
+  REG_RXD3     = 0x3d,
+  REG_RXS3     = 0x3e,
+  REG_RXC3     = 0x3f,
+};
+
+enum {
+  REG_DELTA_EPC = 0,
+  REG_DELTA_TXD = 1,
+  REG_DELTA_TXS = 2,
+  REG_DELTA_TXC = 3,
+  REG_DELTA_RXD = 5,
+  REG_DELTA_RXS = 6,
+  REG_DELTA_RXC = 7,
+};
+
+enum {
+  MCNTRL_SRST_SRT  = 0,
+  MCNTRL_VGE_SRT   = 2,
+  MCNTRL_NAT_SRT   = 3,
+  MCNTRL_INTOC_SRT = 6,
+};
+
+enum {
+  CCONF_CLKDIV_SRT  = 0,
+  CCONF_CODIS_SRT   = 7,
+};
+
+enum {
+  NFS_RESET         = 0x00,
+  NFS_RESUME        = 0x01,
+  NFS_OPERATIONAL   = 0x02,
+  NFS_SUSPEND       = 0x03
+};
+
+enum {
+  MAEV_WARN_SRT     = 0,
+  MAEV_ALT_SRT      = 1,
+  MAEV_TX_EV_SRT    = 2,
+  MAEV_FRAME_SRT    = 3,
+  MAEV_NAK_SRT      = 4,
+  MAEV_ULD_SRT      = 5,
+  MAEV_RX_EV_SRT        = 6,
+  MAEV_INTR_SRT     = 7,
+};
+enum {
+  EPC_EP_EN       = 4,
+  EPC_ISO         = 5,
+  EPC_DEF_SRT     = 6,
+  EPC_STALL_SRT   = 7,
+};
+
+enum {
+  FAR_ADEN_SRT    = 7,
+};
+
+enum {
+  ALT_WKUP_SRT   = 1,
+  ALT_DMA_SRT    = 2,
+  ALT_EOP_SRT    = 3,
+  ALT_SD3_SRT    = 4,
+  ALT_SD5_SRT    = 5,
+  ALT_RESET_SRT  = 6,
+  ALT_RESUME_SRT = 7,
+};
+
+enum {
+  NAKEV_IN0_SRT  = 0,
+  NAKEV_IN1_SRT  = 1,
+  NAKEV_IN2_SRT  = 2,
+  NAKEV_IN3_SRT  = 3,
+  NAKEV_OUT0_SRT = 4,
+  NAKEV_OUT1_SRT = 5,
+  NAKEV_OUT2_SRT = 6,
+  NAKEV_OUT3_SRT = 7,
+};
+
+enum {
+  TXC0_IGN_IN_SRT    = 4,
+};
+
+enum {
+  TXC_TX_EN_SRT      = 0,
+  TXC_LAST_SRT       = 1,
+  TXC_TOGGLE_SRT     = 2,
+  TXC_FLUSH_SRT      = 3,
+  TXC_RFF_SRT        = 4,
+  TXC_TWFL_SRT       = 5,
+  TXC_IGN_ISOMSK_SRT = 7,
+};
+
+enum {
+  RXC_RX_EN_SRT      = 0,
+  RXC_IGN_OUT_SRT    = 1,
+  RXC_IGN_SETUP      = 2,
+  RXC_FLUSH_SRT      = 3,
+  RXC_TWFL_SRT       = 5,
+};
+
+enum {
+  RXEV_FIFO0_SRT     = 0,
+  RXEV_RXFIFO1_SRT   = 1,
+  RXEV_RXFIFO2_SRT   = 2,
+  RXEV_RXFIFO3_SRT   = 3,
+  RXEV_OVRRN0_SRT    = 4,
+  RXEV_RXOVRRN1_SRT  = 5,
+  RXEV_RXOVRRN2_SRT  = 6,
+  RXEV_RXOVRRN3_SRT  = 7,
+};
+
+enum {
+  TXEV_FIFO0_SRT     = 0,
+  TXEV_TXFIFO1_SRT   = 1,
+  TXEV_TXFIFO2_SRT   = 2,
+  TXEV_TXFIFO3_SRT   = 3,
+  TXEV_UDRRN0_SRT    = 4,
+  TXEV_TXUDRRN1_SRT  = 5,
+  TXEV_TXUDRRN2_SRT  = 6,
+  TXEV_TXUDRRN3_SRT  = 7,
+};
+
+enum {
+  RXS_RCOUNT_SRT     = 0,
+  RXS_RX_LAST        = 4,
+  RXS_TOGGLE_SRT     = 5,
+  RXS_SETUP          = 6,
+  RXS_ERR            = 7,
+};
+
+enum {
+  TXS_TCOUNT_SRT     = 0,
+  TXS_TX_DONE_SRT    = 5,
+  TXS_ACK_STAT_SRT   = 6,
+  TXS_URUN_SRT       = 7,
+};
+
+constexpr FlashBuffer<10> USBN960X_reset PROGMEM ({
+  REG_NFSR, NFS_RESET,
+  REG_FAR, 1 << FAR_ADEN_SRT,
+  REG_EPC0, 0,
+  REG_TXC0, 1 << TXC_FLUSH_SRT,
+  REG_RXC0, 1 << RXC_FLUSH_SRT,
+});
+
+
+constexpr FlashBuffer<4> USBN960X_suspend PROGMEM ({
+    REG_ALTMSK, (1 << ALT_RESUME_SRT) |
+                 (1 << ALT_RESET_SRT),
+    REG_NFSR, NFS_SUSPEND,
+});
+
+constexpr FlashBuffer<4> USBN960X_resume PROGMEM ({
+    REG_ALTMSK, (1 << ALT_SD3_SRT) |
+                 (1 << ALT_RESET_SRT),
+    REG_NFSR, NFS_OPERATIONAL,
+});
+
+
+constexpr FlashBuffer<4> USBN960X_config PROGMEM ({
+    REG_TXC1, 1 << TXC_FLUSH_SRT,
+    REG_EPC1, (1 << EPC_EP_EN) + 1,
+});
+
+
+constexpr FlashBuffer<14> USBN960X_init PROGMEM ({
+    REG_NAKMSK, (1 << NAKEV_OUT0_SRT),
+    REG_RXMSK, (1 << RXEV_FIFO0_SRT)   | (1 << RXEV_RXFIFO1_SRT) |
+                (1 << RXEV_RXFIFO2_SRT) | (1 << RXEV_RXFIFO3_SRT),
+    REG_TXMSK, (1 << TXEV_FIFO0_SRT)   | (1 << TXEV_TXFIFO1_SRT) |
+                (1 << TXEV_TXFIFO2_SRT) | (1 << TXEV_TXFIFO3_SRT),
+    REG_ALTMSK, (1 << ALT_SD3_SRT) |
+                 (1 << ALT_RESET_SRT),
+    REG_MAMSK, (1 << MAEV_NAK_SRT)     | (1 << MAEV_ALT_SRT) |
+                (1 << MAEV_TX_EV_SRT)   | (1 << MAEV_RX_EV_SRT) |
+                (1 << MAEV_INTR_SRT) ,
+    REG_NFSR, NFS_OPERATIONAL,
+    REG_MCNTRL,(1 << MCNTRL_VGE_SRT) | (1 << MCNTRL_NAT_SRT) |
+                (3 << MCNTRL_INTOC_SRT),
+});
+
 template<typename DEVICE, template<size_t, typename> class Storage>
 class USBN960X : public DEVICE
 {
-public:
-  enum {
-    SPI_CMD_READ         = 0 << 6,
-    SPI_CMD_NOP          = 1 << 6,
-    SPI_CMD_WRITE        = 2 << 6,
-    SPI_CMD_BURST_WRITE  = 3 << 6,
-  };
-
-  enum {
-    REG_MCNTRL = 0x00,
-    REG_CCONF  = 0x01,
-    REG_RID    = 0x03,
-    REG_FAR    = 0x04,
-    REG_NFSR   = 0x05,
-    REG_MAEV   = 0x06,
-    REG_MAMSK  = 0x07,
-    REG_ALTEV  = 0x08,
-    REG_ALTMSK = 0x09,
-    REG_TXEV   = 0x0A,
-    REG_TXMSK  = 0x0B,
-    REG_RXEV   = 0x0C,
-    REG_RXMSK  = 0x0D,
-    REG_NAKEV  = 0x0E,
-    REG_NAKMSK = 0x0F,
-    REG_FWEV   = 0x10,
-    REG_FWMSK  = 0x11,
-    REG_FNH    = 0x12,
-    REG_FNL    = 0x13,
-    REG_DMACNTRL = 0x14,
-    REG_DMAEV    = 0x15,
-    REG_DMAMSK   = 0x16,
-    REG_MIR      = 0x17,
-    REG_DMACNT   = 0x18,
-    REG_DMAERR   = 0x19,
-    REG_WKUP     = 0x1B,
-    REG_EPC0     = 0x20,
-    REG_TXD0     = 0x21,
-    REG_TXS0     = 0x22,
-    REG_TXC0     = 0x23,
-    REG_RXD0     = 0x25,
-    REG_RXS0     = 0x26,
-    REG_RXC0     = 0x27,
-    REG_EPC1     = 0x28,
-    REG_TXD1     = 0x29,
-    REG_TXS1     = 0x2A,
-    REG_TXC1     = 0x2B,
-    REG_EPC2     = 0x2C,
-    REG_RXD1     = 0x2D,
-    REG_RXS1     = 0x2E,
-    REG_RXC1     = 0x2F,
-    REG_EPC3     = 0x30,
-    REG_TXD2     = 0x31,
-    REG_TXS2     = 0x32,
-    REG_TXC2     = 0x33,
-    REG_EPC4     = 0x34,
-    REG_RXD2     = 0x35,
-    REG_RXS2     = 0x36,
-    REG_RXC2     = 0x37,
-    REG_EPC5     = 0x38,
-    REG_TXD3     = 0x39,
-    REG_TXS3     = 0x3a,
-    REG_TXC3     = 0x3b,
-    REG_EPC6     = 0x3c,
-    REG_RXD3     = 0x3d,
-    REG_RXS3     = 0x3e,
-    REG_RXC3     = 0x3f,
-  };
-
-  enum {
-    REG_DELTA_EPC = 0,
-    REG_DELTA_TXD = 1,
-    REG_DELTA_TXS = 2,
-    REG_DELTA_TXC = 3,
-    REG_DELTA_RXD = 5,
-    REG_DELTA_RXS = 6,
-    REG_DELTA_RXC = 7,
-  };
-
-  enum {
-    MCNTRL_SRST_SRT  = 0,
-    MCNTRL_VGE_SRT   = 2,
-    MCNTRL_NAT_SRT   = 3,
-    MCNTRL_INTOC_SRT = 6,
-  };
-
-  enum {
-    CCONF_CLKDIV_SRT  = 0,
-    CCONF_CODIS_SRT   = 7,
-  };
-
-  enum {
-    NFS_RESET         = 0x00,
-    NFS_RESUME        = 0x01,
-    NFS_OPERATIONAL   = 0x02,
-    NFS_SUSPEND       = 0x03
-  };
-
-  enum {
-    MAEV_WARN_SRT     = 0,
-    MAEV_ALT_SRT      = 1,
-    MAEV_TX_EV_SRT    = 2,
-    MAEV_FRAME_SRT    = 3,
-    MAEV_NAK_SRT      = 4,
-    MAEV_ULD_SRT      = 5,
-    MAEV_RX_EV_SRT        = 6,
-    MAEV_INTR_SRT     = 7,
-  };
-  enum {
-    EPC_EP_EN       = 4,
-    EPC_ISO         = 5,
-    EPC_DEF_SRT     = 6,
-    EPC_STALL_SRT   = 7,
-  };
-
-  enum {
-    FAR_ADEN_SRT    = 7,
-  };
-
-  enum {
-    ALT_WKUP_SRT   = 1,
-    ALT_DMA_SRT    = 2,
-    ALT_EOP_SRT    = 3,
-    ALT_SD3_SRT    = 4,
-    ALT_SD5_SRT    = 5,
-    ALT_RESET_SRT  = 6,
-    ALT_RESUME_SRT = 7,
-  };
-
-  enum {
-    NAKEV_IN0_SRT  = 0,
-    NAKEV_IN1_SRT  = 1,
-    NAKEV_IN2_SRT  = 2,
-    NAKEV_IN3_SRT  = 3,
-    NAKEV_OUT0_SRT = 4,
-    NAKEV_OUT1_SRT = 5,
-    NAKEV_OUT2_SRT = 6,
-    NAKEV_OUT3_SRT = 7,
-  };
-
-  enum {
-    TXC0_IGN_IN_SRT    = 4,
-  };
-
-  enum {
-    TXC_TX_EN_SRT      = 0,
-    TXC_LAST_SRT       = 1,
-    TXC_TOGGLE_SRT     = 2,
-    TXC_FLUSH_SRT      = 3,
-    TXC_RFF_SRT        = 4,
-    TXC_TWFL_SRT       = 5,
-    TXC_IGN_ISOMSK_SRT = 7,
-  };
-
-  enum {
-    RXC_RX_EN_SRT      = 0,
-    RXC_IGN_OUT_SRT    = 1,
-    RXC_IGN_SETUP      = 2,
-    RXC_FLUSH_SRT      = 3,
-    RXC_TWFL_SRT       = 5,
-  };
-
-  enum {
-    RXEV_FIFO0_SRT     = 0,
-    RXEV_RXFIFO1_SRT   = 1,
-    RXEV_RXFIFO2_SRT   = 2,
-    RXEV_RXFIFO3_SRT   = 3,
-    RXEV_OVRRN0_SRT    = 4,
-    RXEV_RXOVRRN1_SRT  = 5,
-    RXEV_RXOVRRN2_SRT  = 6,
-    RXEV_RXOVRRN3_SRT  = 7,
-  };
-
-  enum {
-    TXEV_FIFO0_SRT     = 0,
-    TXEV_TXFIFO1_SRT   = 1,
-    TXEV_TXFIFO2_SRT   = 2,
-    TXEV_TXFIFO3_SRT   = 3,
-    TXEV_UDRRN0_SRT    = 4,
-    TXEV_TXUDRRN1_SRT  = 5,
-    TXEV_TXUDRRN2_SRT  = 6,
-    TXEV_TXUDRRN3_SRT  = 7,
-  };
-
-  enum {
-    RXS_RCOUNT_SRT     = 0,
-    RXS_RX_LAST        = 4,
-    RXS_TOGGLE_SRT     = 5,
-    RXS_SETUP          = 6,
-    RXS_ERR            = 7,
-  };
-
-  enum {
-    TXS_TCOUNT_SRT     = 0,
-    TXS_TX_DONE_SRT    = 5,
-    TXS_ACK_STAT_SRT   = 6,
-    TXS_URUN_SRT       = 7,
-  };
 private:
-  struct USBN960X_Sequence_Reset : public RegisterSequence<5>
-  {
-    constexpr USBN960X_Sequence_Reset() : RegisterSequence<5> {{
-      {REG_NFSR, NFS_RESET},
-      {REG_FAR, 1 << FAR_ADEN_SRT},
-      {REG_EPC0, 0},
-      {REG_TXC0, 1 << TXC_FLUSH_SRT},
-      {REG_RXC0, 1 << RXC_FLUSH_SRT},
-    }}{}
-  };
-
-  struct USBN960X_Sequence_Suspend : public RegisterSequence<2>
-  {
-    constexpr USBN960X_Sequence_Suspend() : RegisterSequence<2> {{
-      {REG_ALTMSK, (1 << ALT_RESUME_SRT) |
-                   (1 << ALT_RESET_SRT)},
-      {REG_NFSR, NFS_SUSPEND},
-    }}{}
-  };
-
-  struct USBN960X_Sequence_Resume : public RegisterSequence<2>
-  {
-    constexpr USBN960X_Sequence_Resume() : RegisterSequence<2> {{
-      {REG_ALTMSK, (1 << ALT_SD3_SRT) |
-                   (1 << ALT_RESET_SRT)},
-      {REG_NFSR, NFS_OPERATIONAL},
-    }}{}
-  };
-
-  struct USBN960X_Sequence_Init : public RegisterSequence<7>
-  {
-    constexpr USBN960X_Sequence_Init() : RegisterSequence<7> {{
-      {REG_NAKMSK, (1 << NAKEV_OUT0_SRT)},
-      {REG_RXMSK, (1 << RXEV_FIFO0_SRT)   | (1 << RXEV_RXFIFO1_SRT) |
-                  (1 << RXEV_RXFIFO2_SRT) | (1 << RXEV_RXFIFO3_SRT)},
-      {REG_TXMSK, (1 << TXEV_FIFO0_SRT)   | (1 << TXEV_TXFIFO1_SRT) |
-                  (1 << TXEV_TXFIFO2_SRT) | (1 << TXEV_TXFIFO3_SRT)},
-      {REG_ALTMSK, (1 << ALT_SD3_SRT) |
-                   (1 << ALT_RESET_SRT)},
-      {REG_MAMSK, (1 << MAEV_NAK_SRT)     | (1 << MAEV_ALT_SRT) |
-                  (1 << MAEV_TX_EV_SRT)   | (1 << MAEV_RX_EV_SRT) |
-                  (1 << MAEV_INTR_SRT) },
-      {REG_NFSR, NFS_OPERATIONAL},
-      {REG_MCNTRL,(1 << MCNTRL_VGE_SRT) | (1 << MCNTRL_NAT_SRT) |
-                  (3 << MCNTRL_INTOC_SRT)},
-    }}{}
-  };
-
-  struct USBN960X_Sequence_Configuration : public RegisterSequence<2>
-  {
-    constexpr USBN960X_Sequence_Configuration() : RegisterSequence<2> {{
-      {REG_TXC1, 1 << TXC_FLUSH_SRT},
-      {REG_EPC1, (1 << EPC_EP_EN) + 1},
-    }}{}
-  };
-
-  static constexpr RegisterSequence<USBN960X_Sequence_Reset::count(), Storage> const & reset() {return
-      ConstantArrayBuffer<USBN960X_Sequence_Reset, Storage>::value;}
-
-  static constexpr RegisterSequence<USBN960X_Sequence_Suspend::count(), Storage> const & suspend() {return
-      ConstantArrayBuffer<USBN960X_Sequence_Suspend, Storage>::value;}
-
-  static constexpr RegisterSequence<USBN960X_Sequence_Resume::count(), Storage> const & resume() {return
-      ConstantArrayBuffer<USBN960X_Sequence_Resume, Storage>::value;}
-
-  static constexpr RegisterSequence<USBN960X_Sequence_Init::count(), Storage> const & initSequence() {return
-      ConstantArrayBuffer<USBN960X_Sequence_Init, Storage>::value;}
-
-  static constexpr RegisterSequence<USBN960X_Sequence_Configuration::count(), Storage> const & configSequence() {return
-      ConstantArrayBuffer<USBN960X_Sequence_Configuration, Storage>::value;}
-
   typedef decltype(devDescriptor)::const_iterator IteratorType;
 
   IteratorType      it;      /*blub */
   IteratorType      itend;   /*blub */
-  uint8_t           txtoggle;
+  uint8_t           txtoggle; /*test*/
 
   template<typename Iterator>
   void writeRegisters(Iterator it, Iterator end)
   {
     while(it != end)
     {
-        uint8_t reg = *(it++);
-        uint8_t val = *(it++);
+        const uint8_t reg = *(it++);
+        const uint8_t val = *(it++);
         write(reg, val);
     }
   }
@@ -627,43 +590,74 @@ private:
     writeRegisters(seq.begin(), seq.end());
   }
 
-
 public:
 
-  uint8_t transfer_2bytes(uint8_t addr, uint8_t value)
+  uint8_t transfer_2bytes(uint8_t value1, uint8_t value2)
   {
+    auto guard     = ChipSelect(*this);
     auto transport = this->getTransport();
 
-    transport.transferByte(addr);
-    return transport.transferByte(value);
+    return transport.transferBytes(value1, value2);
   }
 
-  uint8_t read(uint8_t addr)
+  uint8_t
+  read(uint8_t addr)
   {
-    auto guard = ChipSelect(*this);
     return transfer_2bytes((addr & 0x3F) | SPI_CMD_READ, SPI_CMD_NOP);
   }
 
-  uint8_t write(uint8_t addr, uint8_t value)
+  uint8_t __attribute__((always_inline))
+  write(uint8_t addr, uint8_t value)
   {
-    auto guard = ChipSelect(*this);
     return transfer_2bytes((addr & 0x3F) | SPI_CMD_WRITE, value);
   }
 
+
+  void bwrite(uint8_t addr, const uint8_t *data, uint8_t count)
+  {
+    auto guard = ChipSelect(*this);
+    transfer_2bytes((addr & 0x3F) | SPI_CMD_BURST_WRITE, data[0]);
+
+    auto transport = this->getTransport();
+
+    uint8_t idx = 1;
+    while (idx < count)
+      transport.transferByte(data[idx++]);
+  }
+
+  void bread(uint8_t addr, uint8_t *data, uint8_t count)
+  {
+    auto transport = this->getTransport();
+    auto guard = ChipSelect(*this);
+
+    const uint8_t cmd = (addr & 0x3F) | SPI_CMD_READ;
+
+    transport.transferByte(cmd);
+    transfer_2bytes((addr & 0x3F) | SPI_CMD_BURST_WRITE, data[0]);
+
+
+    uint8_t idx = 0;
+    while (idx < count - 1)
+      data[idx++] = transport.transferByte(cmd);
+
+    data[idx++] = transport.transferByte(SPI_CMD_NOP);
+  }
+
+
   void handleNodeReset()
   {
-    writeRegisters(reset());
-    writeRegisters(resume());
+    writeRegisters(USBN960X_reset);
+    writeRegisters(USBN960X_resume);
   }
 
   void handleNodeSuspend()
   {
-    writeRegisters(suspend());
+    writeRegisters(USBN960X_suspend);
   }
 
   void handleNodeResume()
   {
-    writeRegisters(resume());
+    writeRegisters(USBN960X_resume);
   }
 
   void eventALT()
@@ -692,6 +686,20 @@ public:
   };
 
   uint8_t state;
+
+
+  template<size_t size>
+  void read_fifo(uint8_t reg, uint8_t (&data)[size], uint8_t count = size)
+  {
+    bread(reg,data,count);
+  }
+
+  template<size_t size>
+  void write_fifo(uint8_t reg, const uint8_t (&data)[size], uint8_t count = size)
+  {
+    bwrite(reg, data, count);
+  }
+
   void fillTX0()
   {
     /* check if there is data to send or if we shall queue
@@ -703,7 +711,7 @@ public:
       while(it != itend && count)
       {
         write(REG_TXD0, *(it++));
-        count -= 1;
+        count--;
       }
 
       /* clear the force send bit on the last not full size packet
@@ -747,6 +755,7 @@ public:
     {
       auto status = read(REG_RXS0);
 
+
       if (0 == (status & (1<< RXS_RX_LAST)))
       { /* should never happen */
       }
@@ -761,13 +770,13 @@ public:
           uint8_t bmRequestType = read(REG_RXD0);
           uint8_t bRequest      = read(REG_RXD0);
 
-          uint16_t wValue  = read(REG_RXD0) | (read(REG_RXD0) << 8);
-          uint16_t wIndex  = read(REG_RXD0) | (read(REG_RXD0) << 8);
-          uint16_t wLength = read(REG_RXD0) | (read(REG_RXD0) << 8);
-
-          unstall(REG_EPC0);
+          uint16_t wValue  = (read(REG_RXD0)) | (read(REG_RXD0) << 8);
+          uint16_t wIndex  = (read(REG_RXD0)) | (read(REG_RXD0) << 8);
+          uint16_t wLength = (read(REG_RXD0)) | (read(REG_RXD0) << 8);
 
           write(REG_TXC0, 1 << TXC_FLUSH_SRT);
+          unstall(REG_EPC0);
+
 
           if (0 == (bmRequestType & 0x7F))
           { /* standard device request */
@@ -794,7 +803,7 @@ public:
                 write(REG_FAR,  (1 << FAR_ADEN_SRT) | (wValue & 0xFF));
                 break;
               case SET_CONFIGURATION:
-                writeRegisters(configSequence());
+                writeRegisters(USBN960X_config);
                 break;
               default:
                 stall(REG_EPC0);
@@ -932,7 +941,6 @@ public:
           }
         }
 
-        /* flush any data */
         write(REG_TXC0, 1 << RXC_FLUSH_SRT);
 
         /* reuse NODATA queue in token for ack */
@@ -960,7 +968,6 @@ public:
         if (!(status & (1 << TXS_ACK_STAT_SRT)))
         { /* packet was not acked, reset state */
           state = STATE_WSETUP;
-          trigLed();
         }
         else if (state == STATE_CTRL_READ_DONE)
         { /* enable receiver to get host response to read transfer */
@@ -999,8 +1006,8 @@ public:
     write(REG_MCNTRL, (1 << MCNTRL_SRST_SRT));
     while(read(REG_MCNTRL) & (1 << MCNTRL_SRST_SRT));
 
-    writeRegisters(reset());
-    writeRegisters(initSequence());
+    writeRegisters(USBN960X_reset);
+    writeRegisters(USBN960X_init);
 
     /* disable clock out, do this later we use this
      * to check if the crystal is working properly */
@@ -1010,19 +1017,22 @@ public:
 };
 
 
+
+
+
 class UsbDisplayApplication
 {
 private:
-  USBN960X<SPISlaveA, FlashBuffer> _usb;
+  USBN960X<SPISlaveA, EEPROMBuffer> _usb;
 
 
 public:
   void main() __attribute__((noreturn))
   {
     {
-      auto it = registerInit.begin();
+      auto it    = registers.begin();
 
-      while(it != registerInit.end())
+      while(it != registers.end())
       {
           uint8_t reg = *(it++);
           _SFR_IO8(reg) = *(it++);
