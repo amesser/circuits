@@ -1,0 +1,36 @@
+Low noise amplifier
+
+.INCLUDE tle2021_1.mod
+.INCLUDE 2n3906.mod
+
+vcc 99 0 DC 5V
+
+* input signal
+vin 1 0 DC 0 AC 100u SIN(0 100u 200)
+rin 1 2 1k
+cin 2 3 10u
+
+* emitter follower
+r1  99 3 47k
+r2  3  0 100k
+
+r4  99 5 22k
+r5  6 0  100k
+
+c2  4  0 100u
+r3  4  5 47
+
+q1  6 3 5 2n3906
+
+* opamp stage
+r6 99 7 33k
+r7 7  0 22k
+c3 7  0 47u
+
+r8 8  5 47k
+c5 8  5 1n
+
+xu1 7 6 99 0 8 tle2021
+
+.end
+
