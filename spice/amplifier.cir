@@ -54,24 +54,19 @@ c10 11 12 1n
 xu2a 9 11 99 0 12 lm358
 
 * third stage
-c12 12 13 1u
-r15 13 14 4.7k
-r16 14 15 47k
+c12 8  13 10u
+r15 13 14 1k
+r16 14 15 100k
 c13 14 15 1n
 
 xu2b 9 14 99 0 15 lm358
-
-* 100 db output
-c14 15 16 1u
-r17 99 16 47k
-r18 16  0 22k
 
 
 .control
 op
 print all > operatingpoint.txt
 ac dec 100 10 10k
-hardcopy amplification.ps db(v(10)/v(3)) db(v(13)/v(3)) db(v(15)/v(3))
+hardcopy amplification.ps db(v(10)/v(3)) db(v(12)/v(3)) db(v(15)/v(3))
 .endc
 .end
 
