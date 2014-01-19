@@ -1,36 +1,77 @@
 Low noise amplifier
 
 .INCLUDE tle2021_1.mod
+.INCLUDE lm358.mod
 .INCLUDE 2n3906.mod
 
 vcc 99 0 DC 5V
 
 * input signal
 vin 1 0 DC 0 AC 100u SIN(0 100u 200)
-rin 1 2 1k
-cin 2 3 10u
+r1 1 2 1k
+c1 2 3 1u
 
 * emitter follower
-r1  99 3 47k
-r2  3  0 100k
 
-r4  99 5 22k
-r5  6 0  100k
+** operation point
+r2  99 3 47k
+r3  3  0 100k
 
+** dc feedback and output
+r5  99 5 22k
+r6  6 0  100k
+
+** ac feedback
 c2  4  0 100u
-r3  4  5 47
+r4  4  5 47
 
 q1  6 3 5 2n3906
 
 * opamp stage
-r6 99 7 33k
-r7 7  0 22k
-c3 7  0 47u
 
-r8 8  5 47k
-c5 8  5 1n
+** operation point
+r7 99 7 73k
+r8 7  0 47k
+c3 7  0 1u
+
+** feedback
+r9 8  5 47k
+c4 8  5 1n
 
 xu1 7 6 99 0 8 tle2021
 
+* operation point 2nd & 3rd stage
+r11 99 9  47k
+r12 9  0  22k
+c9  9  0  1u
+
+* second stage
+c8  8  10 1u
+r13 10 11 4.7k
+r14 11 12 47k
+c10 11 12 1n
+
+xu2a 9 11 99 0 12 lm358
+
+* third stage
+c12 12 13 1u
+r15 13 14 4.7k
+r16 14 15 47k
+c13 14 15 1n
+
+xu2b 9 14 99 0 15 lm358
+
+* 100 db output
+c14 15 16 1u
+r17 99 16 47k
+r18 16  0 22k
+
+
+.control
+op
+print all > operatingpoint.txt
+ac dec 100 10 10k
+hardcopy amplification.ps db(v(10)/v(3)) db(v(13)/v(3)) db(v(15)/v(3))
+.endc
 .end
 
