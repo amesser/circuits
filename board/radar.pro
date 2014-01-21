@@ -1,11 +1,6 @@
-update=Sa 18 Jan 2014 12:20:40 CET
+update=Di 21 Jan 2014 19:45:20 CET
 version=1
 last_client=kicad
-[cvpcb]
-version=1
-NetIExt=net
-[cvpcb/libraries]
-EquName1=devcms
 [eeschema]
 version=1
 LibDir=
@@ -65,16 +60,15 @@ DrawSegmentWidth=0.200000000000
 BoardOutlineThickness=0.100000000000
 ModuleOutlineThickness=0.150000000000
 [pcbnew/libraries]
-LibDir=
-LibName1=sockets
-LibName2=connect
-LibName3=discret
-LibName4=pin_array
-LibName5=divers
-LibName6=smd_capacitors
-LibName7=smd_resistors
-LibName8=smd_crystal&oscillator
-LibName9=smd_dil
+LibName1=riaconnect
+LibName2=sockets
+LibName3=connect
+LibName4=discret
+LibName5=pin_array
+LibName6=divers
+LibName7=smd_capacitors
+LibName8=smd_resistors
+LibName9=smd_crystal&oscillator
 LibName10=smd_transistors
 LibName11=libcms
 LibName12=display
@@ -82,5 +76,11 @@ LibName13=led
 LibName14=dip_sockets
 LibName15=pga_sockets
 LibName16=valves
+LibDir=../externals/kicadlib/packages
+[cvpcb]
+version=1
+NetIExt=net
+[cvpcb/libraries]
+EquName1=devcms
 [general]
 version=1

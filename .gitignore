@@ -1,0 +1,3 @@
+board/*.bak
+board/*-cache.lib
+spice/*.ps
