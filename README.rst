@@ -33,13 +33,16 @@ to the MCU to visualize results.
 Licenses
 --------
 
-For the Schematic and Board within subfolder ``board`` the following 
+For the Schematic and Board within subfolder ``board`` and the spice
+circuit description within ``spice`` subfolder the following 
 licensing conditions hold:
 
 Copyright (c) 2014 by Andreas Messer. This work is licensed under the 
 Creative Commons Attribution-ShareAlike 3.0 Unported License. To view 
 a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/.
 
+The model files within the ``spice`` subfolder ship with their own 
+licenses. See the files for more details.
 
 Besides that the external modules located in ``externals``
 subdirectory ship with their own licensing conditions.
