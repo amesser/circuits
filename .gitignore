@@ -1,3 +1,4 @@
 board/*.bak
+board/*.kicad_pcb-bak
 board/*-cache.lib
 spice/*.ps
