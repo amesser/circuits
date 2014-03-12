@@ -1,0 +1,14 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def configure(conf):
+    conf.ecpp_setupbuild(id='dft_test', platform='native')
+
+def build(bld):
+    bld.ecpp_build(
+        id= 'dft_test',
+        source   = 'dft_test.cc',
+        target   = 'dft_test',
+        features = 'cxx cxxprogram',  
+        includes = ['.'],
+    )  
