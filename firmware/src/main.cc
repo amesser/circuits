@@ -72,7 +72,9 @@ using Platform::Guards::ChipSelectGuard;
 using namespace Platform::Util::Datatypes;
 using namespace Platform::Algorithm::DFT;
 using namespace Platform::Architecture::AVR8;
+using ::Platform::Buffer::RamBuffer;
 using ::Platform::Algorithm::Cordic;
+using ::std::size_t;
 
 template<class Device>
 class PCD8544 : public Device
@@ -118,9 +120,9 @@ public:
 
 static PCD8544<SPISlaveA> display;
 
-typedef FixedPoint<int16_t, 256> CalculationType;
+typedef FixedPoint<int16_t, 0x1000> CalculationType;
 
-CalculationType afInputArray[128]; /* input data array */
+CalculationType afInputArray[128]; /*  input data array */
 
 typedef Radix2DFT<CalculationType,7> DFT_Type;
 
@@ -135,22 +137,80 @@ static const FlashBuffer<DFT_Type::m_bins / 2, uint8_t>          dft_descramble 
 static const FlashBuffer<8, uint8_t>                             display_oscilloscopemask PROGMEM  {{0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01}};
 static const FlashBuffer<8, uint8_t>                             display_dftmask          PROGMEM  {{0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF}};
 
+template<typename TYPE, size_t ELEMENTS>
+class AmplitudeTable
+{
+public:
+  static constexpr size_t m_len = ELEMENTS;
+
+  constexpr AmplitudeTable() {}
+
+  constexpr TYPE operator [] (size_t index) const
+  {
+    return ((double)ELEMENTS) * Cordic<>::sqrt((double)index / (double)ELEMENTS);
+  }
+};
+
+template<typename TYPE, size_t SAMPLES>
+class HammingWindow
+{
+public:
+  static constexpr size_t m_len = SAMPLES;
+
+  static constexpr double m_alpha = 0.54;
+  static constexpr double m_beta  = 1.0 - m_alpha;
+
+  constexpr HammingWindow() {}
+
+
+  constexpr TYPE operator [] (size_t index) const
+  {
+    return (m_alpha - m_beta * Cordic<>::cos((2 * Cordic<>::m_pi * index) / (SAMPLES - 1)));
+  }
+};
+
+using ::Platform::Util::indices;
+using ::Platform::Util::build_indices;
+
+template<typename GENERATOR, size_t... Is>
+constexpr auto
+fromFunction_real(const GENERATOR &gen, indices<Is...>)
+-> RamBuffer<indices<Is...>::count(), decltype(gen[0])>
+{
+  return {{gen[Is]...,}};
+}
+
+template<typename GENERATOR, size_t ELEMENTS>
+constexpr RamBuffer<ELEMENTS, uint8_t>
+fromFunction(const GENERATOR &gen)
+{
+  return fromFunction_real(gen, build_indices<ELEMENTS>());
+}
+
+
+
+static const FlashBuffer<256, uint8_t>          amplitude_table PROGMEM  = fromFunction_real(AmplitudeTable<uint8_t,256>(), build_indices<256>());
+static const FlashBuffer<128, CalculationType>  hamming_window  PROGMEM  = fromFunction_real(HammingWindow<CalculationType, 128>(), build_indices<128>());
+
 int main()
 {
   PORTB = _BV(PIN0) /* | _BV(PIN1) */ /* | _BV(PIN2) */ | _BV(PIN3) | _BV(PIN5);
   PORTD = 0;
   DDRB  = _BV(PIN0) | _BV(PIN1) | _BV(PIN2) | _BV(PIN3) | _BV(PIN5);
+  DDRD  = _BV(PIN5) | _BV(PIN6);
 
   display.initialize();
 
-  static constexpr uint8_t reduction       = 8;
+  static constexpr uint8_t reduction       = 32;
   static constexpr uint8_t decay_reduction = (8 + reduction - 1) / reduction;
 
-  uint8_t iAdc     = 0;
-  uint8_t iDiv     = 0;
-  uint8_t iDecay   = 0;
+  int16_t offset  = 512;
+  uint8_t iAdc    = 0;
+  uint8_t iDiv    = 0;
+  uint8_t iDecay  = 0;
+  uint8_t maximumidx = 0;
 
-  ADMUX = _BV(REFS0) | 0x1;
+  ADMUX = _BV(REFS0) | 0x2;
   ADCSR = _BV(ADEN) | _BV(ADFR) | _BV(ADSC) | 0x7;
 
 
@@ -167,9 +227,9 @@ int main()
       { /* store measurement and continue */
         iDiv = reduction - 1;
 
-        auto value = CalculationType((int16_t)(ADCW -0x0200), 0x0200);
+        auto value = CalculationType((int16_t)ADCW - offset, 256);
 
-        afInputArray[iAdc] = value;
+        afInputArray[iAdc] = value * hamming_window[iAdc];
         iAdc++;
 
 
@@ -224,24 +284,48 @@ int main()
       else
         iDecay = decay_reduction;
 
+      const auto offset_correction = dft_buffer[dft_descramble[0]].real();
+
+      if(offset_correction > 0)
+          offset++;
+      else if (offset_correction < 0)
+          offset--;
+
+      uint16_t uAccumulator = 0;
+      uint8_t max           = 0;
+
+      maximumidx = maximumidx /2 + maximumidx /4;
+
       for(uIdx = 0; uIdx < ElementCount(display_dft); uIdx++)
       {
         auto value = dft_buffer[dft_descramble[uIdx]];
         value = value * value.conjugate();
 
-        const uint8_t abs_squared  = FixedPoint<int8_t, 1>(4) * (value.real() + value.imag());
+        uint8_t amplitude = amplitude_table[FixedPoint<int16_t, 1>(256) * (value.real())];
+
+        uAccumulator += ((uint16_t)amplitude * uIdx)/ 4;
 
         uint8_t peak = display_dft[uIdx];
 
         if (0 == iDecay && peak)
           peak = (peak / 2) + (peak / 4);
 
-        if (abs_squared > peak)
-          peak = abs_squared;
+        if (amplitude > peak)
+          peak = amplitude;
 
         display_dft[uIdx] = peak;
+
+        if (amplitude > max && uIdx > maximumidx)
+        {
+          max = amplitude;
+          maximumidx = uIdx;
+        }
       }
 
+      if (uAccumulator > 256)
+        PORTD |= _BV(PIN6);
+      else
+        PORTD &= ~_BV(PIN6);
 
       uint8_t range = 32;
 
@@ -255,13 +339,19 @@ int main()
 
           if(uCol < ElementCount(display_dft))
           {
-            const uint8_t value = display_dft[uCol];
+            const uint8_t value = display_dft[uCol] >> 1;
 
             if (value >= range + 8)
               display_data = 0xFF;
             else if (value >= range)
               display_data = display_dftmask[value-range];
           }
+
+          if(uCol <= maximumidx && range == 24)
+            display_data |= 0x3;
+
+          if(uCol > 80 && range == 24 && uAccumulator >= 256)
+            display_data |= 0x3;
 
           display.writeData(display_data);
         }
