@@ -1,0 +1,17 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def configure(conf):
+    conf.ecpp_setupbuild(id='dab-stm32f4', 
+                         platform='stm32', device='stm32f405')
+
+def build(bld):
+    bld.ecpp_build(
+        id= 'dab-stm32f4',
+        source   = 'main.cc',
+        target   = 'stm32f405.elf',
+        features = 'cxx cxxprogram',  
+        includes = ['.'],
+        use      = ['ecpp_stm32f405'],
+        uselib   = ['c', 'gcc'],
+    ) 
