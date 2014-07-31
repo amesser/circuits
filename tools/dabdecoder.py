@@ -12,7 +12,7 @@ data = np.fromfile("test/channel_7b_iq_8bit.dat", np.uint8)
 raw_data = np.asarray(data, dtype=np.int16) - 128
 
 # cut 200 ms of sampled data
-raw_data = raw_data[0:2048 * 200 * 2]
+raw_data = raw_data[0:2048 * 1000 * 2]
 
 # convert signed data into complex data 
 complex_data = (1.0 * raw_data[::2] + 1j * raw_data[1::2]) / 128.
@@ -50,48 +50,85 @@ frame_start = np.zeros_like(abs_data)
 
 offset_start = None
 
-fft_len   = 2048
-fft_count = 96
+fft_len      = 2048
+guard_length = 504
+
+frame_length = 0.096
+
+sample_rate = 2048000
 
 fft_data   = None
 fft_center = None
 
-correction_steps  = fft_len * 1000
+correction_steps  = fft_len * 1024
 correction_table  = np.sin( 2.0 * np.pi * np.arange(correction_steps) / correction_steps)
-correction_factor = -7496834.4394
+correction_factor = 0
 
-state = 0
-for offset in xrange(0,abs_data.size):
+
+correction_phase = 0
+
+state   = 0
+offset  = 0
+symbol_cnt = 0
+
+while (offset + fft_len + guard_length) <= abs_data.size:
     if state == 0 and moving_average[offset] < (0.5 * pt1_average[offset]) and offset > moving_len:
         state = 1
     elif state == 1 and moving_average[offset] > pt1_average[offset]:
         # Frame Start Detected
+        print ("NULL")
+        
         state = 0
         offset_start = offset
         frame_start[offset_start] = 0.03
         
+        
+        if symbol_cnt:          
+            center  = center  / float(symbol_cnt)
+            center2 = center2 / float(symbol_cnt)
+            
+            delta_f = (float(sample_rate) / float(fft_len)) * (fft_len/2 - center)
+            
+            correction_factor = int((1. * correction_factor + 9* (correction_factor + (correction_steps * delta_f / sample_rate))) / 10.)
+            
+            print (center, center2, delta_f, correction_factor, symbol_cnt)
+            symbol_cnt = 0
+                
+        center2    = 0
+        center     = 0
+                         
     if offset_start is not None:
         x = offset - offset_start
-        if (x / 2048) < fft_count and (x % fft_len) == 0 and (offset + fft_len) <= complex_data.size:
+        modulo = fft_len + guard_length
+        
+        if (x % modulo == 0) and symbol_cnt < 76:
+            symbol_cnt += 1
+             
+            sinus_index = (np.arange(0,modulo) * correction_factor) + correction_phase
+            correction_phase = sinus_index[-1] + correction_factor
             
-            sinus_index   =  np.asarray((np.arange(offset-offset_start,offset + fft_len-offset_start) * correction_factor),dtype=np.int) % correction_steps 
-            cosinus_index =  (sinus_index + correction_steps/4) % correction_steps
+            sinus_index   = sinus_index % correction_steps
+            cosinus_index =  (sinus_index + correction_steps/4) % correction_steps            
             
-            
-            correction = correction_table[cosinus_index] + 1.0j *correction_table[sinus_index] 
+            correction = correction_table[cosinus_index] + 1.0j * correction_table[sinus_index] 
                         
-            fft_input = complex_data[offset:offset + fft_len] * correction
+            samples    = complex_data[offset:offset + modulo] * correction
+
+            center2 += sample_rate / fft_len * np.average(np.angle(samples[fft_len:] * np.conjugate(samples[:guard_length]))) / 2. / np.pi
+            
+            samples_guard = samples[fft_len:]
+            
+            fft_input = samples[0:fft_len]
             
             fft_result = np.fft.fft(fft_input)
             
             fft_result = np.hstack((fft_result[fft_len/2:], fft_result[:fft_len/2]))
             
-            
             fft_abs = np.abs(fft_result)
             
             carrier_detect = np.nonzero((np.average(fft_abs)) < fft_abs)[0]
             
-            center = (carrier_detect[0] + carrier_detect[-1]) / 2
+            center += (carrier_detect[0] + carrier_detect[-1]) / 2.
             
             if (x / 2048) < 4:
                  
@@ -105,10 +142,18 @@ for offset in xrange(0,abs_data.size):
                 else:
                     fft_center = np.vstack((fft_center, center))
                 
-                #print center    
+            # calculate frequency deviation
                 #correction_factor += (fft_len / 2 - center) * correction_steps / 2 / np.pi
                
-                #print correction_factor                
+                #print correction_factor
+        else:
+            correction_phase = correction_phase + correction_factor
+
+
+    
+    offset = offset + 1     
+                
+                           
             
             
 
