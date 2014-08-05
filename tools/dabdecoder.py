@@ -42,8 +42,6 @@ for offset in xrange(1,abs_data.size):
 for offset in xrange(moving_len,abs_data.size):
     moving_average[offset - 1] = np.average(abs_data[offset-moving_len:offset])
 
-
-
 null_time = np.arange(abs_data.size,dtype=np.float) / 2.048e6
 
 frame_start = np.zeros_like(abs_data)
@@ -52,10 +50,51 @@ offset_start = None
 
 fft_len      = 2048
 guard_length = 504
+carriers     = 1536
 
 frame_length = 0.096
 
 sample_rate = 2048000
+
+
+def mapping_generator(fft_len, carriers):
+    lower_bound = (fft_len - carriers) / 2
+    upper_bound = fft_len - lower_bound
+    
+    v1 = fft_len - carriers - 1
+    x = 0
+    for i in xrange(fft_len):
+        if x != fft_len / 2 and x >= lower_bound and x <= upper_bound: 
+            yield x
+            
+        x = ((13 * x) + v1) % fft_len
+        
+mapping = np.fromiter(mapping_generator(fft_len, carriers),dtype=np.int, count=carriers) 
+        
+#                   int16_t lwb, int16_t upb, int16_t *v) {
+#int16_t    *tmp    = (int16_t *)alloca (T_u * sizeof (int16_t));
+#int16_t    index    = 0;
+#int16_t    i;
+#
+#    tmp [0]    = 0;
+#    for (i = 1; i < T_u; i ++)
+#       tmp [i] = (13 * tmp [i - 1] + V1) % T_u;
+#    for (i = 0; i < T_u; i ++) {
+#       if (tmp [i] == T_u / 2)
+#          continue;
+#       if ((tmp [i] < lwb) ||
+#           (tmp [i] > upb)) 
+#          continue;
+#//    we now have a table with values from lwb .. upb
+#//
+#       v [index ++] = tmp [i] - T_u / 2;
+#//    we now have a table with values from lwb - T_u / 2 .. lwb + T_u / 2
+#    }
+#
+#    return v;
+
+
+
 
 fft_data   = None
 fft_center = None
@@ -84,19 +123,8 @@ while (offset + fft_len + guard_length) <= abs_data.size:
         
         
         if symbol_cnt:          
-            center  = center  / float(symbol_cnt)
-            center2 = center2 / float(symbol_cnt)
-            
-            delta_f = (float(sample_rate) / float(fft_len)) * (fft_len/2 - center)
-            
-            correction_factor = int((1. * correction_factor + 9* (correction_factor + (correction_steps * delta_f / sample_rate))) / 10.)
-            
-            print (center, center2, delta_f, correction_factor, symbol_cnt)
             symbol_cnt = 0
-                
-        center2    = 0
-        center     = 0
-                         
+                                         
     if offset_start is not None:
         x = offset - offset_start
         modulo = fft_len + guard_length
@@ -113,10 +141,6 @@ while (offset + fft_len + guard_length) <= abs_data.size:
             correction = correction_table[cosinus_index] + 1.0j * correction_table[sinus_index] 
                         
             samples    = complex_data[offset:offset + modulo] * correction
-
-            center2 += sample_rate / fft_len * np.average(np.angle(samples[fft_len:] * np.conjugate(samples[:guard_length]))) / 2. / np.pi
-            
-            samples_guard = samples[fft_len:]
             
             fft_input = samples[0:fft_len]
             
@@ -126,9 +150,6 @@ while (offset + fft_len + guard_length) <= abs_data.size:
             
             fft_abs = np.abs(fft_result)
             
-            carrier_detect = np.nonzero((np.average(fft_abs)) < fft_abs)[0]
-            
-            center += (carrier_detect[0] + carrier_detect[-1]) / 2.
             
             if (x / 2048) < 4:
                  
@@ -137,10 +158,51 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                 else:
                     fft_data = np.vstack((fft_data, fft_result))
                     
-                if fft_center is None:
-                    fft_center = center
+            carrier_detect = np.nonzero((np.average(fft_abs)) < fft_abs)[0]            
+            center = (carrier_detect[0] + carrier_detect[-1]) / 2.
+                
+            if symbol_cnt == 1:
+                delta_f = (float(sample_rate) / float(fft_len)) * (center - fft_len/2)
+                
+                if abs(delta_f) > 1000:
+                    correction_factor = (correction_factor - (correction_steps * delta_f / sample_rate))
+                    
+            if abs(delta_f) < 1000 and symbol_cnt > 1:
+                delta_f_fine = sample_rate / fft_len * np.average(np.angle(samples[fft_len:] * np.conjugate(samples[:guard_length]))) / 2. / np.pi
+                
+                correction_factor = 0.9 * correction_factor + 0.1 * (correction_factor - (correction_steps * delta_f_fine / sample_rate))
+            else:
+                delta_f_fine = None
+                
+            correction_factor = int(correction_factor)
+            
+            if delta_f < 1000:
+                if symbol_cnt == 1:
+                    # phase reference symbol
+                    phase_reference = fft_result
                 else:
-                    fft_center = np.vstack((fft_center, center))
+                    ofdm_data = fft_result[mapping] * np.conjugate(fft_result[mapping])
+                    phsae_reference = fft_result
+                    
+                    ofdm_data = ofdm_data * 255 / np.abs(ofdm_data)
+                    
+                    bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data)))
+                    
+                if symbol_cnt == 2:
+                    ofdm_fic_data = bits
+                elif symbol_cnt > 2 and symbol_cnt <= 4:
+                    ofdm_fic_data = np.hstack((ofdm_fic_data, bits))
+                    
+                if symbol_cnt >= 2:
+                    while ofdm_fic_data.size >= 2304:
+                        viterby_input_data  = ofdm_fic_data[:2304]
+                        ofdm_fic_data       = ofdm_fic_data[2304:]
+                        
+                          
+            
+
+                            
+            print (center, delta_f, delta_f_fine, correction_factor, symbol_cnt)
                 
             # calculate frequency deviation
                 #correction_factor += (fft_len / 2 - center) * correction_steps / 2 / np.pi
@@ -171,9 +233,3 @@ except:
 
 np.savetxt("/tmp/plot_fft.dat", np.abs(fft_data).transpose() , fmt="%.03e")
 
-try:
-    os.unlink("/tmp/plot_center.dat")
-except:
-    pass
-
-np.savetxt("/tmp/plot_center.dat", fft_center.transpose() , fmt="%.03e")
