@@ -93,7 +93,22 @@ mapping = np.fromiter(mapping_generator(fft_len, carriers),dtype=np.int, count=c
 #
 #    return v;
 
+puncturing_vectors = {
+  1      : [0, 1,    4,       8,        12,         16,         20,         24,         28],
+  8      : [0, 1,    4, 5,    8, 9,     12, 13,     16, 17,     20, 21,     24, 25,     28, 29],
+  15     : [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29],
+  16     : [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30],
+  "tail" : [0, 1,    4, 5,    8, 9,     12, 13,     16, 17,     20, 21]
+}
 
+
+depuncture_fic = \
+    np.hstack((np.tile(puncturing_vectors[16], 21 * 4),
+               np.tile(puncturing_vectors[15], 3  * 4),
+               puncturing_vectors["tail"])) +\
+    np.hstack((np.repeat(np.arange(0,21 * 4)  * 32, len(puncturing_vectors[16])),
+               np.repeat(np.arange(21 * 4,24 * 4) * 32, len(puncturing_vectors[15])),
+               np.repeat(np.arange(24 * 4,24 * 4 + 1) * 32, len(puncturing_vectors["tail"]))))
 
 
 fft_data   = None
@@ -181,12 +196,14 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                     # phase reference symbol
                     phase_reference = fft_result
                 else:
+                    # DQPSK demodulation 
                     ofdm_data = fft_result[mapping] * np.conjugate(fft_result[mapping])
                     phsae_reference = fft_result
+
+                    bits = np.hstack((np.real(ofdm_data) > 0, np.imag(ofdm_data) > 0))
                     
-                    ofdm_data = ofdm_data * 255 / np.abs(ofdm_data)
-                    
-                    bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data)))
+                    #ofdm_data = ofdm_data * 255 / np.abs(ofdm_data)
+                    #bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data)))
                     
                 if symbol_cnt == 2:
                     ofdm_fic_data = bits
@@ -195,8 +212,14 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                     
                 if symbol_cnt >= 2:
                     while ofdm_fic_data.size >= 2304:
-                        viterby_input_data  = ofdm_fic_data[:2304]
-                        ofdm_fic_data       = ofdm_fic_data[2304:]
+                        punctured_codeword  = ofdm_fic_data[:2304]
+                        ofdm_fic_data           = ofdm_fic_data[2304:]
+                        
+                        #start depuncturing:
+                        mothercode = np.zeros(3072 + 24, dtype = punctured_codeword.dtype)
+                        
+                        mothercode[depuncture_fic] = punctured_codeword
+                        
                         
                           
             
