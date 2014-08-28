@@ -48,6 +48,8 @@ class convolutional_encoder(object):
         
         self.prevstate_table = np.tile(state_enumeration,2).reshape(-1,2)
         
+        self.states = state_enumeration
+        
     
     def getOutput(self, bit):
         if bit:
@@ -64,9 +66,18 @@ class convolutional_encoder(object):
         return self.prevstate_table[state]  
 
     def prevOutputs(self,state):
-        bit = (state << 1) & 2**(self.grade - 1)
+        x = self.output_table[self.prevStates(state)]
+        bit = self.prevInput(state)
         
-        return self.output_table[self.prevStates(state),bit]
+        bit = np.repeat(bit,np.prod(x.shape[1:])).reshape(x.shape)
+        bit = bit[...,0,:]
+        
+        return np.where(bit, x[...,1,:], x[...,0,:])
+    
+    def prevInput(self,state):
+        return np.asarray(state / 2**(self.grade-2),dtype=np.int) 
+        
+        #return 1 if (int(state) << 1) & 2**(self.grade - 1) else 0
     
 if __name__ == "__main__": 
     dab_cv_encoder = convolutional_encoder((0133,0171,0145,0133))
