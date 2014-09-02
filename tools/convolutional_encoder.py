@@ -66,14 +66,25 @@ class convolutional_encoder(object):
         return self.prevstate_table[state]  
 
     def prevOutputs(self,state):
+        state = np.asarray(state)
         x = self.output_table[self.prevStates(state)]
-        bit = self.prevInput(state)
+
+        bit    = self.prevInput(state)
+
+
+        if state.shape:        
+            a = np.nonzero(bit)        
+            b = np.nonzero(bit == 0)
+            
+            result = np.zeros(shape=state.shape + (2, x.shape[-1]), dtype=x.dtype)
+            
+            result[b,:] = x[b,:,0]
+            result[a,:] = x[a,:,1]
+        else:
+            result = x[:,bit]
         
-        bit = np.repeat(bit,np.prod(x.shape[1:])).reshape(x.shape)
-        bit = bit[...,0,:]
-        
-        return np.where(bit, x[...,1,:], x[...,0,:])
-    
+        return result
+
     def prevInput(self,state):
         return np.asarray(state / 2**(self.grade-2),dtype=np.int) 
         
