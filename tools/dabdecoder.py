@@ -133,6 +133,13 @@ depuncture_fic = \
     np.hstack((np.repeat(np.arange(0,21 * 4)  * 32, len(puncturing_vectors[16])),
                np.repeat(np.arange(21 * 4,24 * 4) * 32, len(puncturing_vectors[15])),
                np.repeat(np.arange(24 * 4,24 * 4 + 1) * 32, len(puncturing_vectors["tail"]))))
+    
+from puncturing import puncturing
+fic_puncturer = puncturing()
+fic_puncturer.mask = np.zeros(3072 + 24, dtype = np.bool8)
+fic_puncturer.mask[depuncture_fic] = 1
+fic_puncturer.mask = fic_puncturer.mask.reshape((-1,4))
+
 
 def scrambler(length):
     value = 0x1FF;
@@ -249,7 +256,9 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                     ofdm_data = fft_result[mapping] * np.conjugate(phase_reference[mapping])
                     phase_reference = fft_result
 
-                    bits = np.hstack((np.real(ofdm_data) > 0, np.imag(ofdm_data) > 0))
+                    bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data)))
+                    bits = bits/np.max(np.abs(bits))*127
+                    
                     
                     #ofdm_data = ofdm_data * 255 / np.abs(ofdm_data)
                     #bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data)))
@@ -265,61 +274,67 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                         ofdm_fic_data       = ofdm_fic_data[2304:]
                         
                         #depuncturing
-                        mothercode = np.zeros(3072 + 24, dtype = punctured_codeword.dtype)
-                        mothercode[depuncture_fic] = punctured_codeword
-                        
-                        metric_mask = np.zeros(3072 + 24, dtype = punctured_codeword.dtype)
-                        metric_mask[depuncture_fic] = 1
+#                         mothercode = np.zeros(3072 + 24, dtype = punctured_codeword.dtype)
+#                         mothercode[depuncture_fic] = punctured_codeword
+#                          
+#                         metric_mask = np.zeros(3072 + 24, dtype = punctured_codeword.dtype)
+#                         metric_mask[depuncture_fic] = 1
+                        mothercode = fic_puncturer.depuncture(punctured_codeword)
                         
                         #viterby
-                        metric_accu   = np.zeros(shape=((3072 + 24) / 4 + 1, 64))
+#                         metric_accu   = np.zeros(shape=((3072 + 24) / 4 + 1, 64))
+#                         
+#                         state_history = np.zeros(shape=((3072 + 24) / 4 + 1, 64),dtype=np.int16)
+#                         
+#                         for viterby_offset in xrange(0,3072+24, 4):
+#                             history_offset = viterby_offset / 4 + 1
+#                             
+#                             symbol_recv = mothercode[viterby_offset:viterby_offset+4]
+#                             symbol_mask = metric_mask[viterby_offset:viterby_offset+4]
+#                             
+#                             for cv_state in xrange(64):
+#                                 
+#                                 prev_state_a = ((cv_state << 1) & 0x3F)
+#                                 prev_state_b = ((cv_state << 1) & 0x3F) + 1
+#                                 
+#                                 if cv_state & 040:
+#                                     metric_a = (cv_enc_output[prev_state_a][1] - symbol_recv) * symbol_mask
+#                                     metric_b = (cv_enc_output[prev_state_b][1] - symbol_recv) * symbol_mask
+#                                 else:
+#                                     metric_a = (cv_enc_output[prev_state_a][0] - symbol_recv) * symbol_mask
+#                                     metric_b = (cv_enc_output[prev_state_b][0] - symbol_recv) * symbol_mask
+#                                     
+#                                 metric_a = np.sum(np.abs(metric_a))
+#                                 metric_b = np.sum(np.abs(metric_b))
+#                                     
+#                                 metric_a += metric_accu[history_offset-1][prev_state_a]
+#                                 metric_b += metric_accu[history_offset-1][prev_state_b]
+#                                 
+#                                 if metric_a < metric_b:
+#                                     metric_accu[history_offset][cv_state]   = metric_a
+#                                     state_history[history_offset][cv_state] = prev_state_a
+#                                 else:
+#                                     metric_accu[history_offset][cv_state]   = metric_b
+#                                     state_history[history_offset][cv_state] = prev_state_b
+#                         
+#                         viterby_output = np.zeros(shape=(3072 + 24) / 4, dtype=np.uint8)
+#                         
+#                         current_state = 0 
+#                         for index in xrange(viterby_output.size, 0, -1):
+#                             index = index - 1
+#                             
+#                             if current_state & 040:
+#                                 viterby_output[index] = 1
+#                             else:
+#                                 viterby_output[index] = 0
+#                                 
+#                             current_state = state_history[index][current_state]
+                        from convolutional_encoder import convolutional_encoder
+                        from viterby import viterby, euclid_distance
+                        conv_encoder = convolutional_encoder((0133,0171,0145,0133), values=(-128,127), dtype=np.int)
+                        viterby_decoder = viterby(euclid_distance, conv_encoder)
                         
-                        state_history = np.zeros(shape=((3072 + 24) / 4 + 1, 64),dtype=np.int16)
-                        
-                        for viterby_offset in xrange(0,3072+24, 4):
-                            history_offset = viterby_offset / 4 + 1
-                            
-                            symbol_recv = mothercode[viterby_offset:viterby_offset+4]
-                            symbol_mask = metric_mask[viterby_offset:viterby_offset+4]
-                            
-                            for cv_state in xrange(64):
-                                
-                                prev_state_a = ((cv_state << 1) & 0x3F)
-                                prev_state_b = ((cv_state << 1) & 0x3F) + 1
-                                
-                                if cv_state & 040:
-                                    metric_a = (cv_enc_output[prev_state_a][1] - symbol_recv) * symbol_mask
-                                    metric_b = (cv_enc_output[prev_state_b][1] - symbol_recv) * symbol_mask
-                                else:
-                                    metric_a = (cv_enc_output[prev_state_a][0] - symbol_recv) * symbol_mask
-                                    metric_b = (cv_enc_output[prev_state_b][0] - symbol_recv) * symbol_mask
-                                    
-                                metric_a = np.sum(np.abs(metric_a))
-                                metric_b = np.sum(np.abs(metric_b))
-                                    
-                                metric_a += metric_accu[history_offset-1][prev_state_a]
-                                metric_b += metric_accu[history_offset-1][prev_state_b]
-                                
-                                if metric_a < metric_b:
-                                    metric_accu[history_offset][cv_state]   = metric_a
-                                    state_history[history_offset][cv_state] = prev_state_a
-                                else:
-                                    metric_accu[history_offset][cv_state]   = metric_b
-                                    state_history[history_offset][cv_state] = prev_state_b
-                        
-                        viterby_output = np.zeros(shape=(3072 + 24) / 4, dtype=np.uint8)
-                        
-                        current_state = 0 
-                        for index in xrange(viterby_output.size, 0, -1):
-                            index = index - 1
-                            
-                            if current_state & 040:
-                                viterby_output[index] = 1
-                            else:
-                                viterby_output[index] = 0
-                                
-                            current_state = state_history[index][current_state]
-                            
+                        viterby_output = viterby_decoder.decoder(mothercode)
                         output = np.logical_xor(viterby_output, descramble[0:viterby_output.size])
                                 
                         output_packed = np.packbits(np.asarray(output,dtype=np.int8))[0:96]
@@ -348,14 +363,14 @@ try:
 except:
     pass
 
-np.savetxt("/tmp/plot_null.dat", np.vstack((null_time, pt1_average, moving_average, frame_start)).transpose() , fmt="%.08e %.03e %.03e %.03e")
+#np.savetxt("/tmp/plot_null.dat", np.vstack((null_time, pt1_average, moving_average, frame_start)).transpose() , fmt="%.08e %.03e %.03e %.03e")
 
 try:
     os.unlink("/tmp/plot_fft.dat")
 except:
     pass
 
-np.savetxt("/tmp/plot_fft.dat", np.abs(fft_data).transpose() , fmt="%.03e")
+#np.savetxt("/tmp/plot_fft.dat", np.abs(fft_data).transpose() , fmt="%.03e")
 
 try:
     os.unlink("/tmp/output.dat")
