@@ -4,7 +4,7 @@
 import numpy as np
 
 class convolutional_encoder(object):
-    def __init__(self, polynoms):
+    def __init__(self, polynoms, values = (0,1), dtype=np.bool8):
         polynoms = np.asarray(polynoms, dtype=np.uint)
         
         self.state = 0
@@ -37,7 +37,9 @@ class convolutional_encoder(object):
         c = np.repeat(c,2,axis=0).reshape(state_enumeration.size, 2, polynoms.size)
         c[:,1] ^= output_flip
         
-        self.output_table = c
+        self.output_table = np.where(c,
+            np.ones_like(c, dtype=dtype) * values[1],
+            np.ones_like(c, dtype=dtype) * values[0])
         
         helper = np.array(state_enumeration)
         

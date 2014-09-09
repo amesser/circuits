@@ -4,16 +4,27 @@
 import numpy as np
 
 def hamming_distance(a,b):
-    #print("{0}\t{1}".format(a,b))
     length = max(a.size,b.size)
-    
+
     if a.size < length:
         a = np.tile(a, length/a.size).reshape(b.shape)
-        
+
     if b.size < length:
         b = np.tile(b, length/b.size).reshape(a.shape)
-        
+
     return np.sum(a != b, axis=(-1))
+
+def euclid_distance(a,b):
+    length = max(a.size,b.size)
+
+    if a.size < length:
+        a = np.tile(a, length/a.size).reshape(b.shape)
+
+    if b.size < length:
+        b = np.tile(b, length/b.size).reshape(a.shape)
+
+    return np.sum(np.abs(a - b), axis=(-1))
+
 
 class viterby(object):
     

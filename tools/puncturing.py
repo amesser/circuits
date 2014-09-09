@@ -5,7 +5,7 @@ import numpy as np
 
 class puncturing(object):
     def __init__(self):
-        self.mask = np.asarray([[1,1,0,0],[1,0,0,0]])
+        self.mask = np.asarray([[1,1,0,0],[1,0,0,1]])
         
     def puncture(self, input):
         mask  = self.mask.flatten()
@@ -30,7 +30,8 @@ class puncturing(object):
         
 if __name__ == "__main__":
     from convolutional_encoder import convolutional_encoder as conv_enc
-    from viterby import viterby, hamming_distance
+    from viterby import viterby, hamming_distance, euclid_distance
+    
     test_cv_encoder = conv_enc((0133,0171,0145,0133))
     #test_cv_encoder = conv_enc((07,05))
             
@@ -42,10 +43,11 @@ if __name__ == "__main__":
     for i in xrange(data.size):
         cv_data[i] =  test_cv_encoder.getOutput(data[i])
         
+        
     test_puncturer = puncturing()
 
     punctured_data = test_puncturer.puncture(cv_data)
-
+    
     depunctured_data = test_puncturer.depuncture(punctured_data)
             
     test_viterby = viterby(hamming_distance, test_cv_encoder)
@@ -53,4 +55,18 @@ if __name__ == "__main__":
     if ((test_viterby.decoder(depunctured_data) != data).any()):
         raise Exception("blbu")
     
+    punctured_data = np.asarray(punctured_data,dtype=np.int) * 255 - 128
+
+    noise = np.asarray(np.random.normal(scale=80, size=punctured_data.shape), 
+        dtype=punctured_data.dtype)
+    
+    depunctured_data = test_puncturer.depuncture(punctured_data + noise)
+
+
+    test_cv_encoder = conv_enc((0133,0171,0145,0133), values=(-128,127), dtype=np.int)
+    
+    test_viterby = viterby(euclid_distance, test_cv_encoder)
+
+    if ((test_viterby.decoder(depunctured_data) != data).any()):
+        raise Exception("blbu2")
         
