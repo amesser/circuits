@@ -32,15 +32,30 @@ complex_data = (1.0 * raw_data[::2] + 1j * raw_data[1::2]) / 128.
 pt1_length = 10000
 moving_len = 500
  
-abs_data        = np.abs(complex_data)
-pt1_average     = np.zeros_like(abs_data)
-moving_average = np.zeros_like(abs_data)
+abs_data        = np.absolute(complex_data)
 
-for offset in xrange(1,abs_data.size):
-    pt1_average[offset] = (pt1_average[offset-1] * (pt1_length-1) + abs_data[offset]) / pt1_length
 
-for offset in xrange(moving_len,abs_data.size):
-    moving_average[offset - 1] = np.average(abs_data[offset-moving_len:offset])
+#pt1_average     = np.zeros_like(abs_data)
+#for offset in xrange(1,abs_data.size):
+#    pt1_average[offset] = (pt1_average[offset-1] * (pt1_length-1) + abs_data[offset]) / pt1_length
+
+#moving_average = np.zeros_like(abs_data)
+
+#for offset in xrange(moving_len,abs_data.size):
+#    moving_average[offset - 1] = np.average(abs_data[offset-moving_len:offset])
+
+a = abs_data
+b = np.zeros_like(a)
+b[pt1_length:] = -a[:-pt1_length]
+
+pt1_average = np.add.accumulate(a + b) / pt1_length
+
+
+a = abs_data
+b = np.zeros_like(a)
+b[moving_len:] = -a[:-moving_len]
+
+moving_average = np.add.accumulate(a + b) / moving_len
 
 null_time = np.arange(abs_data.size,dtype=np.float) / 2.048e6
 
