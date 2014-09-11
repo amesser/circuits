@@ -257,7 +257,7 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                     phase_reference = fft_result
 
                     bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data)))
-                    bits = bits/np.max(np.abs(bits))*127
+                    bits = bits/np.max(np.abs(bits))*(-127)
                     
                     
                     #ofdm_data = ofdm_data * 255 / np.abs(ofdm_data)
