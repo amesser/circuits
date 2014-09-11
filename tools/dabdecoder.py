@@ -86,27 +86,6 @@ def mapping_generator(fft_len, carriers):
         
 mapping = np.fromiter(mapping_generator(fft_len, carriers),dtype=np.int, count=carriers) 
         
-#                   int16_t lwb, int16_t upb, int16_t *v) {
-#int16_t    *tmp    = (int16_t *)alloca (T_u * sizeof (int16_t));
-#int16_t    index    = 0;
-#int16_t    i;
-#
-#    tmp [0]    = 0;
-#    for (i = 1; i < T_u; i ++)
-#       tmp [i] = (13 * tmp [i - 1] + V1) % T_u;
-#    for (i = 0; i < T_u; i ++) {
-#       if (tmp [i] == T_u / 2)
-#          continue;
-#       if ((tmp [i] < lwb) ||
-#           (tmp [i] > upb)) 
-#          continue;
-#//    we now have a table with values from lwb .. upb
-#//
-#       v [index ++] = tmp [i] - T_u / 2;
-#//    we now have a table with values from lwb - T_u / 2 .. lwb + T_u / 2
-#    }
-#
-#    return v;
 
 puncturing_vectors = {
   1      : [0, 1,    4,       8,        12,         16,         20,         24,         28],
@@ -115,31 +94,6 @@ puncturing_vectors = {
   16     : [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30],
   "tail" : [0, 1,    4, 5,    8, 9,     12, 13,     16, 17,     20, 21]
 }
-
-
-def modulo2_count_bits(x):
-    mask1 = 0x55555555
-    mask2 = 0x33333333
-    mask3 = 0x0F0F0F0F
-    
-    
-    x = ((x >> 1) & mask1) + (x & mask1)
-    x = ((x >> 2) & mask2) + (x & mask2) 
-    x = ((x >> 4) + x) & mask3
-    x = (x >> 16) + x 
-    x = (x >> 8) + x 
-    
-    return x & 0x01
-     
-     
-a = list(map(modulo2_count_bits, (x & 0133, x & 0171, x & 0145, x & 0133)) for x in xrange(64))
-b = list(map(modulo2_count_bits, (x & 0133, x & 0171, x & 0145, x & 0133)) for x in xrange(64,128))
-
-cv_enc_output    = np.asarray(zip(a,b), dtype=np.int16)
-
-a = list( ((x >> 1), (x >> 1) | 040) for x in xrange(64))
-
-cv_enc_nextstate = np.asarray(a, dtype=np.uint8) 
 
 depuncture_fic = \
     np.hstack((np.tile(puncturing_vectors[16], 21 * 4),
@@ -222,7 +176,7 @@ while (offset + fft_len + guard_length) <= abs_data.size:
             
             fft_result = np.hstack((fft_result[fft_len/2:], fft_result[:fft_len/2]))
             
-            fft_abs = np.abs(fft_result)
+            fft_abs = np.absolute(fft_result)
             
             
             if (x / 2048) < 4:
@@ -244,14 +198,26 @@ while (offset + fft_len + guard_length) <= abs_data.size:
             #        center = index + carriers / 2
             #        window_center = window
             
-            carrier_detect = np.nonzero((np.average(fft_abs) *0.5) < fft_abs)[0]            
-            center = (carrier_detect[0] + carrier_detect[-1]) / 2.
+            
+            
+            #carrier_detect = np.nonzero((np.average(fft_abs) *0.5) < fft_abs)[0]            
+            #center = (carrier_detect[0] + carrier_detect[-1]) / 2.
                 
+            a = np.hstack((fft_abs[:fft_len/2], fft_abs[fft_len/2+1:]))
+            b = np.zeros_like(a)
+
+            b[carriers:] = -a[:-carriers]
+
+            center = np.argmax(np.add.accumulate(a + b)) - carriers / 2
+            
             if symbol_cnt == 1:
-                delta_f = (float(sample_rate) / float(fft_len)) * (center - fft_len/2)
+                delta_f = (float(sample_rate) / float(fft_len)) * (center - (fft_len/2 -1))
                 
-                if abs(delta_f) > 1000:
-                    correction_factor = (correction_factor - (correction_steps * delta_f / sample_rate))
+                if abs(delta_f) > 500:
+                    correction_factor = (0.5 * correction_factor) + 0.5 * (correction_factor - (delta_f * correction_steps / sample_rate))
+                    
+                else:
+                    correction_factor = (0.99 * correction_factor) + 0.01 * (correction_factor - (delta_f * correction_steps / sample_rate))
                     
             if delta_f is not None and abs(delta_f) < 1000 and symbol_cnt > 1:
                 delta_f_fine = sample_rate / fft_len * np.average(np.angle(samples[fft_len:] * np.conjugate(samples[:guard_length]))) / 2. / np.pi
@@ -262,7 +228,7 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                 
             correction_factor = int(correction_factor)
             
-            if delta_f is not None and abs(delta_f) < 1000:
+            if True:
                 if symbol_cnt == 1:
                     # phase reference symbol
                     phase_reference = fft_result
@@ -288,62 +254,8 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                         punctured_codeword  = ofdm_fic_data[:2304]
                         ofdm_fic_data       = ofdm_fic_data[2304:]
                         
-                        #depuncturing
-#                         mothercode = np.zeros(3072 + 24, dtype = punctured_codeword.dtype)
-#                         mothercode[depuncture_fic] = punctured_codeword
-#                          
-#                         metric_mask = np.zeros(3072 + 24, dtype = punctured_codeword.dtype)
-#                         metric_mask[depuncture_fic] = 1
                         mothercode = fic_puncturer.depuncture(punctured_codeword)
-                        
-                        #viterby
-#                         metric_accu   = np.zeros(shape=((3072 + 24) / 4 + 1, 64))
-#                         
-#                         state_history = np.zeros(shape=((3072 + 24) / 4 + 1, 64),dtype=np.int16)
-#                         
-#                         for viterby_offset in xrange(0,3072+24, 4):
-#                             history_offset = viterby_offset / 4 + 1
-#                             
-#                             symbol_recv = mothercode[viterby_offset:viterby_offset+4]
-#                             symbol_mask = metric_mask[viterby_offset:viterby_offset+4]
-#                             
-#                             for cv_state in xrange(64):
-#                                 
-#                                 prev_state_a = ((cv_state << 1) & 0x3F)
-#                                 prev_state_b = ((cv_state << 1) & 0x3F) + 1
-#                                 
-#                                 if cv_state & 040:
-#                                     metric_a = (cv_enc_output[prev_state_a][1] - symbol_recv) * symbol_mask
-#                                     metric_b = (cv_enc_output[prev_state_b][1] - symbol_recv) * symbol_mask
-#                                 else:
-#                                     metric_a = (cv_enc_output[prev_state_a][0] - symbol_recv) * symbol_mask
-#                                     metric_b = (cv_enc_output[prev_state_b][0] - symbol_recv) * symbol_mask
-#                                     
-#                                 metric_a = np.sum(np.abs(metric_a))
-#                                 metric_b = np.sum(np.abs(metric_b))
-#                                     
-#                                 metric_a += metric_accu[history_offset-1][prev_state_a]
-#                                 metric_b += metric_accu[history_offset-1][prev_state_b]
-#                                 
-#                                 if metric_a < metric_b:
-#                                     metric_accu[history_offset][cv_state]   = metric_a
-#                                     state_history[history_offset][cv_state] = prev_state_a
-#                                 else:
-#                                     metric_accu[history_offset][cv_state]   = metric_b
-#                                     state_history[history_offset][cv_state] = prev_state_b
-#                         
-#                         viterby_output = np.zeros(shape=(3072 + 24) / 4, dtype=np.uint8)
-#                         
-#                         current_state = 0 
-#                         for index in xrange(viterby_output.size, 0, -1):
-#                             index = index - 1
-#                             
-#                             if current_state & 040:
-#                                 viterby_output[index] = 1
-#                             else:
-#                                 viterby_output[index] = 0
-#                                 
-#                             current_state = state_history[index][current_state]
+
                         from convolutional_encoder import convolutional_encoder
                         from viterby import viterby, euclid_distance
                         conv_encoder = convolutional_encoder((0133,0171,0145,0133), values=(-128,127), dtype=np.int)
@@ -358,34 +270,12 @@ while (offset + fft_len + guard_length) <= abs_data.size:
 
             print (center, delta_f, delta_f_fine, correction_factor, symbol_cnt)
                 
-            # calculate frequency deviation
-                #correction_factor += (fft_len / 2 - center) * correction_steps / 2 / np.pi
-               
-                #print correction_factor
         else:
             correction_phase = correction_phase + correction_factor
 
 
-    
     offset = offset + 1     
-                
-                           
-            
-            
 
-try:
-    os.unlink("/tmp/plot_null.dat")
-except:
-    pass
-
-#np.savetxt("/tmp/plot_null.dat", np.vstack((null_time, pt1_average, moving_average, frame_start)).transpose() , fmt="%.08e %.03e %.03e %.03e")
-
-try:
-    os.unlink("/tmp/plot_fft.dat")
-except:
-    pass
-
-#np.savetxt("/tmp/plot_fft.dat", np.abs(fft_data).transpose() , fmt="%.03e")
 
 try:
     os.unlink("/tmp/output.dat")
