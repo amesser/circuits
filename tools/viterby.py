@@ -23,6 +23,7 @@ def euclid_distance(a,b):
     if b.size < length:
         b = np.tile(b, length/b.size).reshape(a.shape)
 
+    return np.sum((a - b)*(a-b), axis=(-1))
     return np.sum(np.abs(a - b), axis=(-1))
 
 
@@ -72,7 +73,7 @@ class viterby(object):
             #        accumulated_metric_table[i+1][j] = dist_a
         
         survivor_state_table = np.zeros(symbol_count+1,dtype = np.uint)
-        output_table = np.zeros(symbol_count)
+        output_table = np.zeros(symbol_count, dtype=np.bool8)
         survivor_state_table[-1] = np.argmin(accumulated_metric_table[-1])
         for i in xrange(symbol_count, 0, -1):
             survivor_state_table[i-1] = state_history_table[i][survivor_state_table[i]]

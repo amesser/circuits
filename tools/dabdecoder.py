@@ -118,12 +118,12 @@ def scrambler(length):
         value = value << 1 | result
         yield result
          
-descramble = np.fromiter(scrambler(1024),dtype=np.int, count=1024)
+descramble = np.fromiter(scrambler(1024),dtype=np.bool8, count=1024)
 
 fft_data   = None
 fft_center = None
 
-correction_steps  = fft_len * 1024
+correction_steps  = fft_len * 1024 * 8
 correction_table  = np.sin( 2.0 * np.pi * np.arange(correction_steps) / correction_steps)
 correction_factor = 0
 
@@ -136,7 +136,16 @@ symbol_cnt = 0
 
 fic_output = np.array(0,dtype=np.uint8)
 
-delta_f = None
+coarse = True
+
+delta_f      = 0
+delta_f_fine = 0
+
+from convolutional_encoder import convolutional_encoder
+from viterby import viterby, euclid_distance
+from fic_decoder import fic_decoder
+
+fic_decoder = fic_decoder()
 
 while (offset + fft_len + guard_length) <= abs_data.size:
     if state == 0 and moving_average[offset] < (0.5 * pt1_average[offset]) and offset > moving_len:
@@ -152,7 +161,9 @@ while (offset + fft_len + guard_length) <= abs_data.size:
         
         if symbol_cnt:          
             symbol_cnt = 0
-                                                     
+                 
+    add_offset = 1
+                                        
     if offset_start is not None:
         x = offset - offset_start
         modulo = fft_len + guard_length
@@ -160,8 +171,14 @@ while (offset + fft_len + guard_length) <= abs_data.size:
         if (x % modulo == 0) and symbol_cnt < 76:
             symbol_cnt += 1
              
-            sinus_index = (np.arange(0,modulo) * correction_factor) + correction_phase
-            correction_phase = sinus_index[-1] + correction_factor
+            sinus_index = np.empty(shape=(modulo), dtype=np.float64)
+            sinus_index[:] = correction_factor
+            sinus_index[0] = correction_phase
+            
+            sinus_index = np.add.accumulate(sinus_index).astype(np.int)
+            
+            #sinus_index = np.a(np.arange(0,modulo) * correction_factor) + correction_phase
+            #correction_phase = sinus_index[-1] + correction_factor
             
             sinus_index   = sinus_index % correction_steps
             cosinus_index =  (sinus_index + correction_steps/4) % correction_steps            
@@ -211,22 +228,30 @@ while (offset + fft_len + guard_length) <= abs_data.size:
             center = np.argmax(np.add.accumulate(a + b)) - carriers / 2
             
             if symbol_cnt == 1:
-                delta_f = (float(sample_rate) / float(fft_len)) * (center - (fft_len/2 -1))
-                
-                if abs(delta_f) > 500:
-                    correction_factor = (0.5 * correction_factor) + 0.5 * (correction_factor - (delta_f * correction_steps / sample_rate))
-                    
-                else:
-                    correction_factor = (0.99 * correction_factor) + 0.01 * (correction_factor - (delta_f * correction_steps / sample_rate))
-                    
-            if delta_f is not None and abs(delta_f) < 1000 and symbol_cnt > 1:
-                delta_f_fine = sample_rate / fft_len * np.average(np.angle(samples[fft_len:] * np.conjugate(samples[:guard_length]))) / 2. / np.pi
-                
-                correction_factor = 0.9 * correction_factor + 0.1 * (correction_factor - (correction_steps * delta_f_fine / sample_rate))
+                delta_f      = (float(sample_rate) / float(fft_len)) * (center - (fft_len/2 -1))
+                delta_f_fine = 0
             else:
-                delta_f_fine = None
+                delta_f_fine += sample_rate / fft_len * np.average(np.angle(samples[fft_len:] * np.conjugate(samples[:guard_length]))) / 2. / np.pi
                 
-            correction_factor = int(correction_factor)
+            if symbol_cnt == 76:
+                delta_f_fine /= (76 - 1)
+                
+                delta_f_fine = min(delta_f_fine,(sample_rate / fft_len / 2))
+                delta_f_fine = max(delta_f_fine,-(sample_rate / fft_len / 2))
+                 
+                if abs(delta_f) > 2000 and coarse:
+                    correction_factor = (correction_factor - (delta_f * correction_steps / sample_rate))
+                elif abs(delta_f) > 500 and coarse:
+                    correction_factor = ( 0.5 * correction_factor) \
+                                        + 0.4 * (correction_factor - (delta_f      * correction_steps / sample_rate))\
+                                        + 0.1 * (correction_factor - (delta_f_fine * correction_steps / sample_rate))
+                    coarse = False
+                else:
+                    correction_factor = ( 0.9 * correction_factor) \
+                                        + 0.1 * (correction_factor - (delta_f_fine * correction_steps / sample_rate))
+                    coarse = False
+
+                correction_factor = int(correction_factor)
             
             if True:
                 if symbol_cnt == 1:
@@ -236,9 +261,13 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                     # DQPSK demodulation 
                     ofdm_data = fft_result[mapping] * np.conjugate(phase_reference[mapping])
                     phase_reference = fft_result
-
-                    bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data)))
-                    bits = bits/np.max(np.abs(bits))*(-127)
+                    
+                    ofdm_data_abs = np.absolute(ofdm_data)
+                    
+                    ofdm_data_scale = (-127.) * np.sqrt(2) / np.average(ofdm_data_abs)
+                    
+                    bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data))) * ofdm_data_scale
+                    bits = np.clip(np.asarray(bits, dtype=np.int), -128, 127)
                     
                     
                     #ofdm_data = ofdm_data * 255 / np.abs(ofdm_data)
@@ -256,8 +285,6 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                         
                         mothercode = fic_puncturer.depuncture(punctured_codeword)
 
-                        from convolutional_encoder import convolutional_encoder
-                        from viterby import viterby, euclid_distance
                         conv_encoder = convolutional_encoder((0133,0171,0145,0133), values=(-128,127), dtype=np.int)
                         viterby_decoder = viterby(euclid_distance, conv_encoder)
                         
@@ -267,14 +294,13 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                         output_packed = np.packbits(np.asarray(output,dtype=np.int8))[0:96]
 
                         fic_output = np.hstack((fic_output, output_packed))
-
+                        
+                        fic_decoder.decode(output_packed)
             print (center, delta_f, delta_f_fine, correction_factor, symbol_cnt)
-                
-        else:
-            correction_phase = correction_phase + correction_factor
+            add_offset = modulo
 
-
-    offset = offset + 1     
+    correction_phase = correction_phase + correction_factor * add_offset
+    offset = offset + add_offset
 
 
 try:
