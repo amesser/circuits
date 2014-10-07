@@ -134,7 +134,7 @@ state   = 0
 offset  = 0
 symbol_cnt = 0
 
-fic_output = np.array(0,dtype=np.uint8)
+fic_output = ""
 
 coarse = True
 
@@ -291,9 +291,10 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                         viterby_output = viterby_decoder.decoder(mothercode)
                         output = np.logical_xor(viterby_output, descramble[0:viterby_output.size])
                                 
-                        output_packed = np.packbits(np.asarray(output,dtype=np.int8))[0:96]
+                        output_packed = np.packbits(np.asarray(output,dtype=np.uint8))[0:96]
+                        output_packed = output_packed.tostring()
 
-                        fic_output = np.hstack((fic_output, output_packed))
+                        fic_output = fic_output + output_packed
                         
                         fic_decoder.decode(output_packed)
             print (center, delta_f, delta_f_fine, correction_factor, symbol_cnt)
@@ -308,4 +309,5 @@ try:
 except:
     pass
 
-fic_output.tofile("/tmp/output.dat")
+with open("/tmp/output.dat","wb") as f:
+    f.write(fic_output)

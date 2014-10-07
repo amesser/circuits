@@ -53,32 +53,292 @@ def crc_ccitt(data, crc = 0):
     global crc_table
 
     for x in data:
+        if isinstance(x, str):
+            x = ord(x)
+        
         i = (x ^ (crc >> 8)) & 0xff
         crc = (crc_table[i] ^ (crc << 8)) & 0xFFFF
 
     return crc
 
 
-from struct import unpack
+from struct import unpack, unpack_from
+
+class create_object_if_not_exists(object):
+    def __init__(self, cache, create_func):
+        self.cache       = cache
+        self.create_func = create_func
+        
+    def __getitem__(self, key):
+        try:
+            item = self.cache[key]
+        except KeyError:
+            item = self.create_func(key)
+            
+        return item
+    
+class dab_service_org(object):
+    def __init__(self, tmid_and_xid):
+        self.tmid, self.xid = tmid_and_xid
+        
+    @property
+    def id(self):
+        return self.tmid, self.xid
+            
+class dab_service(object):
+    def __init__(self, sref):
+        self.sref = sref
+        self.org  = []
+        self._org_by_id_cache = None
+        
+    def createOrg(self, tmid_and_xid):
+        org = dab_service_org(tmid_and_xid)
+        self.org.append(org)
+        
+        # force rebuild of cache
+        self._org_by_id_cache = None
+        return org
+
+    @property
+    def organization_by_id(self):
+        if not self._org_by_id_cache:
+            org_by_id = dict( (x.id,x) for x in self.org)
+            self._org_by_id_cache = org_by_id
+        else:
+            org_by_id = self._org_by_id_cache
+            
+        return create_object_if_not_exists(org_by_id, self.createOrg)
+    
+class dab_subchannel(object):
+    fec_scheme = None
+    
+    def __init__(self, id):
+        self.id = id
+
+class dab_database(object):
+        
+    def __init__(self):
+        self.subchannels = []
+        self.services    = []
+        
+        self._subchannels_by_id_cache = None
+        self._services_by_sref_cache = None
+
+    def createSubchannel(self, subchid):
+        subchannel = dab_subchannel(subchid)
+        self.subchannels.append(subchannel)
+        
+        # force rebuild of cache
+        self._subchannels_by_id_cache = None
+        return subchannel
+
+    def createService(self, sref):
+        service = dab_service(sref)
+        self.services.append(service)
+        
+        # force rebuild of cache
+        self._services_by_sref_cache = None
+        return service
+
+    @property
+    def subchannel_by_id(self):
+        if not self._subchannels_by_id_cache:
+            subchannels_by_id = dict( (x.id,x) for x in self.subchannels)
+            self._subchannels_by_id_cache = subchannels_by_id
+        else:
+            subchannels_by_id = self._subchannels_by_id_cache
+            
+        return create_object_if_not_exists(subchannels_by_id, self.createSubchannel)
+
+    @property
+    def service_by_sref(self):
+        if not self._services_by_sref_cache:
+            services_by_sref = dict( (x.sref,x) for x in self.services)
+            self._services_by_sref_cache = services_by_sref
+        else:
+            services_by_sref = self._services_by_sref_cache
+            
+        return create_object_if_not_exists(services_by_sref, self.createService)
+            
 
 class fic_decoder(object):
     
-    def __init__(self):
+    def __init__(self,db):
         super(fic_decoder,self).__init__()
+        self.db = db
 
+    def decode_fig0(self, fig_data):
+        extension   = ord(fig_data[0])
+        type0_field = fig_data[1:]
+        
+        cn_flag = (0 != (extension & 0x80))
+        oe_flag = (0 != (extension & 0x40))
+        pd_flag = (0 != (extension & 0x20))
+        
+        extension = extension & 0x1F
+
+        decode_fig0 = getattr(self,"decode_fig0_extension" + str(extension), None)
+        
+        if(decode_fig0):
+            decode_fig0(cn_flag, oe_flag, pd_flag, type0_field)
+        else:
+            print("No decoder for fig 0 extension {0}".format(extension))
+    
+    def decode_fig0_extension1(self,cn_flag, oe_flag, pd_flag, type0_field):
+        while type0_field:
+            x,y = unpack_from(">HB", type0_field)
+            
+            subchannelid  = x >> 10
+            
+            subchannel = self.db.subchannel_by_id[subchannelid]
+            subchannel.startaddress  = x & 0x3FF
+            
+            if y & 0x80:
+                x, = unpack_from(">H",type0_field[2:])
+                x &= 0x7FFF
+                
+                subchannel.size             = x & 0x3FF
+                subchannel.option           = x >> 13
+                subchannel.protection_level = (x & 0x1800) >> 10
+                
+                type0_field = type0_field[4:]
+            else:
+                subchannel.tableindex  = y & 0x3F
+                subchannel.tableswitch = (0 != (y & 0x40))
+                 
+                type0_field = type0_field[3:]
+
+    def decode_fig0_extension2(self,cn_flag, oe_flag, pd_flag, type0_field):
+        while type0_field:
+            if pd_flag:
+                sid, x = unpack_from(">LB", type0_field)
+                
+                sref              =  sid & 0x000FFFFF
+                countryid         = (sid >> 20) & 0x0F
+                extendedcountryid = (sid >> 24)
+                
+                type0_field = type0_field[5:]
+            else:
+                sid, x = unpack_from(">HB", type0_field)
+                
+                sref              =  sid & 0x0FFF
+                countryid         = (sid >> 12)
+                extendedcountryid = None
+                
+                type0_field = type0_field[3:]
+                
+            service = db.service_by_sref[sref]
+            
+            service.countryid         = countryid
+            service.extendedcountryid = extendedcountryid
+            service.local_flag = 0 != (x & 0x80)
+            service.caid       = (x >> 4) & 0x7
+            
+            numberofcomponents = x & 0x0F
+            
+            orgfields = unpack_from(">" + ("H" * numberofcomponents), type0_field);
+            type0_field = type0_field[2*numberofcomponents:]
+            
+            for x in orgfields:
+                tmid = x >> 14
+                
+                if tmid < 3:
+                    ty  = (x >> 8) & 0x3F
+                    id = (x >> 2) & 0x3F
+                elif tmid == 3:
+                    id = (x >> 2) & 0x0FFF
+                    ty = None
+                    
+                org = service.organization_by_id[(tmid, id)]
+                org.ps_flag = 0 != (x & 0x02)
+                org.ca_flag = 0 != (x & 0x01)
+                
+                if ty is not None:
+                    org.ty = ty
+
+    def decode_fig0_extension14(self,cn_flag, oe_flag, pd_flag, type0_field):
+        for x in type0_field:
+            x = ord(x)
+            
+            subchannelid  = x >> 2
+                        
+            subchannel = self.db.subchannel_by_id[subchannelid]
+            subchannel.fec_scheme = x & 0x03
+            
+
+
+    def decode_fig1(self, fig_data):
+        extension   = ord(fig_data[0])
+        type1_field = fig_data[1:]
+        
+        charset = extension >> 4
+        oe_flag = (0 != (extension & 0x08))
+        
+        extension = extension & 0x07
+        
+        character_field  = fig_data[-18:-2]
+        character_flag   = unpack(">H", fig_data[-2:])
+        identifier_field = fig_data[:-18]
+
+        decode_fig1 = getattr(self,"decode_fig1_extension" + str(extension), None)
+        
+        if(decode_fig1):
+            decode_fig1(charset, oe_flag, identifier_field, character_field, character_flag)
+        else:
+            print("No decoder for fig 1 extension {0}".format(extension))
 
     def decode(self, fic):
         for i in xrange(0,len(fic),32):
             fib = fic[i:i+32]
             
-            if "hr4" in fib.tostring():
-                print("hr4")
+            fib_data, fib_crc = unpack(">30sH", fib)
 
-            crc = crc_ccitt(fib[0:30], 0xffff) ^ 0xFFFF
+            crc = crc_ccitt(fib_data, 0xffff) ^ 0xFFFF
         
-            print(str(hex(crc)) + " " + str(hex(unpack(">H", fib[30:32])[0])))
+            if fib_crc == crc:
+                while fib_data:
+                    fig_header = ord(fib_data[0])
+                    
+                    if fig_header == 0xFF:
+                        # end token
+                        break
+                    else:
+                        fig_type   = fig_header >> 5
+                        fig_length = fig_header & 0x1F
+                        fig_data = fib_data[1:1+ fig_length]
+
+                        fib_data = fib_data[1+fig_length:]
+                        
+                        decode_fig = getattr(self,"decode_fig" + str(fig_type), None)
+                        
+                        if(decode_fig):
+                            decode_fig(fig_data)
+                        else:
+                            print("No decoder for fig type {0}".format(fig_type))
+                
             
-            if crc == unpack(">H", fib[30:32])[0]:
-                print("Juhu")
         
+if __name__ == "__main__":
+    with open("/tmp/output.dat", "rb") as f:
+        fic_data = f.read()
+    
+    db = dab_database()
+    
+    decoder = fic_decoder(db)
+    
+    while len(fic_data) > 96:
+        fic = fic_data[0:96]
+        fic_data = fic_data[96:]
         
+        decoder.decode(fic)
+        
+    for x in db.subchannels:
+        print("subchannel ", x.id, x.startaddress, x.size, x.fec_scheme)
+    
+    for x in db.services:
+        print ("service ",x.sref)
+        
+        for y in x.org:
+            print("org ",y.tmid, y.xid)
+    
+    
