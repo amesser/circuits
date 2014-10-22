@@ -1,0 +1,15 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def configure(conf):
+    conf.ecpp_setupbuild(id='panelmeter-attiny461', device='attiny461', arch='avr8')
+    conf.env.append_value('DEFINES', 'F_CPU=8000000UL')
+  
+def build(bld):
+    bld.ecpp_build(
+        id= 'panelmeter-attiny461',
+        source   = 'main.cc',
+        target   = 'firmware.elf',
+        features = 'cxx cxxprogram',  
+        includes = ['.', ],
+    )  
