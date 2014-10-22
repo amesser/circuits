@@ -1,0 +1,11 @@
+.settings
+.pydevproject
+board/*-bak
+board/*.bak
+board/*.bck
+board/*-cache.lib
+board/*.net
+board/*.svg
+firmware/build
+firmware/.lock-waf*
+
