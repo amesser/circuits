@@ -3,6 +3,7 @@
 
 import numpy as np
 import os
+from msc_decoder import msc_decoder
 
 
 # load data from rtl_sdr output
@@ -143,9 +144,15 @@ delta_f_fine = 0
 
 from convolutional_encoder import convolutional_encoder
 from viterby import viterby, euclid_distance
-from fic_decoder import fic_decoder
+from fic_decoder import fic_decoder, dab_database
 
-fic_decoder = fic_decoder()
+db = dab_database()
+
+fic_decoder = fic_decoder(db)
+
+msc_decoder = msc_decoder(db)
+
+db.audio_subchannel_id = 0
 
 while (offset + fft_len + guard_length) <= abs_data.size:
     if state == 0 and moving_average[offset] < (0.5 * pt1_average[offset]) and offset > moving_len:
@@ -257,6 +264,7 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                 if symbol_cnt == 1:
                     # phase reference symbol
                     phase_reference = fft_result
+                    msc_decoder.phase_symbol(None)
                 else:
                     # DQPSK demodulation 
                     ofdm_data = fft_result[mapping] * np.conjugate(phase_reference[mapping])
@@ -269,6 +277,7 @@ while (offset + fft_len + guard_length) <= abs_data.size:
                     bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data))) * ofdm_data_scale
                     bits = np.clip(np.asarray(bits, dtype=np.int), -128, 127)
                     
+                    msc_decoder.data_symbol(bits)
                     
                     #ofdm_data = ofdm_data * 255 / np.abs(ofdm_data)
                     #bits = np.hstack((np.real(ofdm_data), np.imag(ofdm_data)))

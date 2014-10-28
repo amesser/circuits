@@ -61,6 +61,27 @@ def crc_ccitt(data, crc = 0):
 
     return crc
 
+def crc_any(data, poly, bits, crc = 0):
+    mask_crc = 0x1 << (bits - 1)
+    
+    for x in data:
+        if isinstance(x, str):
+            x = ord(x)
+        
+        mask = 0x80
+        
+        while(mask):
+            input = 1 if (mask & x) else 0
+            out   = 1 if (crc & mask_crc) else 0
+            
+            crc = crc << 1
+            
+            if input != out:
+                crc = crc ^ poly
+
+            mask = mask >> 1
+            
+    return crc & ((0x1 << bits) - 1)
 
 from struct import unpack, unpack_from
 
@@ -148,7 +169,11 @@ class dab_database(object):
         else:
             subchannels_by_id = self._subchannels_by_id_cache
             
-        return create_object_if_not_exists(subchannels_by_id, self.createSubchannel)
+        return subchannels_by_id
+    
+    @property
+    def create_subchannel_by_id(self):
+        return create_object_if_not_exists(self.subchannel_by_id, self.createSubchannel)
 
     @property
     def service_by_sref(self):
@@ -159,6 +184,13 @@ class dab_database(object):
             services_by_sref = self._services_by_sref_cache
             
         return create_object_if_not_exists(services_by_sref, self.createService)
+    
+    @property
+    def audio_channel_to_decode(self):
+        if getattr(self,"audio_subchannel_id", None) is not None:
+            return self.subchannel_by_id.get(self.audio_subchannel_id, None)
+        else:
+            return None
             
 
 class fic_decoder(object):
@@ -190,7 +222,7 @@ class fic_decoder(object):
             
             subchannelid  = x >> 10
             
-            subchannel = self.db.subchannel_by_id[subchannelid]
+            subchannel = self.db.create_subchannel_by_id[subchannelid]
             subchannel.startaddress  = x & 0x3FF
             
             if y & 0x80:
@@ -227,7 +259,7 @@ class fic_decoder(object):
                 
                 type0_field = type0_field[3:]
                 
-            service = db.service_by_sref[sref]
+            service = self.db.service_by_sref[sref]
             
             service.countryid         = countryid
             service.extendedcountryid = extendedcountryid
@@ -262,7 +294,7 @@ class fic_decoder(object):
             
             subchannelid  = x >> 2
                         
-            subchannel = self.db.subchannel_by_id[subchannelid]
+            subchannel = self.db.create_subchannel_by_id[subchannelid]
             subchannel.fec_scheme = x & 0x03
             
 
@@ -319,7 +351,7 @@ class fic_decoder(object):
             
         
 if __name__ == "__main__":
-    with open("/tmp/output.dat", "rb") as f:
+    with open("../test/fic.dat", "rb") as f:
         fic_data = f.read()
     
     db = dab_database()
@@ -333,7 +365,7 @@ if __name__ == "__main__":
         decoder.decode(fic)
         
     for x in db.subchannels:
-        print("subchannel ", x.id, x.startaddress, x.size, x.fec_scheme)
+        print("subchannel ", x.id, x.startaddress, x.size, x.protection_level, x.option, x.fec_scheme)
     
     for x in db.services:
         print ("service ",x.sref)
