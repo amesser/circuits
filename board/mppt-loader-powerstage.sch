@@ -30,14 +30,13 @@ LIBS:atmel
 LIBS:contrib
 LIBS:valves
 LIBS:amesser-com
-LIBS:mpt-loader-cache
 EELAYER 27 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 2 2
 Title ""
-Date "30 nov 2014"
+Date "7 dec 2014"
 Rev "1"
 Comp "Copyright (c) 2014 Andreas Messer"
 Comment1 ""
