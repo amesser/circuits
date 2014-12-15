@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2
+EESchema Schematic File Version 2  date Mo 15 Dez 2014 21:39:26 CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -30,13 +30,16 @@ LIBS:atmel
 LIBS:contrib
 LIBS:valves
 LIBS:amesser-com
+LIBS:amesser-pmic
+LIBS:amesser-linear
+LIBS:mppt-loader-cache
 EELAYER 27 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 2 2
 Title ""
-Date "7 dec 2014"
+Date "15 dec 2014"
 Rev "1"
 Comp "Copyright (c) 2014 Andreas Messer"
 Comment1 ""
@@ -1158,4 +1161,8 @@ Text Label 3700 2350 0    60   ~ 0
 GND_PWR
 Wire Wire Line
 	3600 2150 3600 2350
+Text Label 4250 3200 0    60   ~ 0
+VSA
+Text Label 4250 6200 0    60   ~ 0
+VSB
 $EndSCHEMATC
