@@ -1,9 +1,9 @@
-(kicad_pcb (version 3) (host pcbnew "(2013-may-01)-stable")
+(kicad_pcb (version 3) (host pcbnew "(2013-jul-07)-stable")
 
   (general
     (links 259)
     (no_connects 2)
-    (area 152.224999 102.024999 240.975001 180.875001)
+    (area 152.038889 101.999999 236.972222 195.875001)
     (thickness 1.6)
     (drawings 15)
     (tracks 1370)
@@ -32,7 +32,7 @@
   )
 
   (setup
-    (last_trace_width 1)
+    (last_trace_width 0.254)
     (user_trace_width 0.5)
     (user_trace_width 0.75)
     (user_trace_width 1)
@@ -60,15 +60,15 @@
     (mod_text_width 0.3)
     (pad_size 3.6576 2.032)
     (pad_drill 0)
-    (pad_to_mask_clearance 0.15)
+    (pad_to_mask_clearance 0.2)
     (solder_mask_min_width 0.15)
     (aux_axis_origin 0 0)
     (visible_elements 7FFFFFBF)
     (pcbplotparams
-      (layerselection 3178497)
+      (layerselection 15761409)
       (usegerberextensions true)
       (excludeedgelayer true)
-      (linewidth 0)
+      (linewidth 0.150000)
       (plotframeref false)
       (viasonmask false)
       (mode 1)
@@ -87,9 +87,9 @@
       (subtractmaskfromsilk false)
       (outputformat 1)
       (mirror false)
-      (drillshape 1)
+      (drillshape 0)
       (scaleselection 1)
-      (outputdirectory ""))
+      (outputdirectory /tmp))
   )
 
   (net 0 "")
