@@ -3,7 +3,11 @@
 import numpy as np
 import struct
 from fic_decoder import crc_any, crc_ccitt
-from reedsolo import RSCodec
+from rs_decoder import generate_poly, eval_poly, checksum, coefficient, find_errors, correct_errors
+
+poly = generate_poly(10)
+poly_zeros = np.asarray([coefficient(x) for x in range(10)], dtype=np.uint8)
+
 
 if __name__ == "__main__":
     blub = open("/tmp/subchannel.aac", "wb")
@@ -11,7 +15,6 @@ if __name__ == "__main__":
     sync       = False
     superframe = ""
     cnt        = 0
-    rs = RSCodec(10)
     
     with open("/tmp/subchannel.dat", "rb") as f:
         content = f.read()
@@ -39,11 +42,30 @@ if __name__ == "__main__":
                 
                 for i in xrange(15):
                     row = bytearray(superframe[i::15])
-                    try:
-                        rs_corrected.append(str(rs.decode(row)))
-                    except:
-                        print("bububg")
-                     
+                    
+                    input_array = np.asarray(row, dtype=np.uint8)
+                    
+                    chksum    = checksum(input_array, poly)
+                    syndromes = np.asarray([eval_poly(input_array[::-1], x) for x in poly_zeros])
+                    
+                    
+                    if np.count_nonzero(chksum):
+                        print "chksum   " + str((chksum))
+                        print "syndromes" + str((syndromes))
+                        
+                        positions = find_errors(input_array, syndromes)
+                        print " find_errors " + str(positions)
+                                             
+                        correct_errors(input_array, syndromes, positions)
+                        chksum    = checksum(input_array, poly)
+                        syndromes = np.asarray([eval_poly(input_array[::-1], x) for x in poly_zeros])
+                        
+                        print "chksum after correction  " + str((chksum))
+                        print "syndromes after correction  " + str((syndromes))
+
+                    if 0 == np.count_nonzero(chksum):
+                        rs_corrected.append(input_array[0:110].tostring())
+
                 if len(rs_corrected) == 15:
                     interleaved = "".join(rs_corrected)
                 
