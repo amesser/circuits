@@ -288,8 +288,55 @@ static volatile uint8_t    abIBuffer[DFT_Type::m_bins*2] =
     0x80, 0x83, 0x7f, 0x83, 0x82, 0x80, 0x82, 0x84, 0x7d, 0x7f, 0x80, 0x7d, 0x83, 0x84, 0x7d, 0x80
 };
 
+struct rcc_regs {
+  volatile uint32_t RCC_CR;
+  volatile uint32_t RCC_PLLCFGR;
+  volatile uint32_t RCC_CFGR;
+
+};
+
+struct rcc_regs * const pRCC = reinterpret_cast<struct rcc_regs*>(0x40023800);
+
 int main()
 {
+  uint32_t reg;
+
+  /* set HSEON to enable crystal oscialltor */
+  pRCC->RCC_CR |= 0x1 << 16;
+
+  /* wait until crystal osc ready */
+  while((pRCC->RCC_CR & (0x1 << 17)) == 0);
+
+  /* activate PLL */
+  reg = pRCC->RCC_PLLCFGR & 0xF03C8000;
+
+  reg |= 0x1 << 22;/* select HSE oscilattor */
+  reg |= 0xF << 24;  /* PLLQ = 15 */
+
+  reg |= 8;        /* divide crystal freq by 8 */
+  reg |= 300 << 6; /* pll multiply by 300 -> 300 Mhz */
+
+  pRCC->RCC_PLLCFGR = reg;
+
+  /* set PLLON to enable crystal oscialltor */
+  pRCC->RCC_CR |= 0x1 << 24;
+
+  /* wait until pll is  ready */
+  while((pRCC->RCC_CR & (0x1 << 25)) == 0);
+
+  reg = pRCC->RCC_CFGR & 0x00000300;
+
+  reg |= 0x4 << 13;   /* apb2 prescale 2 */
+  reg |= 0x5 << 10; /* apb1 prescale3 2 */
+
+  pRCC->RCC_CFGR = reg;
+
+  reg |= 0x2; /* select pll as system clock */
+  pRCC->RCC_CFGR = reg;
+
+  /* weait until pll is system clock */
+  while( ((pRCC->RCC_CFGR >> 2) & 0x3) != 0x2);
+
   while(1)
   {
     unsigned int i;
