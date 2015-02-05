@@ -1,4 +1,7 @@
 firmware/build
+src/build
 firmware/.lock-waf*
+src/.lock-waf*
 3rdparty
 *.pyc
+.settings
