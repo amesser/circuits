@@ -1,0 +1,15 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def configure(conf):
+    conf.ecpp_setupbuild(id='lirc-rs232-attiny2313', device='attiny2313', arch='avr8')
+    conf.env.append_value('DEFINES', 'F_CPU=1000000UL')
+  
+def build(bld):
+    bld.ecpp_build(
+        id= 'lirc-rs232-attiny2313',
+        source   = 'main.cpp',
+        target   = 'firmware.elf',
+        features = 'cxx cxxprogram',  
+        includes = ['.', ],
+    )  
