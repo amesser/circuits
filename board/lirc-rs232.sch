@@ -540,7 +540,7 @@ Connection ~ 5450 650
 Wire Wire Line
 	4150 1100 4150 1150
 Wire Wire Line
-	4250 2500 4150 2500
+	4150 2500 4300 2500
 Wire Wire Line
 	4200 2500 4200 2550
 Connection ~ 4200 2500
