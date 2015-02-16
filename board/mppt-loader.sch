@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Mo 15 Dez 2014 21:39:26 CET
+EESchema Schematic File Version 2  date Mo 16 Feb 2015 20:52:30 CET
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -38,10 +38,10 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 2
-Title "MPPT Solar Loader"
-Date "15 dec 2014"
-Rev "1"
-Comp "Copyright (c) 2014 Andreas Messer"
+Title "MPPT Charger"
+Date "16 feb 2015"
+Rev "2"
+Comp "Copyright (c) 2014, 2015 Andreas Messer"
 Comment1 ""
 Comment2 ""
 Comment3 ""
@@ -387,7 +387,7 @@ F 3 "" H 6550 1550 60  0000 C CNN
 $EndComp
 Text Label 4150 1650 0    60   ~ 0
 CLK
-Text Label 5000 5150 0    60   ~ 0
+Text Label 4750 5150 0    60   ~ 0
 CLK
 $Comp
 L TST P102
@@ -501,7 +501,7 @@ F 3 "" H 1800 2150 60  0000 C CNN
 $EndComp
 Text Label 2600 1500 2    60   ~ 0
 RESET
-Text Label 5000 5450 0    60   ~ 0
+Text Label 4750 5450 0    60   ~ 0
 RESET
 $Comp
 L C C106
@@ -583,7 +583,7 @@ Text Label 4350 3600 2    60   ~ 0
 CAN_SI
 Text Label 4350 3700 2    60   ~ 0
 CAN_SO
-Text Label 5000 5250 0    60   ~ 0
+Text Label 4750 5250 0    60   ~ 0
 CAN_CS
 $Comp
 L CONN_3X2 P101
@@ -707,15 +707,13 @@ Connection ~ 5000 4250
 Connection ~ 5050 4350
 Connection ~ 5100 4450
 Wire Wire Line
-	4900 3450 4900 5350
+	5100 3850 5100 5350
 Wire Wire Line
-	5100 3850 5100 4550
+	5050 3750 5050 4550
 Wire Wire Line
-	5050 3750 5050 4450
+	5000 3650 5000 4450
 Wire Wire Line
-	5000 3650 5000 4350
-Wire Wire Line
-	4950 3550 4950 4250
+	4950 3550 4950 4350
 Wire Wire Line
 	5150 3850 5100 3850
 Wire Wire Line
@@ -763,9 +761,9 @@ Wire Wire Line
 Wire Wire Line
 	4050 2150 4100 2150
 Wire Wire Line
-	5000 5250 4500 5250
+	4750 5250 4500 5250
 Wire Wire Line
-	4900 5350 4500 5350
+	5100 5350 4500 5350
 Wire Wire Line
 	4650 4050 4500 4050
 Wire Wire Line
@@ -843,7 +841,7 @@ Wire Wire Line
 	1800 1600 1800 1700
 Connection ~ 4550 5450
 Wire Wire Line
-	4500 5150 5000 5150
+	4500 5150 4750 5150
 Wire Wire Line
 	4050 1650 4150 1650
 Wire Wire Line
@@ -894,7 +892,7 @@ Wire Wire Line
 Wire Wire Line
 	1900 3150 1900 3200
 Wire Wire Line
-	4500 5450 5000 5450
+	4500 5450 4750 5450
 Wire Wire Line
 	4850 3350 5950 3350
 Wire Wire Line
@@ -942,17 +940,9 @@ Wire Wire Line
 Wire Wire Line
 	4950 4150 5150 4150
 Wire Wire Line
-	4950 4250 4500 4250
-Wire Wire Line
 	5000 4250 5150 4250
 Wire Wire Line
-	5000 4350 4500 4350
-Wire Wire Line
 	5050 4350 5150 4350
-Wire Wire Line
-	5050 4450 4500 4450
-Wire Wire Line
-	5100 4550 4500 4550
 Wire Wire Line
 	5150 4450 5100 4450
 Wire Wire Line
@@ -987,8 +977,6 @@ Wire Wire Line
 	2200 4250 2300 4250
 Wire Wire Line
 	6250 4650 6200 4650
-Wire Wire Line
-	7200 5050 7450 5050
 Wire Wire Line
 	7200 4950 7450 4950
 Wire Wire Line
@@ -1068,30 +1056,6 @@ F 3 "~" H 6850 4600 60  0000 C CNN
 	1    6850 4600
 	-1   0    0    -1  
 $EndComp
-$Sheet
-S 7450 3800 1150 1600
-U 547B139E
-F0 "Powerstage" 50
-F1 "mppt-loader-powerstage.sch" 50
-F2 "VINA" I R 8600 4100 60 
-F3 "HIGHSIDEA" I L 7450 4850 60 
-F4 "LOWSIDEA" I L 7450 4950 60 
-F5 "VOUTA" O R 8600 4700 60 
-F6 "SENSEA_VOUT" O L 7450 4050 60 
-F7 "SENSEA_I" O L 7450 4150 60 
-F8 "VINB" I R 8600 4400 60 
-F9 "HIGHSIDEB" I L 7450 5050 60 
-F10 "LOWSIDEB" I L 7450 5150 60 
-F11 "VOUTB" O R 8600 5000 60 
-F12 "SENSEB_VOUT" O L 7450 4250 60 
-F13 "SENSEB_I" O L 7450 4350 60 
-F14 "VDD_LOGIC" I L 7450 3900 60 
-F15 "VDD_PWR" I R 8600 3900 60 
-F16 "GND_LOGIC" I L 7450 5300 60 
-F17 "GND_PWR" I R 8600 5300 60 
-$EndSheet
-Wire Wire Line
-	7450 5150 7200 5150
 Wire Wire Line
 	7450 4050 7200 4050
 Wire Wire Line
@@ -1585,4 +1549,40 @@ Text Label 5900 5500 2    60   ~ 0
 AVCC
 Wire Wire Line
 	5950 5550 5950 5500
+Wire Wire Line
+	5050 4550 4500 4550
+Wire Wire Line
+	5000 4450 4500 4450
+Wire Wire Line
+	4950 4350 4500 4350
+Wire Wire Line
+	4900 3450 4900 4250
+Wire Wire Line
+	4900 4250 4500 4250
+$Sheet
+S 7450 3800 1150 1600
+U 547B139E
+F0 "Powerstage" 50
+F1 "mppt-loader-powerstage.sch" 50
+F2 "VINA" I R 8600 4100 60 
+F3 "HIGHSIDEA" I L 7450 4850 60 
+F4 "LOWSIDEA" I L 7450 4950 60 
+F5 "VOUTA" O R 8600 4700 60 
+F6 "SENSEA_VOUT" O L 7450 4050 60 
+F7 "SENSEA_I" O L 7450 4150 60 
+F8 "VINB" I R 8600 4400 60 
+F9 "HIGHSIDEB" I L 7450 5150 60 
+F10 "LOWSIDEB" I L 7450 5050 60 
+F11 "VOUTB" O R 8600 5000 60 
+F12 "SENSEB_VOUT" O L 7450 4250 60 
+F13 "SENSEB_I" O L 7450 4350 60 
+F14 "VDD_LOGIC" I L 7450 3900 60 
+F15 "VDD_PWR" I R 8600 3900 60 
+F16 "GND_LOGIC" I L 7450 5300 60 
+F17 "GND_PWR" I R 8600 5300 60 
+$EndSheet
+Wire Wire Line
+	7450 5050 7200 5050
+Wire Wire Line
+	7200 5150 7450 5150
 $EndSCHEMATC
