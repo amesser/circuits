@@ -1,0 +1,3 @@
+.settings
+firmware/build
+firmware/.lock-waf_*
