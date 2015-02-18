@@ -36,7 +36,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "RS232 IR Receiver"
-Date "13 feb 2015"
+Date "14 feb 2015"
 Rev "1"
 Comp "Copyright (c) 2015 Andreas Messer"
 Comment1 ""
@@ -71,7 +71,7 @@ L C C107
 U 1 1 54DE4584
 P 6750 1250
 F 0 "C107" H 6750 1350 40  0000 L CNN
-F 1 "C" H 6756 1165 40  0000 L CNN
+F 1 "100n" H 6756 1165 40  0000 L CNN
 F 2 "~" H 6788 1100 30  0000 C CNN
 F 3 "~" H 6750 1250 60  0000 C CNN
 	1    6750 1250
