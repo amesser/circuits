@@ -1,0 +1,15 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def configure(conf):
+    conf.ecpp_setupbuild(id='mppt-attiny461a', device='attiny461a', arch='avr8')
+    conf.env.append_value('DEFINES', 'F_CPU=8000000UL')
+  
+def build(bld):
+    bld.ecpp_build(
+        id= 'mppt-attiny461a',
+        source   = 'main.cpp',
+        target   = 'firmware.elf',
+        features = 'cxx cxxprogram',  
+        includes = ['.', ],
+    )  
