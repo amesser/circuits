@@ -19,8 +19,7 @@ using namespace Platform::Guards;
 
 typedef USISPIMaster<1000000> SPIDriverType;
 
-
-const FlashBuffer<25,RegisterConfig> g_RegisterInit PROGMEM =
+const FlashBuffer<26,RegisterConfig> g_RegisterInit PROGMEM =
 {{
   {DDRA, 0},
   {DDRB, 0},
@@ -32,13 +31,13 @@ const FlashBuffer<25,RegisterConfig> g_RegisterInit PROGMEM =
 
   /* configure adc */
   {DIDR0,  _BV(AREFD) | _BV(ADC3D) | _BV(ADC4D) | _BV(ADC5D) | _BV(ADC6D)},
-  {DIDR1, _BV(ADC9D)},
+  {DIDR1,  _BV(ADC9D)},
+  {ADCSRA, _BV(ADEN)  | _BV(ADPS2) | _BV(ADPS1) |  _BV(ADATE) },
   {ADCSRB, _BV(ADTS2) | _BV(ADTS1)}, /* we want to be triggered by Timer 1 Overflow */
-  {ADCSRA, _BV(ADEN)  | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0) | _BV(ADIE) | _BV(ADATE)},
 
   /* configure tick timer */
   {TCCR0A, _BV(WGM00)},
-  {OCR0A,  125 - 1},
+  {OCR0A,  125-1},
   {TCCR0B, _BV(CS01) | _BV(CS00) | _BV(PSR0)},
   {TCNT0L,  0},
 
@@ -47,6 +46,7 @@ const FlashBuffer<25,RegisterConfig> g_RegisterInit PROGMEM =
   {TCCR1A, _BV(PWM1A)| _BV(PWM1B)},
   {TCCR1D, _BV(WGM10)},
   {TCCR1B, _BV(CS10)},
+  {DT1, 0},
 
   /* configure ports */
   {PORTA,  0},
@@ -477,6 +477,11 @@ public:
       _tmout += iv;
     }
 
+    void init(const Clock &clock, C iv)
+    {
+      _tmout = clock.value() + iv;
+    }
+
     constexpr C value()
     {
       return _tmout;
@@ -485,6 +490,25 @@ public:
   };
 };
 
+/* ku long example parameters */
+struct parameters
+{
+  uint16_t imax;
+  uint8_t  ulow;
+  uint8_t  ufull;
+  uint8_t  umax;
+  int8_t   coef;
+};
+
+struct parameters accu_prm =
+{
+  /* 25 °C */
+  .imax  =  36, /* 360 mA maximum charge current */
+  .ulow  = 105, /* 10.5 V */
+  .ufull = 135, /* 13.5 V full */
+  .umax  = 138, /* 13.8 V maximum charge voltage (used for balancing*) */
+  .coef  = -18, /* in mv */
+};
 class App
 {
 private:
@@ -499,12 +523,17 @@ private:
   uint8_t                  _AdcState;
   uint16_t                 _Values[5];
 
-  ClockType::Timer<uint8_t>  _AdcTimer;
+  ClockType::Timer<uint16_t>  _AdcTimer;
   ClockType::Timer<uint16_t> _CanTimer;
   ClockType::Timer<uint16_t> _LedTimer;
+  ClockType::Timer<uint16_t> _SimTimer;
 
   uint16_t                 _LastCycle;
   uint16_t                 _CycleTime;
+   int16_t                 _OffsetI[2];
+  uint8_t                  _Duty;
+  uint8_t                  _Hit;
+  uint8_t                  _BuckState;
 
   enum AdcMux{
     ADMUX_VOUTA  = _BV(REFS0) | _BV(ADLAR) | 0x3,
@@ -526,28 +555,89 @@ private:
     LED_BOTH  = 0x03,
   };
 
+  enum RegulatorState
+  {
+    STATE_ADCSAMPLE_VOUTA   = 0,
+    STATE_ADCSAMPLE_IOUTA   = 1,
+    STATE_ADCSAMPLE_VOUTB   = 2,
+    STATE_ADCSAMPLE_IOUTB   = 3,
+    STATE_ADCSAMPLE_VSOLAR  = 4,
+    STATE_UPDATE            = 5,
+    STATE_IDLE              = 6,
+  };
+
+  enum BuckState
+  {
+    BUCK_STATE_OFF               = 0,
+    BUCK_STATE_SETUP             = 1, /* configure pwm and wait 1 cycle */
+    BUCK_STATE_START             = 2, /* startup buck and wait one cycle */
+    BUCK_STATE_RUN               = 3, /* buck active and running */
+  };
 public:
-  void setDutyCycle(uint8_t duty)
+  void handleBuck(uint8_t tmout)
   {
     const uint8_t max_duty = OCR1C - 1;
+    uint8_t state          = _BuckState;
+    uint8_t duty           = _Duty;
 
-    if (duty > max_duty)
-      duty = max_duty;
+    if (duty > max_duty - 10)
+      duty = max_duty - 10;
 
-    if (duty == 0)
+    /* adjust duty cycle to be at least 100 ns, otherwise the
+     * buck will not start properly because of switching delays
+     */
+    if (BUCK_STATE_RUN > state && duty < 50 && duty > 0)
+      duty = 50;
+
+    /* update duty cycle */
+    OCR1A = duty;
+    OCR1B = max_duty + 1 - duty;
+
+    if (duty)
     {
-      TCCR1A &= ~_BV(COM1A0);
-      TCCR1A &= ~_BV(COM1B0);
+      if (BUCK_STATE_RUN > state && tmout)
+      {
+        state++;
+
+        if (BUCK_STATE_START == state)
+        {
+          /* peek low side switch to generate some charge
+           * for high side driver
+           */
+          PORTB |=  _BV(PB0);
+          PORTB &= ~_BV(PB0);
+
+          PORTB |=  _BV(PB3);
+          PORTB &= ~_BV(PB3);
+
+          /* disable the low side switches */
+          DDRB   &= ~_BV(PB0);
+          DDRB   &= ~_BV(PB3);
+
+          /* connect pwm */
+          TCCR1A |= _BV(COM1A0);
+          TCCR1A |= _BV(COM1B0);
+        }
+      }
     }
     else
     {
+      /* disconnect pwm */
+      TCCR1A &= ~_BV(COM1A0);
+      TCCR1A &= ~_BV(COM1B0);
 
-      OCR1A = duty;
-      OCR1B = max_duty + 1 - duty;
-      TCCR1A |= _BV(COM1A0);
-      TCCR1A |= _BV(COM1B0);
+      /* enable data output for low side switches
+       * this forces them to be disabled
+       */
+      DDRB   |= _BV(PB0);
+      DDRB   |= _BV(PB3);
+
+      state = BUCK_STATE_OFF;
     }
+
+    _BuckState = state;
   }
+
 
   void setLedStatus(uint8_t mask)
   {
@@ -569,21 +659,37 @@ public:
     _Can.configure(cnf1, cnf2, cnf3);
     _Can.setOneshot(true);
 
-#if 0
-    /* set configuration mode */
-    _Can.writeRegister(_Can.REG_CANCTRL, 0b100 << 5);;
-
-    _Can.writeRegister(_Can.REG_CNF1, 0x1);
-    _Can.writeRegister(_Can.REG_CNF2, 0x1 | 0x6 << 3 | 0x80);
-    _Can.writeRegister(_Can.REG_CNF3, 0x5);
-
-    /* set normal mode */
-    _Can.writeRegister(_Can.REG_CANCTRL, 0b000 << 5 | 0x08);
-#endif
 
     _CanState = 0;
     _AdcState = 0xFF;
-    _CanSid   = _Can.getTxRtsPins();
+    _CanSid   = (~_Can.getTxRtsPins()) &  0x7;
+    _Duty     = 0;
+    _Hit      = 0xFF;
+    _BuckState = BUCK_STATE_OFF;
+
+    _CanTimer.init(_Clock, 0);
+    _LedTimer.init(_Clock, 10000);
+    _SimTimer.init(_Clock, 1000);
+
+  }
+
+  void calibrate()
+  {
+    const uint8_t bak = (ADCSRA & ~_BV(ADEN)) | _BV(ADIF);
+    int i;
+
+    for(i = 0; i < 2; ++i)
+    {
+      ADCSRA  = bak;
+      ADMUX   =  ADMUXMapping[STATE_ADCSAMPLE_IOUTA + i*2];
+      ADCSRB |= _BV(BIN);
+      ADCSRA  = bak | _BV(ADEN) | _BV(ADSC);
+
+      while(ADCSRA & _BV(ADSC));
+      _OffsetI[i] = ADC;
+
+      ADCSRA |= _BV(ADIF);
+    }
   }
 
   void perfStartCycle()
@@ -599,62 +705,203 @@ public:
 
   void startADCConversion()
   {
-    if(_AdcState < 10)
+    if(_AdcState < STATE_UPDATE)
     {
-      if (0 == (_AdcState % 2))
+      if((_AdcState % 2) == (STATE_ADCSAMPLE_IOUTA % 2))
       {
-        /* first conversation after changing admux is garbage
-         * we start conversation immediately */
-        ADMUX = ADMUXMapping[_AdcState/2];
-        ADCSRA |= _BV(ADSC);
+        ADCSRA &= ~_BV(ADEN);
+        ADCSRB |= _BV(BIN);
       }
       else
       {
-        /* now perform the real conversation, this is synced to
-         * Timer 1 PWM */
-        TIFR   |= _BV(TOV1);
+        ADCSRB &= ~_BV(BIN);
       }
+
+
+      ADMUX  = ADMUXMapping[_AdcState];
+
+      if((_AdcState % 2) == (STATE_ADCSAMPLE_IOUTA % 2))
+        ADCSRA |= _BV(ADEN);
+
+      TIFR   |= _BV(TOV1);
     }
   }
 
 
-  void handleRegul()
+  void handleRegul(uint8_t tmout)
   {
-    uint8_t tmout = _AdcTimer.hasTimedOut(_Clock);
+    const uint8_t max_duty = OCR1C - 1;
 
-    if (_AdcState >= 10 && tmout)
+    if(_AdcState == STATE_UPDATE)
+    {
+      const uint8_t vout   = static_cast<uint8_t>(_Values[VOUTA] + _Values[VOUTB] + 1) / 2;
+      const uint8_t vsolar = static_cast<uint8_t>(_Values[VSOLAR]);
+
+      const uint16_t iout = (_Values[IOUTA] + _Values[IOUTB]);
+
+      const uint16_t imax = accu_prm.imax;
+      const uint8_t  umax = accu_prm.ufull;
+
+      uint8_t duty = _Duty;
+      uint8_t hit;
+
+      if(duty && _BuckState != BUCK_STATE_RUN)
+      {
+        hit = 0;
+      }
+      else if ((vout + 5) > vsolar)
+      {
+        duty = 0;
+        hit = 1;
+      }
+      else if ((vout + 10) > vsolar)
+      {
+        uint8_t delta = vout + 10 - vsolar;
+        delta *= 2;
+
+        if (duty > delta)
+          duty = duty - delta;
+        else
+          duty = 0;
+
+        hit = 2;
+      }
+      else if (iout > imax)
+      {
+        uint16_t delta = iout - imax;
+
+        delta = (delta + 3) / 4;
+
+        if (duty > delta)
+          duty = duty - delta;
+        else
+          duty = 0;
+
+        hit = 3;
+      }
+      else if (vout > umax)
+      {
+        uint8_t delta = vout - umax;
+
+        if (delta > 0 && duty > 0)
+          duty = duty - 1;
+
+        hit = 4;
+      }
+      else if (iout < 5 && duty > (max_duty / 2))
+      {
+        duty = max_duty / 2;
+        hit = 5;
+      }
+      else if (vout < umax && iout < imax)
+      {
+        if (duty < max_duty)
+          duty = duty + 1;
+
+        hit = 6;
+      }
+      else
+      {
+        hit = 7;
+      }
+
+      _Hit = hit;
+      _Duty = duty;
+
+      ++_AdcState;
+      perfFinishCycle();
+    }
+    else if (_AdcState >= STATE_IDLE && tmout)
     {
       perfStartCycle();
 
-      _AdcState = 0;
+      _AdcState = STATE_ADCSAMPLE_VOUTA;
       startADCConversion();
-
-      _AdcTimer.updateTimeout(10);
     }
   }
 
+  void handleSim(uint8_t tmout)
+  {
+    const uint8_t max_duty = OCR1C - 1;
+
+    if(_AdcState == STATE_UPDATE)
+    {
+      if(_SimTimer.hasTimedOut(_Clock))
+      {
+        uint8_t duty = _Duty;
+
+        _SimTimer.updateTimeout(1000);
+
+        if(duty && _BuckState != BUCK_STATE_RUN)
+        {
+          ;
+        }
+        else if (duty == 0)
+        {
+          duty = 40;
+          _Hit = 1;
+        }
+        else
+        {
+          if(_Hit)
+          {
+            if((duty + 10) < max_duty)
+            {
+              duty = duty + 10;
+            }
+            else
+            {
+              duty = max_duty;
+              _Hit = 0;
+            }
+          }
+          else
+          {
+            if(duty > 10)
+            {
+              duty = duty - 10;
+            }
+            else
+            {
+              duty = 0;
+            }
+          }
+
+        }
+
+       _Duty = duty;
+        ++_AdcState;
+      }
+    }
+    else if (_AdcState >= STATE_IDLE && tmout)
+    {
+      if(_Duty == 0)
+        calibrate();
+
+      perfStartCycle();
+
+      _AdcState = STATE_ADCSAMPLE_VOUTA;
+      startADCConversion();
+    }
+  }
 
   void handleADCEvent()
   {
 
-    if(GPIOR1 & EV_ADC)
+    if(ADCSRA & _BV(ADIF))
     {
       uint8_t state = _AdcState;
 
-      GPIOR1 &= ~EV_ADC;
+      ADCSRA |= _BV(ADIF);
 
-      if(state < 10)
+      if(state < STATE_UPDATE)
       {
         uint16_t value = ADC;
 
-        _AdcState++;
+        _AdcState +=1;
         startADCConversion();
 
-        if((state & 0x01) == 0)
-        {
-          /* garbage, first conversation after changing admux */
-        }
-        else if(state & 0x2)
+        if((state % 2) == (STATE_ADCSAMPLE_IOUTA % 2))
         {
           /* this was a current
            * 0,1 Ohm 20x, 1/11, vref 2.5 v
@@ -664,11 +911,13 @@ public:
            * measure *  5 * 11 * 1000 / 4096
            * measure *  80 * 11 * 1000 / 65536
            *
-           * compensate for adlar and unit is 10mA
+           * compensate for adlar, bipolar and unit is 10mA
            * */
-          const uint32_t fact_mul = 80UL * 11 * 1000 / 64 / 10;
-          const uint32_t fact_div = 65536;
-          _Values[state/2] = (value * fact_mul) / fact_div;
+          const int32_t fact_mul = 80UL * 11 * 1000 * 2/ 64 / 10;
+          const int32_t fact_div = 65536;
+
+          int16_t sign_value = (int16_t)value - _OffsetI[(state - STATE_ADCSAMPLE_IOUTA) / 2];
+          _Values[state] = (sign_value * fact_mul + fact_div / 2) / fact_div;
         }
         else
         {
@@ -681,12 +930,16 @@ public:
            */
           const uint32_t fact_mul = 160UL * 11 * 1000 / 64 / 100;
           const uint32_t fact_div = 65536;
-          _Values[state/2] = (value * fact_mul) / fact_div;
+          _Values[state] = (value * fact_mul) / fact_div;
         }
 
-        if(state == 9)
-          perfFinishCycle();
       }
+
+      if(_AdcState >= STATE_UPDATE)
+      {
+        perfFinishCycle();
+      }
+
     }
   }
 
@@ -696,33 +949,50 @@ public:
 
     if (_CanTimer.hasTimedOut(_Clock))
     {
-      _CanTimer.updateTimeout(1000);
+      _CanTimer.updateTimeout(500);
 
-      if(state >= 5)
+      if(state >= 6)
         state = 0;
     }
 
-    if(state < 5 && !_Can.isTxPending(0))
+    if(state < 6 && !_Can.isTxPending(0))
     {
       const uint16_t sid = (state << 3) | (_CanSid);
       auto buf = _Can.getTxBuffer();
+      uint8_t len = 0;
 
-      uint16_t usValue;
 
-      usValue = _Clock.value();
-      buf[0] = usValue >> 8;
-      buf[1] = usValue & 0xFF;
+      if (state < 5)
+      {
+        uint16_t usValue;
+        usValue = _Clock.value();
+        buf[0] = 0;
+        buf[1] = _Duty;
 
-      usValue = _CycleTime;
-      buf[2] = usValue >> 8;
-      buf[3] = usValue & 0xFF;
+        usValue = _Values[state];
+        buf[2] = usValue >> 8;
+        buf[3] = usValue & 0xFF;
+        len = 4;
+      }
+      else if (state == 5)
+      {
+        uint16_t usValue;
+        usValue = _Clock.value();
+        buf[0] = usValue >> 8;
+        buf[1] = usValue & 0xFF;
 
-      usValue = _Values[state];
-      buf[4] = usValue >> 8;
-      buf[5] = usValue & 0xFF;
+        usValue = _CycleTime;
+        buf[2] = usValue >> 8;
+        buf[3] = usValue & 0xFF;
 
-      _Can.transmitStandard(0, sid, 6);
 
+        buf[4] = _Duty;
+        buf[5] = _Hit;
+
+        len = 6;
+      }
+
+      _Can.transmitStandard(0, sid, len);
       state = state + 1;
     }
 
@@ -742,6 +1012,7 @@ public:
       else
         _LedTimer.updateTimeout(1000);
 
+
       setLedStatus(status);
     }
   }
@@ -750,16 +1021,20 @@ public:
   {
     _Clock.update(GPIOR0);
 
-    handleADCEvent();
-    handleRegul();
-    handleCan();
-    handleLeds();
-  }
+    uint8_t tmout = _AdcTimer.hasTimedOut(_Clock);
 
-  static void isrADC()
-  {
-    /* store that ADC was done, we need this because the ADIF is cleared because of the interrupt routine */
-    GPIOR1 |= EV_ADC;
+    if(tmout)
+      _AdcTimer.updateTimeout(10);
+
+    handleLeds();
+
+    handleADCEvent();
+
+    //handleRegul(tmout);
+    handleSim(tmout);
+    handleBuck(tmout);
+
+    handleCan();
   }
 
   static void isrTick()
@@ -777,15 +1052,8 @@ const FlashBuffer<5,uint8_t>  App::ADMUXMapping PROGMEM =
   static_cast<uint8_t>(ADMUX_VSOLAR),
 }};
 
-ISR(ADC_vect)
-{
-  Sys_AVR8::disableSleep();
-  App::isrADC();
-}
-
 ISR(TIMER0_COMPA_vect)
 {
-  Sys_AVR8::disableSleep();
   App::isrTick();
 }
 
@@ -802,15 +1070,11 @@ int main()
 
   app.init();
 
+  Sys_AVR8::enableInterrupts();
+
   while(1)
   {
-    Sys_AVR8::enableSleep();
-    Sys_AVR8::enableInterrupts();
-
     app.cycle();
-
-    Sys_AVR8::enterSleep();
-    Sys_AVR8::disableInterupts();
   }
 }
 

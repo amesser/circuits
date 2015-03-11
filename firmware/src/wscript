@@ -10,6 +10,6 @@ def build(bld):
         id= 'mppt-attiny461a',
         source   = 'main.cpp',
         target   = 'firmware.elf',
-        features = 'cxx cxxprogram',  
+        features = 'cxx cxxprogram listings',  
         includes = ['.', ],
     )  
