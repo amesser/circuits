@@ -490,25 +490,53 @@ public:
   };
 };
 
-/* ku long example parameters */
 struct parameters
 {
-  uint16_t imax;
-  uint8_t  ulow;
-  uint8_t  ufull;
-  uint8_t  umax;
-  int8_t   coef;
+  int16_t  icharge;
+  int16_t  ibalance;
+  int16_t  icharged;
+  uint16_t ulow;
+  uint16_t uwarning;
+  uint16_t udischarging;
+  uint16_t utrickle;
+  uint16_t ucharge;
+  uint16_t ubalance;
+  int16_t  coef;
 };
 
+/* ku long example parameters */
+#if 1
 struct parameters accu_prm =
 {
   /* 25 °C */
-  .imax  =  36, /* 360 mA maximum charge current */
-  .ulow  = 105, /* 10.5 V */
-  .ufull = 135, /* 13.5 V full */
-  .umax  = 138, /* 13.8 V maximum charge voltage (used for balancing*) */
-  .coef  = -18, /* in mv */
+  .icharge      = 360,
+  .ibalance     = 150,
+  .icharged     = 100,
+  .ulow         = 11800, /* 11.5 V */
+  .uwarning     = 12200, /* 11.5 V */
+  .udischarging = 12600, /* 12.5 V */
+  .utrickle     = 13500, /* 13.5 V full */
+  .ucharge      = 13700, /* 13.7 V maximum charge voltage (used for balancing*) */
+  .ubalance     = 13800, /* 13.8 V maximum charge voltage (used for balancing*) */
+  .coef         =   -18, /* in mv */
 };
+#else
+struct parameters accu_prm =
+{
+  /* MOLL Soloar 100 Ah 25 °C */
+  .icharge      = 10000,
+  .ibalance     =  3500,
+  .icharged     =  1000,
+  .ulow         = 11800, /* 11.5 V */
+  .uwarning     = 12200, /* 11.5 V */
+  .udischarging = 12600, /* 12.5 V */
+  .utrickle     = 13500, /* 13.5 V full */
+  .ucharge      = 14100, /* 14.1 V maximum charge voltage (used for balancing*) */
+  .ubalance     = 14400, /* 14.4 V maximum charge voltage (used for balancing*) */
+  .coef         =   -24, /* in mv */
+};
+#endif
+
 class App
 {
 private:
@@ -521,7 +549,19 @@ private:
   uint8_t                  _CanSid;
 
   uint8_t                  _AdcState;
-  uint16_t                 _Values[5];
+  uint8_t                  _StartCycle;
+
+  uint8_t                  _ChargerState;
+  uint8_t                  _BatteryLimited;
+
+  union {
+    struct {
+       int16_t                 _Currents[2];
+       uint16_t                _Voltages[3];
+    };
+
+    uint16_t _Meas[5];
+  };
 
   ClockType::Timer<uint16_t>  _AdcTimer;
   ClockType::Timer<uint16_t> _CanTimer;
@@ -530,20 +570,14 @@ private:
 
   uint16_t                 _LastCycle;
   uint16_t                 _CycleTime;
-   int16_t                 _OffsetI[2];
   uint8_t                  _Duty;
-  uint8_t                  _Hit;
   uint8_t                  _BuckState;
 
-  enum AdcMux{
-    ADMUX_VOUTA  = _BV(REFS0) | _BV(ADLAR) | 0x3,
-    ADMUX_IOUTA  = _BV(REFS0) | _BV(ADLAR) | 0x12,
-    ADMUX_VOUTB  = _BV(REFS0) | _BV(ADLAR) | 0x5,
-    ADMUX_IOUTB  = _BV(REFS0) | _BV(ADLAR) | 0x17,
-    ADMUX_VSOLAR = _BV(REFS0) | _BV(ADLAR) | 0x9,
-  };
+  int16_t                  _OffsetI[2];
+  int16_t                  _AvgI[2];
+  uint8_t                  _CntOffset;
 
-  static const FlashBuffer<5,uint8_t> ADMUXMapping;
+  static const FlashBuffer<8,uint8_t> ADMUXMapping;
 
   enum Event {
     EV_ADC  = 0x1,
@@ -555,15 +589,17 @@ private:
     LED_BOTH  = 0x03,
   };
 
-  enum RegulatorState
+  enum AdcState
   {
-    STATE_ADCSAMPLE_VOUTA   = 0,
-    STATE_ADCSAMPLE_IOUTA   = 1,
-    STATE_ADCSAMPLE_VOUTB   = 2,
-    STATE_ADCSAMPLE_IOUTB   = 3,
-    STATE_ADCSAMPLE_VSOLAR  = 4,
-    STATE_UPDATE            = 5,
-    STATE_IDLE              = 6,
+    STATE_CONTROL_IDLE  = 0,
+    STATE_ADC_CALIBRATEIOUTA,
+    STATE_ADC_CALIBRATEIOUTB,
+    STATE_ADC_SAMPLEIOUTA,
+    STATE_ADC_SAMPLEIOUTB,
+    STATE_ADC_SAMPLEVOUTA,
+    STATE_ADC_SAMPLEVOUTB,
+    STATE_ADC_SAMPLEVSOLAR,
+    STATE_CONTROL_CALC,
   };
 
   enum BuckState
@@ -571,7 +607,14 @@ private:
     BUCK_STATE_OFF               = 0,
     BUCK_STATE_SETUP             = 1, /* configure pwm and wait 1 cycle */
     BUCK_STATE_START             = 2, /* startup buck and wait one cycle */
-    BUCK_STATE_RUN               = 3, /* buck active and running */
+    BUCK_STATE_RUN               = 3 + 64, /* buck active and running */
+  };
+
+  enum ChargerState
+  {
+    CHARGER_STATE_TRICKLE,
+    CHARGER_STATE_NORMAL,
+    CHARGER_STATE_BALANCE,
   };
 public:
   void handleBuck(uint8_t tmout)
@@ -589,13 +632,21 @@ public:
     if (BUCK_STATE_RUN > state && duty < 50 && duty > 0)
       duty = 50;
 
+    if (BUCK_STATE_RUN == state &&
+        (_Currents[0] < 1 || _Currents[1] < 1))
+    {
+      /* converter not running anymore,
+       * force restart */
+      duty = 0;
+    }
+
     /* update duty cycle */
     OCR1A = duty;
     OCR1B = max_duty + 1 - duty;
 
     if (duty)
     {
-      if (BUCK_STATE_RUN > state && tmout)
+      if (BUCK_STATE_START >= state && tmout)
       {
         state++;
 
@@ -638,10 +689,13 @@ public:
     _BuckState = state;
   }
 
-
   void setLedStatus(uint8_t mask)
   {
-    _Can.setRxBfPins(~mask, 0x3);
+    if(GPIOR2 != mask)
+    {
+      _Can.setRxBfPins(~mask, 0x3);
+      GPIOR2 = mask;
+    }
   }
 
   void init()
@@ -659,37 +713,19 @@ public:
     _Can.configure(cnf1, cnf2, cnf3);
     _Can.setOneshot(true);
 
-
-    _CanState = 0;
-    _AdcState = 0xFF;
-    _CanSid   = (~_Can.getTxRtsPins()) &  0x7;
-    _Duty     = 0;
-    _Hit      = 0xFF;
-    _BuckState = BUCK_STATE_OFF;
+    _CanState     = 0;
+    _StartCycle   = false;
+    _AdcState     = STATE_CONTROL_IDLE;
+    _CanSid       = (~_Can.getTxRtsPins()) &  0x7;
+    _Duty         = 0;
+    _BuckState    = BUCK_STATE_OFF;
+    _ChargerState = CHARGER_STATE_NORMAL;
+    _CntOffset    = 0;
 
     _CanTimer.init(_Clock, 0);
     _LedTimer.init(_Clock, 10000);
     _SimTimer.init(_Clock, 1000);
 
-  }
-
-  void calibrate()
-  {
-    const uint8_t bak = (ADCSRA & ~_BV(ADEN)) | _BV(ADIF);
-    int i;
-
-    for(i = 0; i < 2; ++i)
-    {
-      ADCSRA  = bak;
-      ADMUX   =  ADMUXMapping[STATE_ADCSAMPLE_IOUTA + i*2];
-      ADCSRB |= _BV(BIN);
-      ADCSRA  = bak | _BV(ADEN) | _BV(ADSC);
-
-      while(ADCSRA & _BV(ADSC));
-      _OffsetI[i] = ADC;
-
-      ADCSRA |= _BV(ADIF);
-    }
   }
 
   void perfStartCycle()
@@ -703,243 +739,319 @@ public:
     _CycleTime = time - _LastCycle;
   }
 
-  void startADCConversion()
+  uint16_t getChargeVoltage()
   {
-    if(_AdcState < STATE_UPDATE)
+    uint8_t state = _ChargerState;
+    uint16_t u;
+
+    switch(state)
     {
-      if((_AdcState % 2) == (STATE_ADCSAMPLE_IOUTA % 2))
+    case CHARGER_STATE_TRICKLE:
+      u = accu_prm.utrickle;
+      break;
+    case CHARGER_STATE_NORMAL:
+      u = accu_prm.ucharge;
+      break;
+    case CHARGER_STATE_BALANCE:
+      u = accu_prm.ubalance;
+      break;
+    default:
+      u = accu_prm.utrickle;
+      break;
+    }
+    return u;
+  }
+
+  uint16_t getChargeCurrent()
+  {
+    const uint16_t vbat     = (_Voltages[0] + _Voltages[1] + 1) / 2;
+
+    uint8_t state = _ChargerState;
+
+    if ((vbat + 10 > accu_prm.ucharge) &&
+        state == CHARGER_STATE_BALANCE)
+    {
+      return accu_prm.ibalance;
+    }
+    else
+    {
+      return accu_prm.icharge;
+    }
+  }
+
+  void updateChargerState()
+  {
+    uint8_t state = _ChargerState;
+
+    const int16_t  current  = _Currents[0] + _Currents[1];
+    const uint16_t vbat     = (_Voltages[0] + _Voltages[1] + 1) / 2;
+
+    /* if (vbat < accu_prm.uwarning)
+       state = CHARGER_STATE_BALANCE; */
+
+    const bool batterlimited = _BatteryLimited > 5;
+
+    switch(state)
+    {
+    case CHARGER_STATE_TRICKLE:
+      {
+        if (vbat < accu_prm.udischarging)
+          state = CHARGER_STATE_NORMAL;
+      }
+      break;
+    case CHARGER_STATE_NORMAL:
+      {
+        if ((current < accu_prm.icharged) &&
+             batterlimited)
+          state = CHARGER_STATE_TRICKLE;
+      }
+      break;
+    case CHARGER_STATE_BALANCE:
+      {
+        if ((vbat + 10) > accu_prm.ubalance)
+          state = CHARGER_STATE_NORMAL;
+      }
+      break;
+    }
+
+    _ChargerState = state;
+  }
+
+
+
+  void enterADCState(uint8_t state)
+  {
+    if (state != _AdcState)
+    {
+      if(state >= STATE_ADC_CALIBRATEIOUTA &&
+         state <= STATE_ADC_SAMPLEIOUTB)
       {
         ADCSRA &= ~_BV(ADEN);
         ADCSRB |= _BV(BIN);
       }
-      else
+      else if(state >= STATE_ADC_SAMPLEVOUTA &&
+              state <= STATE_ADC_SAMPLEVSOLAR)
       {
         ADCSRB &= ~_BV(BIN);
       }
 
+      if(state >= STATE_ADC_CALIBRATEIOUTA &&
+         state <= STATE_ADC_SAMPLEVSOLAR)
+      {
+        ADMUX  = ADMUXMapping[state];
 
-      ADMUX  = ADMUXMapping[_AdcState];
-
-      if((_AdcState % 2) == (STATE_ADCSAMPLE_IOUTA % 2))
         ADCSRA |= _BV(ADEN);
+        TIFR   |= _BV(TOV1);
+      }
 
-      TIFR   |= _BV(TOV1);
+      if(state == STATE_CONTROL_CALC)
+      {
+        /* in start up phase of buck regulator we must wait until the average current reflects
+         * the real current before the buck is switched to state 'run'. therefore after each
+         * adc measurement increment the buck state until it reaches buck state run
+         */
+        if (_BuckState > BUCK_STATE_START && _BuckState < BUCK_STATE_RUN)
+        {
+          _BuckState = _BuckState + 1;
+        }
+
+        updateChargerState();
+      }
     }
+
+    _AdcState = state;
   }
 
+  enum {
+    MSK_GPIOR1_STARTCYCLE = 0x01,
+  };
+
+  void setStartCycle()
+  {
+    GPIOR1 |= MSK_GPIOR1_STARTCYCLE;
+  }
+
+  bool getStartCycle()
+  {
+    return (GPIOR1 & MSK_GPIOR1_STARTCYCLE);
+  }
+
+  void confirmStartCycle()
+  {
+    GPIOR1 &= ~MSK_GPIOR1_STARTCYCLE;
+  }
 
   void handleRegul(uint8_t tmout)
   {
-    const uint8_t max_duty = OCR1C - 1;
+    uint8_t state = _AdcState;
 
-    if(_AdcState == STATE_UPDATE)
+    if(tmout && _CntOffset >= 0xFF)
+      setStartCycle();
+
+    if(state == STATE_CONTROL_IDLE)
     {
-      const uint8_t vout   = static_cast<uint8_t>(_Values[VOUTA] + _Values[VOUTB] + 1) / 2;
-      const uint8_t vsolar = static_cast<uint8_t>(_Values[VSOLAR]);
-
-      const uint16_t iout = (_Values[IOUTA] + _Values[IOUTB]);
-
-      const uint16_t imax = accu_prm.imax;
-      const uint8_t  umax = accu_prm.ufull;
-
-      uint8_t duty = _Duty;
-      uint8_t hit;
-
-      if(duty && _BuckState != BUCK_STATE_RUN)
+      if(getStartCycle())
       {
-        hit = 0;
+        confirmStartCycle();
+        state = STATE_ADC_SAMPLEIOUTA;
       }
-      else if ((vout + 5) > vsolar)
+      else if (_Duty == 0)
       {
-        duty = 0;
-        hit = 1;
+        state = STATE_ADC_CALIBRATEIOUTA;
       }
-      else if ((vout + 10) > vsolar)
+    }
+    else if (state == STATE_CONTROL_CALC)
+    {
+      /* compute new duty cycle value */
+      uint8_t  duty     = _Duty;
+
+      const int16_t  current  = _Currents[0] + _Currents[1];
+      const uint16_t vbat     = (_Voltages[0] + _Voltages[1] + 1) / 2;
+      const uint16_t vsolar   = _Voltages[2];
+
+      int16_t  du = (vsolar-vbat);
+
+      if (_BuckState > BUCK_STATE_START &&
+          _BuckState < BUCK_STATE_RUN)
       {
-        uint8_t delta = vout + 10 - vsolar;
-        delta *= 2;
-
-        if (duty > delta)
-          duty = duty - delta;
-        else
-          duty = 0;
-
-        hit = 2;
+        /* while buck is starting up do not play with duty cycle */
       }
-      else if (iout > imax)
+      else if(du > 1000)
       {
-        uint16_t delta = iout - imax;
+        const uint16_t ucharge = getChargeVoltage();
+        const  int16_t icharge = getChargeCurrent();
 
-        delta = (delta + 3) / 4;
+        uint8_t        max_duty;
 
-        if (duty > delta)
-          duty = duty - delta;
-        else
-          duty = 0;
+        { /* calculate maximum duty according input and output voltage of
+           * buck */
+          const uint8_t  max_pwmduty = OCR1C - 1;
+          const uint16_t max_calcduty = max_pwmduty * (vbat/256) / (vsolar/256);
 
-        hit = 3;
-      }
-      else if (vout > umax)
-      {
-        uint8_t delta = vout - umax;
+          if (max_pwmduty > max_calcduty + 2)
+            max_duty = max_calcduty + 2;
+          else
+            max_duty = max_pwmduty;
+        }
 
-        if (delta > 0 && duty > 0)
-          duty = duty - 1;
+        if(du < 1500)
+        {
+          if(duty > 0)
+            duty = duty - 1;
 
-        hit = 4;
-      }
-      else if (iout < 5 && duty > (max_duty / 2))
-      {
-        duty = max_duty / 2;
-        hit = 5;
-      }
-      else if (vout < umax && iout < imax)
-      {
-        if (duty < max_duty)
-          duty = duty + 1;
+          _BatteryLimited = 0;
+        }
+        else if (current > icharge)
+        {
+          if(duty > 0)
+            duty = duty - 1;
 
-        hit = 6;
+          _BatteryLimited = 0;
+        }
+        else if (vbat > ucharge)
+        {
+          if(duty > 0)
+            duty = duty - 1;
+
+          if(_BatteryLimited < 100)
+            _BatteryLimited += 10;
+        }
+        else if (vbat < ucharge)
+        {
+          if(duty < max_duty)
+            duty += 1;
+
+          if(_BatteryLimited > 0)
+            _BatteryLimited -= 1;
+        }
       }
       else
       {
-        hit = 7;
+          _BatteryLimited = 0;
+        duty = 0;
       }
 
-      _Hit = hit;
       _Duty = duty;
-
-      ++_AdcState;
-      perfFinishCycle();
+      state = STATE_CONTROL_IDLE;
     }
-    else if (_AdcState >= STATE_IDLE && tmout)
-    {
-      perfStartCycle();
 
-      _AdcState = STATE_ADCSAMPLE_VOUTA;
-      startADCConversion();
-    }
-  }
 
-  void handleSim(uint8_t tmout)
-  {
-    const uint8_t max_duty = OCR1C - 1;
-
-    if(_AdcState == STATE_UPDATE)
-    {
-      if(_SimTimer.hasTimedOut(_Clock))
-      {
-        uint8_t duty = _Duty;
-
-        _SimTimer.updateTimeout(1000);
-
-        if(duty && _BuckState != BUCK_STATE_RUN)
-        {
-          ;
-        }
-        else if (duty == 0)
-        {
-          duty = 40;
-          _Hit = 1;
-        }
-        else
-        {
-          if(_Hit)
-          {
-            if((duty + 10) < max_duty)
-            {
-              duty = duty + 10;
-            }
-            else
-            {
-              duty = max_duty;
-              _Hit = 0;
-            }
-          }
-          else
-          {
-            if(duty > 10)
-            {
-              duty = duty - 10;
-            }
-            else
-            {
-              duty = 0;
-            }
-          }
-
-        }
-
-       _Duty = duty;
-        ++_AdcState;
-      }
-    }
-    else if (_AdcState >= STATE_IDLE && tmout)
-    {
-      if(_Duty == 0)
-        calibrate();
-
-      perfStartCycle();
-
-      _AdcState = STATE_ADCSAMPLE_VOUTA;
-      startADCConversion();
-    }
+    enterADCState(state);
   }
 
   void handleADCEvent()
   {
-
     if(ADCSRA & _BV(ADIF))
     {
-      uint8_t state = _AdcState;
-
       ADCSRA |= _BV(ADIF);
 
-      if(state < STATE_UPDATE)
+      uint8_t  state = _AdcState;
+      uint16_t val   = ADC;
+
+      if(state >= STATE_ADC_SAMPLEIOUTA && state <= STATE_ADC_SAMPLEVSOLAR)
+        enterADCState(state + 1);
+      else if (state >= STATE_ADC_CALIBRATEIOUTA && state < STATE_ADC_CALIBRATEIOUTB)
+        enterADCState(state + 1);
+      else if (state == STATE_ADC_CALIBRATEIOUTB)
       {
-        uint16_t value = ADC;
+        if (_CntOffset < 0xFF)
+          _CntOffset += 1;
 
-        _AdcState +=1;
-        startADCConversion();
+        enterADCState(STATE_CONTROL_IDLE);
+      }
 
-        if((state % 2) == (STATE_ADCSAMPLE_IOUTA % 2))
+      switch(state)
+      {
+      case STATE_ADC_CALIBRATEIOUTA:
+      case STATE_ADC_CALIBRATEIOUTB:
         {
+          const int index = state - STATE_ADC_CALIBRATEIOUTA;
+          _OffsetI[index] = _OffsetI[index] - (_OffsetI[index] / 64) + (int16_t)val;
+        }
+        break;
+      case STATE_ADC_SAMPLEIOUTA:
+      case STATE_ADC_SAMPLEIOUTB:
+        {
+          const int index = state - STATE_ADC_SAMPLEIOUTA;
+          const int16_t AvgI = _AvgI[index] - (_AvgI[index] / 64) + (int16_t)val;
+          _AvgI[index]       = AvgI;
+
+          /* a current was sampled */
           /* this was a current
-           * 0,1 Ohm 20x, 1/11, vref 2.5 v
-           * measure / 1024 / 20 * 2.5 * 11 / 0.1 * 1000
-           * measure * 2.5 * 11 * 1000 / 1024 / 20 / 0.1
-           * measure * 25 * 11 * 1000 / 4096 / 5
-           * measure *  5 * 11 * 1000 / 4096
-           * measure *  80 * 11 * 1000 / 65536
+           * 0,05 Ohm 20x, 1/11, vref 2.5 v
+           * measure / 1024 / 20 * 2.5 * 11 / 0.05 * 1000
+           * measure * 2.5 * 11 * 1000 / 1024 / 20 / 0.05
+           * measure * 50 * 11 * 1000 / 4096 / 5
+           * measure *  10 * 11 * 1000 / 4096
+           * measure *  160 * 11 * 1000 / 65536
            *
-           * compensate for adlar, bipolar and unit is 10mA
+           * compensate for adlar, bipolar and unit is mA
            * */
-          const int32_t fact_mul = 80UL * 11 * 1000 * 2/ 64 / 10;
+
+          const int32_t fact_mul = 160UL * 11 * 1000 * 2 / 64;
           const int32_t fact_div = 65536;
 
-          int16_t sign_value = (int16_t)value - _OffsetI[(state - STATE_ADCSAMPLE_IOUTA) / 2];
-          _Values[state] = (sign_value * fact_mul + fact_div / 2) / fact_div;
+          int16_t sign_value = AvgI - _OffsetI[index];
+          _Currents[index] = (sign_value * fact_mul + fact_div / 2) / fact_div;
         }
-        else
+        break;
+      case STATE_ADC_SAMPLEVOUTA:
+      case STATE_ADC_SAMPLEVOUTB:
+      case STATE_ADC_SAMPLEVSOLAR:
         {
           /* this is a voltage
            * 1/11, vref 2.5V
            * measure / 1024 * 2.5 * 11 * 1000
            * measure * 5 * 11 * 1000 * 32 / 65536
            *
-           * compensate for adlar and unit is 100mV
+           * compensate for adlar and unit is mV
            */
-          const uint32_t fact_mul = 160UL * 11 * 1000 / 64 / 100;
+          const uint32_t fact_mul = 160UL * 11 * 1000 / 64;
           const uint32_t fact_div = 65536;
-          _Values[state] = (value * fact_mul) / fact_div;
+          _Voltages[state - STATE_ADC_SAMPLEVOUTA] = (val * fact_mul) / fact_div;
         }
-
+        break;
       }
-
-      if(_AdcState >= STATE_UPDATE)
-      {
-        perfFinishCycle();
-      }
-
     }
   }
 
@@ -965,14 +1077,21 @@ public:
       if (state < 5)
       {
         uint16_t usValue;
-        usValue = _Clock.value();
-        buf[0] = 0;
-        buf[1] = _Duty;
 
-        usValue = _Values[state];
-        buf[2] = usValue >> 8;
-        buf[3] = usValue & 0xFF;
-        len = 4;
+        buf[0] = _Duty;
+
+        if(state < 2)
+          usValue = _OffsetI[state];
+        else
+          usValue = 0;
+
+        buf[1] = usValue >> 8;
+        buf[2] = usValue & 0xFF;
+
+        usValue = _Meas[state];
+        buf[3] = usValue >> 8;
+        buf[4] = usValue & 0xFF;
+        len = 5;
       }
       else if (state == 5)
       {
@@ -987,7 +1106,7 @@ public:
 
 
         buf[4] = _Duty;
-        buf[5] = _Hit;
+        buf[5] = _Duty;
 
         len = 6;
       }
@@ -1005,13 +1124,29 @@ public:
 
     if(tmout)
     {
+      const int16_t  current  = _Currents[0] + _Currents[1];
+      const uint16_t vbat     = (_Voltages[0] + _Voltages[1] + 1) / 2;
+      const uint16_t vsolar   = _Voltages[2];
+
       uint8_t status = 0;
 
-      if(tmout < 50)
+      if(_ChargerState == CHARGER_STATE_TRICKLE)
         status |= LED_GREEN;
+      else if (current > 100)
+        status |= LED_BOTH;
       else
-        _LedTimer.updateTimeout(1000);
+        status |= LED_RED;
 
+      if(_ChargerState == CHARGER_STATE_TRICKLE &&
+          vsolar > (vbat + 1000))
+      {
+        _LedTimer.updateTimeout(1000);
+      }
+      else if(tmout > 50)
+      {
+         status = 0;
+        _LedTimer.updateTimeout(1000);
+      }
 
       setLedStatus(status);
     }
@@ -1024,14 +1159,15 @@ public:
     uint8_t tmout = _AdcTimer.hasTimedOut(_Clock);
 
     if(tmout)
-      _AdcTimer.updateTimeout(10);
+      _AdcTimer.updateTimeout(5);
+
 
     handleLeds();
 
     handleADCEvent();
 
-    //handleRegul(tmout);
-    handleSim(tmout);
+    handleRegul(tmout);
+    //handleSim(tmout);
     handleBuck(tmout);
 
     handleCan();
@@ -1043,13 +1179,16 @@ public:
   }
 };
 
-const FlashBuffer<5,uint8_t>  App::ADMUXMapping PROGMEM =
+const FlashBuffer<8,uint8_t>  App::ADMUXMapping PROGMEM =
 {{
-  static_cast<uint8_t>(ADMUX_VOUTA),
-  static_cast<uint8_t>(ADMUX_IOUTA),
-  static_cast<uint8_t>(ADMUX_VOUTB),
-  static_cast<uint8_t>(ADMUX_IOUTB),
-  static_cast<uint8_t>(ADMUX_VSOLAR),
+    0,
+    _BV(REFS0)              | 0x12,
+    _BV(REFS0)              | 0x17,
+    _BV(REFS0) /* | _BV(ADLAR) */ | 0x12,
+    _BV(REFS0) /* | _BV(ADLAR) */ | 0x17,
+    _BV(REFS0) | _BV(ADLAR) | 0x3,
+    _BV(REFS0) | _BV(ADLAR) | 0x5,
+    _BV(REFS0) | _BV(ADLAR) | 0x9,
 }};
 
 ISR(TIMER0_COMPA_vect)
@@ -1077,5 +1216,6 @@ int main()
     app.cycle();
   }
 }
+
 
 
