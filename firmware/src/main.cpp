@@ -511,7 +511,7 @@ struct parameters accu_prm =
   /* 25 °C */
   .icharge      = 360,
   .ibalance     = 150,
-  .icharged     = 100,
+  .icharged     =  50,
   .ulow         = 11800, /* 11.5 V */
   .uwarning     = 12200, /* 11.5 V */
   .udischarging = 12600, /* 12.5 V */
@@ -765,18 +765,32 @@ public:
   uint16_t getChargeCurrent()
   {
     const uint16_t vbat     = (_Voltages[0] + _Voltages[1] + 1) / 2;
-
     uint8_t state = _ChargerState;
+    uint16_t icharge;
 
-    if ((vbat + 10 > accu_prm.ucharge) &&
-        state == CHARGER_STATE_BALANCE)
+    if (state == CHARGER_STATE_BALANCE)
     {
-      return accu_prm.ibalance;
+      if(vbat > accu_prm.ucharge)
+      {
+        icharge = accu_prm.ibalance;
+      }
+      else if ((vbat + 128) > accu_prm.ucharge)
+      {
+        icharge = accu_prm.icharge - accu_prm.ibalance;
+        icharge = (int32_t)icharge * (accu_prm.ucharge - vbat) / 128;
+        icharge += accu_prm.ibalance;
+      }
+      else
+      {
+        icharge = accu_prm.icharge;
+      }
     }
     else
     {
-      return accu_prm.icharge;
+      icharge = accu_prm.icharge;
     }
+
+    return icharge;
   }
 
   void updateChargerState()
@@ -789,7 +803,7 @@ public:
     /* if (vbat < accu_prm.uwarning)
        state = CHARGER_STATE_BALANCE; */
 
-    const bool batterlimited = _BatteryLimited > 5;
+    const bool batterlimited = _BatteryLimited > 10;
 
     switch(state)
     {
