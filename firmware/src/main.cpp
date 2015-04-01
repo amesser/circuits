@@ -625,7 +625,6 @@ private:
   ClockType::Timer<uint16_t> _CanTimer;
   ClockType::Timer<uint16_t> _LedTimer;
   ClockType::Timer<uint16_t> _BatTimer;
-  ClockType::Timer<uint16_t> _MPPTTimer;
   ClockType::Timer<uint32_t> _TempTimer;
 
   uint16_t                 _LastCycle;
@@ -640,14 +639,9 @@ private:
   uint8_t                  _CntOffset;
   uint8_t                  _MPPTCnt;
 
-  uint32_t                 _Pwr;
-  PT1<uint16_t, 64>        _PAvg;
-
-  uint16_t                 _TrackPwr;
-  uint16_t                 _TrackU;
-
   uint16_t                 _ITrack;
   int8_t                   _DutyTrack;
+  uint8_t                  _Hit;
 
   static const FlashBuffer<9,uint8_t> ADMUXMapping;
 
@@ -694,13 +688,6 @@ private:
     BATTERY_STATE_WARNING = 1,
     BATTERY_STATE_HALF    = 2,
     BATTERY_STATE_FULL    = 3,
-  };
-
-  enum MPPTState
-  {
-    MPPT_CNT_OFF        = 0,
-    MPPT_CNT_START      = 1,
-    MPPT_CNT_TRACK      = 16,
   };
 
 public:
@@ -827,7 +814,7 @@ public:
     _ChargerState = CHARGER_STATE_NORMAL;
     _CntOffset    = 0;
     _BatState     = BATTERY_STATE_HALF;
-    _MPPTCnt      = MPPT_CNT_OFF;
+    _MPPTCnt      = 0;
 
     _CanTimer.init(_Clock, 0);
     _LedTimer.init(_Clock, 10000);
@@ -1087,32 +1074,62 @@ public:
     }
     else if (state == STATE_CONTROL_CALC)
     {
+      int16_t  du = (_USolar-_UBattery);
+
+      uint8_t max_duty = 0;
+      uint8_t min_duty = 0;
+
+      if(_USolar > _UBattery )
+      { /* calculate maximum duty according input and output voltage of
+         * buck */
+
+        const uint8_t  max_pwmduty  = OCR1C - 1;
+        const uint16_t max_calcduty = max_pwmduty - max_pwmduty * ((uint16_t)du / 256) / (_USolar/256);
+
+        if (max_pwmduty > max_calcduty + 5)
+        {
+          max_duty = max_calcduty + 5;
+          min_duty = max_calcduty;
+        }
+        else
+        {
+          max_duty = max_pwmduty;
+          min_duty = max_pwmduty;
+        }
+      }
+
       /* compute new duty cycle value */
       uint8_t  duty     = _Duty;
       int8_t   dduty    = 0;
 
-      int16_t  du = (_USolar-_UBattery);
+
+      uint16_t ITrack = 0;
 
       if (_BuckState > BUCK_STATE_START &&
           _BuckState < BUCK_STATE_RUN)
       {
         /* while buck is starting up do not play with duty cycle */
+        _Hit = 1;
       }
       else if(getRecalibrate())
       {
         /* recalibaration of current and temperature measurement requested */
         duty = 0;
         _BatteryLimited = 0;
+        _Hit = 2;
       }
       else if(du > 1000)
       {
         const uint16_t ucharge = getChargeVoltage();
         const uint16_t icharge = getChargeCurrent();
 
+        ITrack = _ICharge;
+
         if (_ICharge > icharge)
         {
           dduty = -1;
           _BatteryLimited = 0;
+          _Hit = 3;
         }
         else if (_UBattery > ucharge)
         {
@@ -1120,21 +1137,37 @@ public:
 
           if(_BatteryLimited < 100)
             _BatteryLimited += 10;
+
+          _Hit = 4;
         }
-        else if ((_UBattery + 25) < ucharge)
+        else if(duty == 0)
+        {
+          dduty = 50;
+          _BatteryLimited = 0;
+
+          _Hit = 5;
+        }
+        else
         {
           if (_USolar < (_UBattery + 1500))
           {
             dduty = -1;
+            _BatteryLimited = 0;
+            _Hit = 6;
           }
-          else if(duty == 0)
+          else if ((_UBattery + 25) > ucharge)
           {
-            dduty = 50;
+            _Hit = 7;
+            ;
           }
-          if(_ICharge < 100)
+          /*
+          else if (_MPPTCnt >= 32 &&
+                 _DutyTrack > duty &&
+                 (duty + 20) < min_duty)
           {
             dduty = 1;
-          }
+            _Hit = 8;
+          } */
           else if (_MPPTCnt >= 128)
           {
             if(_DutyTrack < duty)
@@ -1142,15 +1175,29 @@ public:
             else
               dduty = -1;
 
-            if((_ICharge + 3) < _ITrack)
+            if((_ICharge + 25) < _ITrack)
             {
               dduty = -dduty;
-
-              if(_ICharge > 25)
-                _ITrack = _ICharge - 25;
-              else
-                _ITrack = 0;
             }
+            _Hit = 9;
+
+          }
+          else
+          {
+            _Hit = 10;
+          }
+
+          if((dduty < 0 && _DutyTrack < duty) ||
+             (dduty > 0 && _DutyTrack > duty))
+          {
+            ITrack = _ICharge;
+          }
+          else
+          {
+            if(_ICharge > _ITrack)
+              ITrack = _ICharge;
+            else
+              ITrack = _ITrack;
           }
 
           if(dduty > 0 && _BatteryLimited > 0)
@@ -1161,6 +1208,7 @@ public:
       {
         duty = 0;
         _BatteryLimited = 0;
+        _Hit = 11;
       }
 
 
@@ -1172,28 +1220,12 @@ public:
           duty += dduty;
       }
       else
-      { /* calculate maximum duty according input and output voltage of
-         * buck */
-        const uint8_t  max_pwmduty = OCR1C - 1;
-        const uint16_t max_calcduty = max_pwmduty * (_UBattery/256) / (_USolar/256);
-        uint8_t max_duty;
-
-        if (max_pwmduty > max_calcduty + 2)
-          max_duty = max_calcduty + 2;
-        else
-          max_duty = max_pwmduty;
-
+      {
         if ((dduty + duty) > max_duty)
           duty = max_duty;
         else
           duty += dduty;
       }
-
-      if((_ICharge + 25) > _ITrack)
-        _ITrack = _ICharge - 25;
-      else if (_ICharge < (_ITrack + 25))
-        _ITrack = _ICharge + 25;
-
 
       if((duty != _Duty) || duty == 0)
       {
@@ -1206,6 +1238,7 @@ public:
           _MPPTCnt += 1;
       }
 
+      _ITrack  = ITrack;
       _Duty    = duty;
 
       state = STATE_CONTROL_IDLE;
@@ -1312,10 +1345,6 @@ public:
           _ICharge = I;
 
         _UBattery = (_Voltages[0] + _Voltages[1] + 1) / 2;
-
-        _Pwr = (uint32_t)_ICharge * _UBattery;
-
-        _PAvg.addValue((uint32_t)(_Pwr >> 16UL));
       }
     }
   }
@@ -1372,13 +1401,7 @@ public:
         buf[3] = usValue >> 8;
         buf[4] = usValue & 0xFF;
 
-        uint32_t ulValue = _Pwr / 1000;
-
-        buf[5] = (ulValue >> 16) & 0xFF;
-        buf[6] = (ulValue >> 8)  & 0xFF;
-        buf[7] = (ulValue >> 0)  & 0xFF;
-
-        len = 8;
+        len = 5;
       }
       else if(state == 2)
       {
@@ -1400,7 +1423,9 @@ public:
 
         buf[6] =  _Duty;
 
-        len = 7;
+        buf[7] =  _Hit;
+
+        len = 8;
       }
 
       _Can.transmitStandard(0, sid, len);
