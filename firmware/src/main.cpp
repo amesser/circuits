@@ -19,7 +19,7 @@ using namespace Platform::Guards;
 
 typedef USISPIMaster<1000000> SPIDriverType;
 
-const FlashBuffer<26,RegisterConfig> g_RegisterInit PROGMEM =
+const FlashBuffer<25,RegisterConfig> g_RegisterInit PROGMEM =
 {{
   {DDRA, 0},
   {DDRB, 0},
@@ -33,7 +33,6 @@ const FlashBuffer<26,RegisterConfig> g_RegisterInit PROGMEM =
   {DIDR0,  _BV(AREFD) | _BV(ADC3D) | _BV(ADC4D) | _BV(ADC5D) | _BV(ADC6D)},
   {DIDR1,  _BV(ADC9D)},
   {ADCSRA, _BV(ADEN)  | _BV(ADPS2) | _BV(ADPS1) |  _BV(ADATE) },
-  {ADCSRB, _BV(ADTS2) | _BV(ADTS1) }, /* we want to be triggered by Timer 1 Overflow */
 
   /* configure tick timer */
   {TCCR0A, _BV(WGM00)},
@@ -427,7 +426,7 @@ private:
 
 public:
   template<typename C>
-  void update(const C val)
+  void update(C val)
   {
     const C maskc = ~static_cast<C>(0);
     const C part  = static_cast<C>(_cnt & maskc);
@@ -453,46 +452,64 @@ public:
     return _cnt;
   }
 
+  void init(T value)
+  {
+    _cnt = value;
+  }
+
   template<typename C>
   class Timer
   {
   private:
     C _tmout;
   public:
-
-    C hasTimedOut(const Clock & clock)
-    {
-      const C maskc = ~static_cast<C>(0);
-      const C part  =  static_cast<C>(clock.value() & maskc);
-      C delta = part - _tmout;
-
-      if (delta > TypeProperties<C>::MaxSigned)
-        delta = 0;
-      else if (delta == 0)
-        delta = 1;
-
-      return delta;
-    }
-
+    C hasTimedOut(const Clock & clock);
     void updateTimeout(C iv)
     {
       _tmout += iv;
     }
 
-    void init(const Clock &clock, C iv)
-    {
-      _tmout = clock.value() + iv;
-    }
+    void init(C iv);
+    void init(const Clock &clock, C iv);
 
     constexpr C value()
     {
       return _tmout;
     }
-
   };
 };
 
-template<typename TYPE, int SAMPLES>
+template<typename T>
+template<typename C>
+C Clock<T>::Timer<C>::hasTimedOut(const Clock & clock)
+{
+  const C maskc = ~static_cast<C>(0);
+  const C part  =  static_cast<C>(clock.value() & maskc);
+  C delta = part - _tmout;
+
+  if (delta > TypeProperties<C>::MaxSigned)
+    delta = 0;
+  else if (delta == 0)
+    delta = 1;
+
+  return delta;
+}
+
+template<typename T>
+template<typename C>
+void Clock<T>::Timer<C>::init(const Clock &clock, C iv)
+{
+  _tmout = clock.value() + iv;
+}
+
+template<typename T>
+template<typename C>
+void Clock<T>::Timer<C>::init(C iv)
+{
+  _tmout = iv;
+}
+
+template<typename TYPE, unsigned long SAMPLES>
 class PT1
 {
 private:
@@ -509,7 +526,7 @@ public:
 
 };
 
-template<typename TYPE, int SAMPLES>
+template<typename TYPE, unsigned long SAMPLES>
 void PT1<TYPE, SAMPLES>::addValue(const TYPE value)
 {
   TYPE s = _sum - getValue();
@@ -517,20 +534,20 @@ void PT1<TYPE, SAMPLES>::addValue(const TYPE value)
 }
 
 
-template<typename TYPE, int SAMPLES>
+template<typename TYPE, unsigned long SAMPLES>
 TYPE PT1<TYPE,SAMPLES>::getValue(void) const
 {
   return (_sum + (TYPE)(SAMPLES/2)) / SAMPLES;
 }
 
-template<typename TYPE, int SAMPLES>
+template<typename TYPE, unsigned long SAMPLES>
 TYPE PT1<TYPE,SAMPLES>::getSum(void) const
 {
   return _sum;
 }
 
 
-template<typename TYPE, int SAMPLES>
+template<typename TYPE, unsigned long SAMPLES>
 TYPE PT1<TYPE,SAMPLES>::operator - (const PT1 & rhs) const
 {
   return (_sum - rhs._sum + SAMPLES/2) / SAMPLES;
@@ -587,16 +604,16 @@ struct parameters accu_prm =
 class App
 {
 private:
-  typedef Clock<uint32_t> ClockType;
+  typedef Clock<uint16_t> ClockType;
 
   MCP2515Driver<CanDevice> _Can;
-  ClockType                _Clock;
+  ClockType                _Clock1ms;
+  ClockType                _Clock30s;
 
   uint8_t                  _CanState;
   uint8_t                  _CanSid;
 
   uint8_t                  _AdcState;
-  uint8_t                  _StartCycle;
 
   uint8_t                  _ChargerState;
   uint8_t                  _BatteryLimited;
@@ -625,25 +642,31 @@ private:
   ClockType::Timer<uint16_t> _CanTimer;
   ClockType::Timer<uint16_t> _LedTimer;
   ClockType::Timer<uint16_t> _BatTimer;
-  ClockType::Timer<uint32_t> _TempTimer;
+  ClockType::Timer<uint16_t> _HalfMinuteTimer;
+  ClockType::Timer<uint16_t> _TempTimer;
 
-  uint16_t                 _LastCycle;
-  uint16_t                 _CycleTime;
   uint8_t                  _Duty;
   uint8_t                  _BuckState;
   uint8_t                  _BatState;
 
   PT1<int16_t, 64>         _IOffset[2];
   PT1<int16_t, 64>         _IAvg[2];
+  PT1<uint32_t, 256>       _IChargeAvg;
 
-  uint8_t                  _CntOffset;
-  uint8_t                  _MPPTCnt;
+  uint16_t                 _MPPTCnt;
 
   uint16_t                 _ITrack;
-  int8_t                   _DutyTrack;
+  uint16_t                 _UTrack;
+  int8_t                   _TrackState;
   uint8_t                  _Hit;
 
-  static const FlashBuffer<9,uint8_t> ADMUXMapping;
+  struct adc_settings
+  {
+    uint8_t admux;
+    uint8_t adcsrb;
+  };
+
+  static const FlashBuffer<9,adc_settings> _ADCSettings;
 
   enum Led {
     LED_RED   = 0x01,
@@ -689,6 +712,52 @@ private:
     BATTERY_STATE_HALF    = 2,
     BATTERY_STATE_FULL    = 3,
   };
+
+  enum {
+    MSK_GPIOR1_STARTCYCLE     = 0x01,
+    MSK_GPIOR1_RECALIBRATE    = 0x04,
+    MSK_GPIOR1_ENABLED        = 0x08,
+  };
+
+  void setStartCycle()
+  {
+    GPIOR1 |= MSK_GPIOR1_STARTCYCLE;
+  }
+
+  bool getStartCycle()
+  {
+    return (GPIOR1 & MSK_GPIOR1_STARTCYCLE);
+  }
+
+  void confirmStartCycle()
+  {
+    GPIOR1 &= ~MSK_GPIOR1_STARTCYCLE;
+  }
+
+  void setRecalibrate()
+  {
+    GPIOR1 |= MSK_GPIOR1_RECALIBRATE;
+  }
+
+  bool getRecalibrate()
+  {
+    return (GPIOR1 & MSK_GPIOR1_RECALIBRATE);
+  }
+
+  void confirmRecalibrate()
+  {
+    GPIOR1 &= ~MSK_GPIOR1_RECALIBRATE;
+  }
+
+  void setEnabled()
+  {
+    GPIOR1 |= MSK_GPIOR1_ENABLED;
+  }
+
+  bool getEnabled()
+  {
+    return (GPIOR1 & MSK_GPIOR1_ENABLED);
+  }
 
 public:
   void handleBuck(uint8_t tmout)
@@ -805,32 +874,15 @@ public:
     _Can.configure(cnf1, cnf2, cnf3);
     _Can.setOneshot(true);
 
-    _CanState     = 0;
-    _StartCycle   = false;
-    _AdcState     = STATE_CONTROL_IDLE;
     _CanSid       = (~_Can.getTxRtsPins()) &  0x7;
-    _Duty         = 0;
-    _BuckState    = BUCK_STATE_OFF;
     _ChargerState = CHARGER_STATE_NORMAL;
-    _CntOffset    = 0;
     _BatState     = BATTERY_STATE_HALF;
-    _MPPTCnt      = 0;
 
-    _CanTimer.init(_Clock, 0);
-    _LedTimer.init(_Clock, 10000);
-    _BatTimer.init(_Clock, 10000);
-    _TempTimer.init(_Clock, 1000UL * 60 * 15);
-  }
+    _LedTimer.init(10000);
+    _BatTimer.init(10000);
+    _HalfMinuteTimer.init(30000);
 
-  void perfStartCycle()
-  {
-    _LastCycle = _Clock.value();
-  }
-
-  void perfFinishCycle()
-  {
-    uint16_t time = _Clock.value();
-    _CycleTime = time - _LastCycle;
+    _TempTimer.init(30);
   }
 
   uint16_t getChargeVoltage()
@@ -891,7 +943,7 @@ public:
     bool    retrigger = false;
     uint8_t state = _BatState;
 
-    uint16_t tmout = _BatTimer.hasTimedOut(_Clock);
+    uint16_t tmout = _BatTimer.hasTimedOut(_Clock1ms);
 
 
     switch(state)
@@ -923,7 +975,7 @@ public:
     }
 
     if(retrigger || tmout)
-      _BatTimer.init(_Clock, 10000);
+      _BatTimer.init(_Clock1ms, 10000);
 
     _BatState = state;
   }
@@ -965,69 +1017,23 @@ public:
     _ChargerState = state;
   }
 
-  enum {
-    MSK_GPIOR1_STARTCYCLE     = 0x01,
-    MSK_GPIOR1_RECALIBRATE    = 0x04,
-  };
-
-  void setStartCycle()
-  {
-    GPIOR1 |= MSK_GPIOR1_STARTCYCLE;
-  }
-
-  bool getStartCycle()
-  {
-    return (GPIOR1 & MSK_GPIOR1_STARTCYCLE);
-  }
-
-  void confirmStartCycle()
-  {
-    GPIOR1 &= ~MSK_GPIOR1_STARTCYCLE;
-  }
-
-  void setRecalibrate()
-  {
-    GPIOR1 |= MSK_GPIOR1_RECALIBRATE;
-  }
-
-  bool getRecalibrate()
-  {
-    return (GPIOR1 & MSK_GPIOR1_RECALIBRATE);
-  }
-
-  void confirmRecalibrate()
-  {
-    GPIOR1 &= ~MSK_GPIOR1_RECALIBRATE;
-  }
 
   void enterADCState(uint8_t state)
   {
     if (state != _AdcState)
     {
-      if(state == STATE_ADC_SAMPLETEMP)
+      if (state <= STATE_ADC_SAMPLEVOUTA)
       {
         ADCSRA &= ~_BV(ADEN);
-        ADCSRB &= ~_BV(BIN);
-        ADCSRB |=  _BV(MUX5);
-      }
-      else if(state >= STATE_ADC_CALIBRATEIOUTA &&
-         state <= STATE_ADC_SAMPLEIOUTB)
-      {
-        ADCSRA &= ~_BV(ADEN);
-        ADCSRB |=   _BV(BIN);
-        ADCSRB &=  ~_BV(MUX5);
-      }
-      else if(state >= STATE_ADC_SAMPLEVOUTA &&
-              state <= STATE_ADC_SAMPLEVSOLAR)
-      {
-        ADCSRB &= ~_BV(BIN);
-        ADCSRB &=  ~_BV(MUX5);
       }
 
       if(state >= STATE_ADC_SAMPLETEMP &&
          state <= STATE_ADC_SAMPLEVSOLAR)
       {
-        ADMUX  = ADMUXMapping[state];
+        struct adc_settings s = _ADCSettings[state];
+
+        ADCSRB =  s.adcsrb;
+        ADMUX  =  s.admux;
 
         ADCSRA |= _BV(ADEN);
         TIFR   |= _BV(TOV1);
@@ -1053,57 +1059,42 @@ public:
   }
 
 
-  void handleRegul(uint8_t tmout)
+  void handleRegul()
   {
     uint8_t state = _AdcState;
-
-    if(tmout && _CntOffset >= 0xFF)
-      setStartCycle();
 
     if(state == STATE_CONTROL_IDLE)
     {
       if(getStartCycle())
       {
         confirmStartCycle();
-        state = STATE_ADC_SAMPLEIOUTA;
-      }
-      else if (_Duty == 0 && _BuckState == BUCK_STATE_OFF)
-      {
-        state = STATE_ADC_SAMPLETEMP;
+
+        bool recalibrate = getRecalibrate() || !getEnabled();
+
+        if(recalibrate && _Duty == 0 &&
+           _BuckState == BUCK_STATE_OFF)
+        {
+          confirmRecalibrate();
+          state = STATE_ADC_SAMPLETEMP;
+        }
+        else
+        {
+          state = STATE_ADC_SAMPLEIOUTA;
+        }
       }
     }
     else if (state == STATE_CONTROL_CALC)
     {
       int16_t  du = (_USolar-_UBattery);
 
-      uint8_t max_duty = 0;
-      uint8_t min_duty = 0;
-
-      if(_USolar > _UBattery )
-      { /* calculate maximum duty according input and output voltage of
-         * buck */
-
-        const uint8_t  max_pwmduty  = OCR1C - 1;
-        const uint16_t max_calcduty = max_pwmduty - max_pwmduty * ((uint16_t)du / 256) / (_USolar/256);
-
-        if (max_pwmduty > max_calcduty + 5)
-        {
-          max_duty = max_calcduty + 5;
-          min_duty = max_calcduty;
-        }
-        else
-        {
-          max_duty = max_pwmduty;
-          min_duty = max_pwmduty;
-        }
-      }
-
       /* compute new duty cycle value */
       uint8_t  duty     = _Duty;
       int8_t   dduty    = 0;
 
+      int16_t  TrackState = 0;
+      uint16_t UTrack     = _USolar;
 
-      uint16_t ITrack = 0;
+      uint16_t IChargeAvg = _IChargeAvg.getValue();
 
       if (_BuckState > BUCK_STATE_START &&
           _BuckState < BUCK_STATE_RUN)
@@ -1111,7 +1102,7 @@ public:
         /* while buck is starting up do not play with duty cycle */
         _Hit = 1;
       }
-      else if(getRecalibrate())
+      else if(getRecalibrate() || !getEnabled())
       {
         /* recalibaration of current and temperature measurement requested */
         duty = 0;
@@ -1123,84 +1114,82 @@ public:
         const uint16_t ucharge = getChargeVoltage();
         const uint16_t icharge = getChargeCurrent();
 
-        ITrack = _ICharge;
-
-        if (_ICharge > icharge)
-        {
-          dduty = -1;
-          _BatteryLimited = 0;
-          _Hit = 3;
-        }
-        else if (_UBattery > ucharge)
+        if (_ICharge  > icharge ||
+            _UBattery > ucharge)
         {
           dduty = -1;
 
           if(_BatteryLimited < 100)
             _BatteryLimited += 10;
 
-          _Hit = 4;
+          _Hit = 3;
         }
         else if(duty == 0)
         {
           dduty = 50;
           _BatteryLimited = 0;
-
-          _Hit = 5;
+          _Hit = 4;
         }
         else
         {
-          if (_USolar < (_UBattery + 1500))
+          TrackState = _TrackState;
+          UTrack     = _UTrack;
+
+          if(TrackState == 0)
           {
-            dduty = -1;
-            _BatteryLimited = 0;
+            /* start tracking */
+            TrackState = -100;
+            UTrack     = _USolar + TrackState;
+            _Hit = 5;
+          }
+          else if((_USolar > (_UBattery + 1500)) &&
+             (TrackState > 0) &&
+             ((_ICharge + 25) < _ITrack))
+          {
+            /* charge current is lowering significantly while we decrease the duty cycle
+             * we probably reached the maximum input voltage */
+            TrackState = -100;
+            UTrack     = _USolar + TrackState;
             _Hit = 6;
           }
-          else if ((_UBattery + 25) > ucharge)
+          else if(_MPPTCnt >= 2000)
           {
-            _Hit = 7;
-            ;
+            if((IChargeAvg + 10 ) < _ITrack)
+            {
+              /* the output current lowered while tracking in that direction
+               * so lets change tracking direction */
+              TrackState = -TrackState;
+              _Hit = 7;
+            }
+            else
+            {
+              _Hit = 8;
+            }
+
+            UTrack += TrackState;
           }
-          /*
-          else if (_MPPTCnt >= 32 &&
-                 _DutyTrack > duty &&
-                 (duty + 20) < min_duty)
+
+          if (UTrack < (_UBattery + 1500))
+          {
+            /* the tracking voltage must never be lower than battery + offset
+             * so force increasing tracking here */
+            UTrack     = _UBattery + 1600;
+            TrackState = 100;
+
+            _Hit = 9;
+          }
+
+
+          if (_USolar < UTrack)
+          {
+            dduty = -1;
+          }
+          else
           {
             dduty = 1;
-            _Hit = 8;
-          } */
-          else if (_MPPTCnt >= 128)
-          {
-            if(_DutyTrack < duty)
-              dduty = 1;
-            else
-              dduty = -1;
-
-            if((_ICharge + 25) < _ITrack)
-            {
-              dduty = -dduty;
-            }
-            _Hit = 9;
-
-          }
-          else
-          {
-            _Hit = 10;
           }
 
-          if((dduty < 0 && _DutyTrack < duty) ||
-             (dduty > 0 && _DutyTrack > duty))
-          {
-            ITrack = _ICharge;
-          }
-          else
-          {
-            if(_ICharge > _ITrack)
-              ITrack = _ICharge;
-            else
-              ITrack = _ITrack;
-          }
-
-          if(dduty > 0 && _BatteryLimited > 0)
+          if(_BatteryLimited > 0)
             _BatteryLimited -= 1;
         }
       }
@@ -1208,7 +1197,7 @@ public:
       {
         duty = 0;
         _BatteryLimited = 0;
-        _Hit = 11;
+        _Hit = 10;
       }
 
 
@@ -1221,25 +1210,34 @@ public:
       }
       else
       {
-        if ((dduty + duty) > max_duty)
-          duty = max_duty;
+        const uint8_t  max_pwmduty  = OCR1C - 1;
+
+        if ((dduty + duty) > max_pwmduty)
+          duty = max_pwmduty;
         else
           duty += dduty;
       }
 
-      if((duty != _Duty) || duty == 0)
+      if((_UTrack != UTrack) ||
+          0 == UTrack)
       {
-        _MPPTCnt   = 0;
-        _DutyTrack = _Duty;
+        _UTrack  = UTrack;
+        _MPPTCnt = 0;
       }
-      else
+      else if (_MPPTCnt < 0xFFFF)
       {
-        if(_MPPTCnt < 128)
-          _MPPTCnt += 1;
+        _MPPTCnt += 1;
       }
 
-      _ITrack  = ITrack;
-      _Duty    = duty;
+      if(IChargeAvg > _ITrack ||
+         TrackState != _TrackState ||
+         0 == TrackState )
+      {
+        _ITrack = IChargeAvg;
+      }
+
+      _TrackState = TrackState;
+      _Duty       = duty;
 
       state = STATE_CONTROL_IDLE;
     }
@@ -1257,20 +1255,8 @@ public:
       uint8_t  state = _AdcState;
       uint16_t val   = ADC;
 
-      if(state >= STATE_ADC_SAMPLEIOUTA && state <= STATE_ADC_SAMPLEVSOLAR)
+      if(state >= STATE_ADC_SAMPLETEMP && state <= STATE_ADC_SAMPLEVSOLAR)
         enterADCState(state + 1);
-      else if (state >= STATE_ADC_SAMPLETEMP && state < STATE_ADC_CALIBRATEIOUTB)
-        enterADCState(state + 1);
-      else if (state == STATE_ADC_CALIBRATEIOUTB)
-      {
-        if (_CntOffset < 0xFF)
-          _CntOffset += 1;
-
-        _TempTimer.init(_Clock, 1000UL * 60 * 15);
-        confirmRecalibrate();
-
-        enterADCState(STATE_CONTROL_IDLE);
-      }
 
       switch(state)
       {
@@ -1282,6 +1268,7 @@ public:
           temp += g_TempCalibration[1];
 
           _Temp = temp;
+          _TempTimer.init(_Clock30s, 30);
         }
         break;
       case STATE_ADC_CALIBRATEIOUTA:
@@ -1340,9 +1327,10 @@ public:
         int16_t I = _Currents[0] + _Currents[1];
 
         if(I < 0)
-          _ICharge = 0;
-        else
-          _ICharge = I;
+          I = 0;
+
+        _ICharge = I;
+        _IChargeAvg.addValue(I);
 
         _UBattery = (_Voltages[0] + _Voltages[1] + 1) / 2;
       }
@@ -1353,7 +1341,7 @@ public:
   {
     uint8_t state = _CanState;
 
-    if (_CanTimer.hasTimedOut(_Clock))
+    if (_CanTimer.hasTimedOut(_Clock1ms))
     {
       _CanTimer.updateTimeout(500);
 
@@ -1411,21 +1399,18 @@ public:
 
         usValue = _ITrack;
 
-        buf[1] = usValue >> 8;
-        buf[2] = usValue & 0xFF;
+        buf[1]  = usValue >> 8;
+        buf[2]  = usValue & 0xFF;
 
-        usValue = _ICharge;
+        usValue = _IChargeAvg.getValue();
 
-        buf[3] = usValue >> 8;
-        buf[4] = usValue & 0xFF;
+        buf[3]  = usValue >> 8;
+        buf[4]  = usValue & 0xFF;
 
-        buf[5] =  _DutyTrack;
+        buf[5]  =  _TrackState;
+        buf[6]  =  _Hit;
 
-        buf[6] =  _Duty;
-
-        buf[7] =  _Hit;
-
-        len = 8;
+        len = 7;
       }
 
       _Can.transmitStandard(0, sid, len);
@@ -1437,7 +1422,7 @@ public:
 
   void handleLeds()
   {
-    const uint16_t tmout = _LedTimer.hasTimedOut(_Clock);
+    const uint16_t tmout = _LedTimer.hasTimedOut(_Clock1ms);
 
     if(tmout)
     {
@@ -1462,26 +1447,42 @@ public:
       }
 
       setLedStatus(status);
+
+      /* the following makes sure that the charger will be enabled
+       * after a delay of 10 seconds
+       * this is required to wait for the current offsets to be
+       * calibrated */
+      setEnabled();
     }
   }
 
   void cycle()
   {
-    _Clock.update(GPIOR0);
+    _Clock1ms.update(GPIOR0);
 
-    uint8_t tmout = _AdcTimer.hasTimedOut(_Clock);
+    uint8_t tmout = _AdcTimer.hasTimedOut(_Clock1ms);
 
     if(tmout)
+    {
       _AdcTimer.updateTimeout(5);
+      setStartCycle();
+    }
 
-    if(_TempTimer.hasTimedOut(_Clock))
+
+    if(_HalfMinuteTimer.hasTimedOut(_Clock1ms))
+    {
+      _HalfMinuteTimer.updateTimeout(30000);
+      _Clock30s.update(_Clock30s.value() + 1);
+    }
+
+    if(_TempTimer.hasTimedOut(_Clock30s))
       setRecalibrate();
 
     handleLeds();
 
     handleADCEvent();
 
-    handleRegul(tmout);
+    handleRegul();
     //handleSim(tmout);
     handleBuck(tmout);
 
@@ -1494,17 +1495,18 @@ public:
   }
 };
 
-const FlashBuffer<9,uint8_t>  App::ADMUXMapping PROGMEM =
+
+const FlashBuffer<9,App::adc_settings>  App::_ADCSettings PROGMEM =
 {{
-    0,
-    _BV(REFS1)              | 0x1F,
-    _BV(REFS0)              | 0x12,
-    _BV(REFS0)              | 0x17,
-    _BV(REFS0) /* | _BV(ADLAR) */ | 0x12,
-    _BV(REFS0) /* | _BV(ADLAR) */ | 0x17,
-    _BV(REFS0) | _BV(ADLAR) | 0x3,
-    _BV(REFS0) | _BV(ADLAR) | 0x5,
-    _BV(REFS0) | _BV(ADLAR) | 0x9,
+    {                             0, _BV(ADTS2) | _BV(ADTS1)},
+    {_BV(REFS1)              | 0x1F, _BV(ADTS2) | _BV(ADTS1) | _BV(MUX5)},
+    {_BV(REFS0)              | 0x12, _BV(ADTS2) | _BV(ADTS1) | _BV(BIN)},
+    {_BV(REFS0)              | 0x17, _BV(ADTS2) | _BV(ADTS1) | _BV(BIN)},
+    {_BV(REFS0)              | 0x12, _BV(ADTS2) | _BV(ADTS1) | _BV(BIN)},
+    {_BV(REFS0)              | 0x17, _BV(ADTS2) | _BV(ADTS1) | _BV(BIN)},
+    {_BV(REFS0) | _BV(ADLAR) |  0x3, _BV(ADTS2) | _BV(ADTS1)},
+    {_BV(REFS0) | _BV(ADLAR) |  0x5, _BV(ADTS2) | _BV(ADTS1)},
+    {_BV(REFS0) | _BV(ADLAR) |  0x9, _BV(ADTS2) | _BV(ADTS1)},
 }};
 
 ISR(TIMER0_COMPA_vect)
@@ -1514,7 +1516,7 @@ ISR(TIMER0_COMPA_vect)
 
 int main()
 {
-  static App app;
+  static App app = App();
 
   CLKPR = _BV(CLKPCE);
   CLKPR = 0;
