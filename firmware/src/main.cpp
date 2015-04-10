@@ -61,7 +61,7 @@ const FlashBuffer<25,RegisterConfig> g_RegisterInit PROGMEM =
   {MCUCR, 0},
 }};
 
-const EEPROMBuffer<2,int8_t> g_TempCalibration EEMEM = {{0, 0,}};
+const EEPROMBuffer<2,int8_t> g_TempCalibration EEMEM = {{-68, 67}};
 
 class CanDevice : public SPIDriverType
 {
@@ -565,6 +565,8 @@ struct parameters
   uint16_t utrickle;
   uint16_t ucharge;
   uint16_t ubalance;
+  uint16_t tlow;
+  uint16_t thigh;
   int16_t  coef;
 };
 
@@ -582,12 +584,14 @@ struct parameters accu_prm =
   .utrickle     = 13500, /* 13.5 V full */
   .ucharge      = 13700, /* 13.7 V maximum charge voltage (used for balancing*) */
   .ubalance     = 13800, /* 13.8 V maximum charge voltage (used for balancing*) */
-  .coef         =   -18, /* in mv */
+  .tlow         = 298,
+  .thigh        = 298,
+  .coef         =   0 /*-18*/, /* in mv */
 };
 #else
 struct parameters accu_prm =
 {
-  /* MOLL Soloar 100 Ah 25 °C */
+  /* MOLL Soloar 100 Ah 20 °C */
   .icharge      = 10000,
   .ibalance     =  3500,
   .icharged     =  1000,
@@ -597,6 +601,8 @@ struct parameters accu_prm =
   .utrickle     = 13500, /* 13.5 V full */
   .ucharge      = 14100, /* 14.1 V maximum charge voltage (used for balancing*) */
   .ubalance     = 14400, /* 14.4 V maximum charge voltage (used for balancing*) */
+  .tlow         = 273 + 10, /* Moll sugests no temp compensation between these two temperatures */
+  .thigh        = 273 + 30,
   .coef         =   -24, /* in mv */
 };
 #endif
@@ -616,8 +622,6 @@ private:
   uint8_t                  _AdcState;
 
   uint8_t                  _ChargerState;
-  uint8_t                  _BatteryLimited;
-
   union {
     struct {
        int16_t                 _Currents[2];
@@ -644,6 +648,7 @@ private:
   ClockType::Timer<uint16_t> _BatTimer;
   ClockType::Timer<uint16_t> _HalfMinuteTimer;
   ClockType::Timer<uint16_t> _TempTimer;
+  ClockType::Timer<uint16_t> _BalanceTimer;
 
   uint8_t                  _Duty;
   uint8_t                  _BuckState;
@@ -677,9 +682,9 @@ private:
   enum AdcState
   {
     STATE_CONTROL_IDLE  = 0,
-    STATE_ADC_SAMPLETEMP,
     STATE_ADC_CALIBRATEIOUTA,
     STATE_ADC_CALIBRATEIOUTB,
+    STATE_ADC_SAMPLETEMP,
     STATE_ADC_SAMPLEIOUTA,
     STATE_ADC_SAMPLEIOUTB,
     STATE_ADC_SAMPLEVOUTA,
@@ -715,6 +720,7 @@ private:
 
   enum {
     MSK_GPIOR1_STARTCYCLE     = 0x01,
+    MSK_GPIOR1_BATTERYLIMIT   = 0x02,
     MSK_GPIOR1_RECALIBRATE    = 0x04,
     MSK_GPIOR1_ENABLED        = 0x08,
   };
@@ -758,6 +764,24 @@ private:
   {
     return (GPIOR1 & MSK_GPIOR1_ENABLED);
   }
+
+
+  void setBatteryLimit()
+  {
+    GPIOR1 |= MSK_GPIOR1_BATTERYLIMIT;
+  }
+
+  void clearBatteryLimit()
+  {
+    GPIOR1 &= ~MSK_GPIOR1_BATTERYLIMIT;
+  }
+
+  bool getBatteryLimit()
+  {
+    return (GPIOR1 & MSK_GPIOR1_BATTERYLIMIT);
+  }
+
+
 
 public:
   void handleBuck(uint8_t tmout)
@@ -874,7 +898,6 @@ public:
     _Can.configure(cnf1, cnf2, cnf3);
     _Can.setOneshot(true);
 
-    _CanSid       = (~_Can.getTxRtsPins()) &  0x7;
     _ChargerState = CHARGER_STATE_NORMAL;
     _BatState     = BATTERY_STATE_HALF;
 
@@ -883,6 +906,7 @@ public:
     _HalfMinuteTimer.init(30000);
 
     _TempTimer.init(30);
+    _BalanceTimer.init(2 * 60 * 24 * 7);
   }
 
   uint16_t getChargeVoltage()
@@ -890,21 +914,45 @@ public:
     uint8_t state = _ChargerState;
     uint16_t u;
 
+    int16_t utemp;
+
+    if(_Temp > accu_prm.thigh)
+    {
+      utemp = (_Temp - accu_prm.thigh);
+    }
+    else if (_Temp < accu_prm.tlow)
+    {
+      utemp = (_Temp - accu_prm.tlow);
+    }
+    else
+    {
+      utemp = 0;
+    }
+
+    utemp = utemp * accu_prm.coef;
+
     switch(state)
     {
     case CHARGER_STATE_TRICKLE:
       u = accu_prm.utrickle;
       break;
     case CHARGER_STATE_NORMAL:
-      u = accu_prm.ucharge;
+      u = accu_prm.ucharge + utemp;
       break;
     case CHARGER_STATE_BALANCE:
-      u = accu_prm.ubalance;
+      u = accu_prm.ubalance + utemp;
       break;
     default:
       u = accu_prm.utrickle;
       break;
     }
+
+    /* some hard limits to sfe accu */
+    if (u > 14700)
+      u = 14700;
+    else if (u < 12000)
+      u = 12000;
+
     return u;
   }
 
@@ -940,44 +988,41 @@ public:
 
   void updateBatteryState()
   {
-    bool    retrigger = false;
     uint8_t state = _BatState;
-
-    uint16_t tmout = _BatTimer.hasTimedOut(_Clock1ms);
-
 
     switch(state)
     {
     case BATTERY_STATE_EMPTY:
-      if (_UBattery < accu_prm.udischarging)
-        retrigger = true;
-      else if (tmout)
+      if (_UBattery > accu_prm.udischarging)
         state = BATTERY_STATE_HALF;
       break;
     case BATTERY_STATE_WARNING:
-      if (_UBattery > accu_prm.ulow)
-        retrigger = true;
-      else
+      if (_UBattery < accu_prm.ulow)
         state = BATTERY_STATE_EMPTY;
+      else if (_UBattery > accu_prm.udischarging)
+        state = BATTERY_STATE_HALF;
       break;
     case BATTERY_STATE_HALF:
-      if (_UBattery > accu_prm.uwarning)
-        retrigger = true;
-      else
+      if (_UBattery < accu_prm.uwarning)
         state = BATTERY_STATE_WARNING;
+      else if (getBatteryLimit() && _IChargeAvg.getValue() < accu_prm.icharged)
+        state = BATTERY_STATE_FULL;
       break;
     case BATTERY_STATE_FULL:
-      if (_UBattery > accu_prm.udischarging)
-        retrigger = true;
-      else if (tmout)
+      if (_UBattery < accu_prm.udischarging)
         state = BATTERY_STATE_HALF;
       break;
     }
 
-    if(retrigger || tmout)
-      _BatTimer.init(_Clock1ms, 10000);
+    uint16_t tmout = _BatTimer.hasTimedOut(_Clock1ms);
 
-    _BatState = state;
+    if(state == _BatState || tmout)
+    {
+      _BatTimer.init(_Clock1ms, 10000);
+    }
+
+    if(tmout)
+      _BatState = state;
   }
 
   void updateChargerState()
@@ -988,26 +1033,31 @@ public:
     if(batstate <= BATTERY_STATE_WARNING)
        state = CHARGER_STATE_BALANCE;
 
+    if(_BalanceTimer.hasTimedOut(_Clock30s))
+      state = CHARGER_STATE_BALANCE;
+
     switch(state)
     {
     case CHARGER_STATE_TRICKLE:
       {
         if (batstate != BATTERY_STATE_FULL)
+        {
           state = CHARGER_STATE_NORMAL;
+        }
       }
       break;
     case CHARGER_STATE_NORMAL:
       {
-        if ((_ICharge < accu_prm.icharged) &&
-            _BatteryLimited > 10)
+        if (batstate == BATTERY_STATE_FULL)
         {
-          _BatState = BATTERY_STATE_FULL;
           state = CHARGER_STATE_TRICKLE;
         }
       }
       break;
     case CHARGER_STATE_BALANCE:
       {
+        _BalanceTimer.init(_Clock30s, 2 * 60 * 24 * 7);
+
         if ((_UBattery + 50) > accu_prm.ubalance)
           state = CHARGER_STATE_NORMAL;
       }
@@ -1027,8 +1077,8 @@ public:
         ADCSRA &= ~_BV(ADEN);
       }
 
-      if(state >= STATE_ADC_SAMPLETEMP &&
-         state <= STATE_ADC_SAMPLEVSOLAR)
+      if(state >  STATE_CONTROL_IDLE &&
+         state <  STATE_CONTROL_CALC)
       {
         struct adc_settings s = _ADCSettings[state];
 
@@ -1075,11 +1125,11 @@ public:
            _BuckState == BUCK_STATE_OFF)
         {
           confirmRecalibrate();
-          state = STATE_ADC_SAMPLETEMP;
+          state = STATE_ADC_CALIBRATEIOUTA;
         }
         else
         {
-          state = STATE_ADC_SAMPLEIOUTA;
+          state = STATE_ADC_SAMPLETEMP;
         }
       }
     }
@@ -1106,7 +1156,7 @@ public:
       {
         /* recalibaration of current and temperature measurement requested */
         duty = 0;
-        _BatteryLimited = 0;
+        clearBatteryLimit();
         _Hit = 2;
       }
       else if(du > 1000)
@@ -1114,20 +1164,20 @@ public:
         const uint16_t ucharge = getChargeVoltage();
         const uint16_t icharge = getChargeCurrent();
 
+        if ((_UBattery + 50) < ucharge)
+          clearBatteryLimit();
+
         if (_ICharge  > icharge ||
             _UBattery > ucharge)
         {
           dduty = -1;
-
-          if(_BatteryLimited < 100)
-            _BatteryLimited += 10;
+          setBatteryLimit();
 
           _Hit = 3;
         }
         else if(duty == 0)
         {
           dduty = 50;
-          _BatteryLimited = 0;
           _Hit = 4;
         }
         else
@@ -1144,7 +1194,7 @@ public:
           }
           else if((_USolar > (_UBattery + 1500)) &&
              (TrackState > 0) &&
-             ((_ICharge + 25) < _ITrack))
+             ((_ICharge + 50) < _ITrack))
           {
             /* charge current is lowering significantly while we decrease the duty cycle
              * we probably reached the maximum input voltage */
@@ -1154,7 +1204,7 @@ public:
           }
           else if(_MPPTCnt >= 2000)
           {
-            if((IChargeAvg + 10 ) < _ITrack)
+            if((IChargeAvg + 25 ) < _ITrack)
             {
               /* the output current lowered while tracking in that direction
                * so lets change tracking direction */
@@ -1175,7 +1225,6 @@ public:
              * so force increasing tracking here */
             UTrack     = _UBattery + 1600;
             TrackState = 100;
-
             _Hit = 9;
           }
 
@@ -1188,15 +1237,12 @@ public:
           {
             dduty = 1;
           }
-
-          if(_BatteryLimited > 0)
-            _BatteryLimited -= 1;
         }
       }
       else
       {
         duty = 0;
-        _BatteryLimited = 0;
+        clearBatteryLimit();
         _Hit = 10;
       }
 
@@ -1255,7 +1301,7 @@ public:
       uint8_t  state = _AdcState;
       uint16_t val   = ADC;
 
-      if(state >= STATE_ADC_SAMPLETEMP && state <= STATE_ADC_SAMPLEVSOLAR)
+      if(state > STATE_CONTROL_IDLE && state < STATE_CONTROL_CALC)
         enterADCState(state + 1);
 
       switch(state)
@@ -1346,10 +1392,12 @@ public:
       _CanTimer.updateTimeout(500);
 
       if(state >= 3)
+      {
+        _CanSid       = (~_Can.getTxRtsPins()) &  0x7;
         state = 0;
+      }
     }
-
-    if(state < 3 && !_Can.isTxPending(0))
+    else if(state < 3 && !_Can.isTxPending(0))
     {
       const uint16_t sid = (state << 3) | (_CanSid);
       auto buf = _Can.getTxBuffer();
@@ -1499,9 +1547,9 @@ public:
 const FlashBuffer<9,App::adc_settings>  App::_ADCSettings PROGMEM =
 {{
     {                             0, _BV(ADTS2) | _BV(ADTS1)},
-    {_BV(REFS1)              | 0x1F, _BV(ADTS2) | _BV(ADTS1) | _BV(MUX5)},
     {_BV(REFS0)              | 0x12, _BV(ADTS2) | _BV(ADTS1) | _BV(BIN)},
     {_BV(REFS0)              | 0x17, _BV(ADTS2) | _BV(ADTS1) | _BV(BIN)},
+    {_BV(REFS1)              | 0x1F, _BV(ADTS2) | _BV(ADTS1) | _BV(MUX5)},
     {_BV(REFS0)              | 0x12, _BV(ADTS2) | _BV(ADTS1) | _BV(BIN)},
     {_BV(REFS0)              | 0x17, _BV(ADTS2) | _BV(ADTS1) | _BV(BIN)},
     {_BV(REFS0) | _BV(ADLAR) |  0x3, _BV(ADTS2) | _BV(ADTS1)},
