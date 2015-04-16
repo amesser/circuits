@@ -10,7 +10,8 @@
 #include "util/datatypes.hpp"
 #include "algorithm/dft.hpp"
 #include "algorithm/cordic.hpp"
-
+#include "arm_math.h"
+#include "arm_const_structs.h"
 
 using namespace ::std;
 using namespace Platform::Algorithm::DFT;
@@ -18,6 +19,130 @@ using namespace Platform::Algorithm;
 
 using namespace Platform::Util::Datatypes;
 
+namespace Platform {
+  namespace Util {
+    namespace Datatypes {
+      typedef int16_t v2si __attribute__((vector_size(4)));
+
+      template<unsigned long SCALE>
+      class Complex< FixedPoint<int16_t, SCALE> >
+      {
+      public:
+        typedef FixedPoint<int16_t, SCALE> TYPE;
+
+      private:
+
+
+        union {
+          struct {
+            TYPE m_real;
+            TYPE m_imag;
+          } s;
+
+          v2si v;
+
+          uint32_t u;
+        };
+      public:
+        constexpr Complex() {};
+
+        constexpr Complex(const TYPE & real, const TYPE & imag) :
+          u(real.m_value << 16 | imag.m_value) {};
+
+        constexpr Complex(const Complex & cp) :
+          u(cp.u) {};
+
+        constexpr Complex(const v2si & init) :
+          v(init) {};
+
+        constexpr Complex(const uint32_t init) :
+          u(init) {};
+
+        Complex & operator = (const Complex & rhs)
+        {
+          u = rhs.u;
+          return *this;
+        }
+
+        template<typename RHS_TYPE>
+        Complex & operator = (const Complex<RHS_TYPE> & rhs)
+        {
+          s.m_real = rhs.real();
+          s.m_imag = rhs.imag();
+          return *this;
+        }
+
+        constexpr TYPE real() const { return s.m_real;}
+        constexpr TYPE imag() const { return s.m_imag;}
+
+        inline Complex operator * (const TYPE & rhs) const
+        {
+          uint32_t factor = static_cast<uint32_t>(rhs.m_value);
+          int32_t real,imag;
+
+          asm("smulbb %[res], %[a], %[b]"
+              : [res]"=r"(real)
+              : [a]"r"(u), [b]"r"(factor));
+
+          asm("smultb %[res], %[a], %[b]"
+              : [res]"=r"(imag)
+              : [a]"r"(u), [b]"r"(factor));
+
+          v2si result = { static_cast<int16_t>(real/SCALE),
+                          static_cast<int16_t>(imag / SCALE)};
+
+          return result;
+        }
+
+        inline Complex operator + (const Complex & rhs) const
+        {
+          uint32_t result;
+          asm("sadd16 %[res], %[a], %[b]"
+              : [res]"=r"(result)
+              : [a]"r"(u), [b]"r"(rhs.u));
+          return {result};
+        }
+
+        inline Complex operator - (const Complex & rhs) const
+        {
+          uint32_t result;
+          asm("ssub16 %[res], %[a], %[b]"
+              : [res]"=r"(result)
+              : [a]"r"(u), [b]"r"(rhs.u));
+          return {result};
+        }
+
+        inline Complex operator * (const Complex & rhs) const
+        {
+          uint32_t imag, real;
+
+          asm ("smuadx %[res], %[a], %[b]"
+              : [res]"=r"(imag)
+              : [a]"r"(u), [b]"r"(rhs.u));
+
+          asm ("smusd %[res], %[a], %[b]"
+              : [res]"=r"(real)
+              : [a]"r"(u), [b]"r"(rhs.u));
+
+          v2si result = { static_cast<int16_t>(real/SCALE),
+                          static_cast<int16_t>(imag / SCALE)};
+
+          return result;
+
+          /*
+          v2si result =  {
+              static_cast<int16_t>(s.m_real.m_value * rhs.s.m_real.m_value / SCALE
+                                   - s.m_imag.m_value * rhs.s.m_imag.m_value / SCALE),
+              static_cast<int16_t>(s.m_real.m_value * rhs.s.m_imag.m_value / SCALE
+                                   + s.m_imag.m_value * rhs.s.m_real.m_value / SCALE)
+          };
+          return result; */
+        }
+
+      };
+    }
+  }
+}
 
 typedef FixedPoint<int16_t, (0x1 << 14)> DFT_BaseType;
 typedef Radix2DFT<DFT_BaseType, 11>              DFT_Type;
@@ -27,7 +152,8 @@ typedef DFT_Type::t_Type DFT_Buffer[DFT_Type::m_bins];
 const DFT_Type::FactorArrayType          s_DftTwiddleFactors  = DFT_Type::w<Cordic<> >().asArray();
 const DFT_Type::DescrambleArrayTypeFull  s_DftDescramble      = DFT_Type::descramble().asArrayFull();
 
-static DFT_Buffer BufferI, BufferO;
+DFT_Buffer BufferI;
+
 static volatile uint8_t    abIBuffer[DFT_Type::m_bins*2] =
 {
     0x80, 0x81, 0x82, 0x7c, 0x84, 0x7e, 0x82, 0x7f, 0x7a, 0x7c, 0x7d, 0x7c, 0x81, 0x7e, 0x7d, 0x7a,
@@ -292,10 +418,50 @@ struct rcc_regs {
   volatile uint32_t RCC_CR;
   volatile uint32_t RCC_PLLCFGR;
   volatile uint32_t RCC_CFGR;
-
+  volatile uint32_t RCC_CIR;
+  volatile uint32_t RCC_AHB1RSTR;
+  volatile uint32_t RCC_AHB2RSTR;
+  volatile uint32_t RCC_AHB3RSTR;
+  uint32_t          Reserved1;
+  volatile uint32_t RCC_APB1RSTR;
+  volatile uint32_t RCC_APB2RSTR;
+  uint32_t          Reserved2;
+  uint32_t          Reserved3;
+  volatile uint32_t RCC_AHB1ENR;
+  volatile uint32_t RCC_AHB2ENR;
+  volatile uint32_t RCC_AHB3ENR;
+  uint32_t          Reserved4;
+  volatile uint32_t RCC_APB1ENR;
+  volatile uint32_t RCC_APB2ENR;
 };
 
-struct rcc_regs * const pRCC = reinterpret_cast<struct rcc_regs*>(0x40023800);
+
+struct tim_regs {
+  volatile uint32_t TIMx_CR1;
+  volatile uint32_t TIMx_CR2;
+  volatile uint32_t TIMx_SMCR;
+  volatile uint32_t TIMx_DIER;
+  volatile uint32_t TIMx_SR;
+  volatile uint32_t TIMx_EGR;
+  volatile uint32_t TIMx_CCMR1;
+  volatile uint32_t TIMx_CCMR2;
+  volatile uint32_t TIMx_CCER;
+  volatile uint32_t TIMx_CNT;
+  volatile uint32_t TIMx_PSC;
+  volatile uint32_t TIMx_ARR;
+};
+
+
+struct rcc_regs * const pRCC  = reinterpret_cast<struct rcc_regs*>(0x40023800);
+struct tim_regs * const pTIM2 = reinterpret_cast<struct tim_regs*>(0x40000000);
+struct tim_regs * const pTIM5 = reinterpret_cast<struct tim_regs*>(0x40000C00);
+
+volatile uint8_t abResult[4096];
+
+volatile uint32_t TimeSum = 0;
+volatile uint32_t TimeCnt = 0;
+
+const arm_cfft_instance_q15 *cmis_fft = &arm_cfft_sR_q15_len2048;
 
 int main()
 {
@@ -327,7 +493,7 @@ int main()
   reg = pRCC->RCC_CFGR & 0x00000300;
 
   reg |= 0x4 << 13;   /* apb2 prescale 2 */
-  reg |= 0x5 << 10; /* apb1 prescale3 2 */
+  reg |= 0x5 << 10; /* apb1 prescale 4 */
 
   pRCC->RCC_CFGR = reg;
 
@@ -337,9 +503,33 @@ int main()
   /* weait until pll is system clock */
   while( ((pRCC->RCC_CFGR >> 2) & 0x3) != 0x2);
 
+  /* enable clock for syscfg controller */
+  pRCC->RCC_APB2ENR |= 0x00004000;
+
+  /* enable clock for TIM2 */
+  pRCC->RCC_APB1ENR |= 0x00000001;
+
+  /* generate 1 mhz timer clock */
+  pTIM2->TIMx_PSC = 75;
+  pTIM2->TIMx_ARR = 0xFFFFFFFF;
+
+  pTIM2->TIMx_EGR |= 0x01;
+
+  /* enable TIM 2 */
+  pTIM2->TIMx_CR1 |= 0x00000001;
+
+  uint32_t TimeDelta;
+
+
   while(1)
   {
     unsigned int i;
+
+    for(i = 0; i < DFT_Type::m_bins; ++i)
+    {
+      abIBuffer[i*2] = pTIM2->TIMx_CNT;
+    }
+
 
     for(i = 0; i < DFT_Type::m_bins; ++i)
     {
@@ -365,13 +555,32 @@ int main()
       BufferI[i] = {real, imag};
     }
 
+    TimeDelta = pTIM2->TIMx_CNT;
+
+#if DISABLED
     DFT_Type::decimation_in_f(BufferI, s_DftTwiddleFactors);
+
 
     for(unsigned int i = 0; i < DFT_Type::m_bins; ++i)
     {
       unsigned int reversed = s_DftDescramble[i];
 
-      BufferO[reversed] = BufferI[i];
+      pTIM5->TIMx_ARR = BufferI[i].real();
+
+      abResult[reversed*2] = BufferI[i].real();
+      abResult[reversed*2+1] = BufferI[i].imag();
+    }
+#else
+    arm_cfft_q15(cmis_fft, reinterpret_cast<q15_t*>(BufferI), 0 ,1);
+#endif
+
+    TimeDelta = pTIM2->TIMx_CNT - TimeDelta;
+
+
+    if((TimeDelta + TimeSum) > TimeSum)
+    {
+      TimeSum += TimeDelta;
+      TimeCnt += 1;
     }
   }
 

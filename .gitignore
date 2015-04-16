@@ -1,6 +1,8 @@
 firmware/build
+dab-player/build
 src/build
 firmware/.lock-waf*
+dab-player/.lock-waf*
 src/.lock-waf*
 3rdparty
 *.pyc

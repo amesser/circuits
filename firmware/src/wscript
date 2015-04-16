@@ -12,6 +12,6 @@ def build(bld):
         target   = 'stm32f405.elf',
         features = 'cxx cxxprogram',  
         includes = ['.'],
-        use      = ['ecpp_stm32f405'],
+        use      = ['cmsis-stm32f405', 'ecpp_stm32f405'],
         uselib   = ['c', 'gcc'],
     ) 

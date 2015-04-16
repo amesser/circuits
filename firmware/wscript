@@ -6,7 +6,7 @@ def options(opt):
     opt.recurse(['../externals/ecpp'])
 
 def configure(conf):
-    conf.recurse(['../externals/ecpp','src'])
+    conf.recurse(['../externals/ecpp','src', 'cmsis'])
   
 def build(ctx):
-    ctx.recurse(['../externals/ecpp','src'])
+    ctx.recurse(['../externals/ecpp','src', 'cmsis'])

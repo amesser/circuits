@@ -1,0 +1,36 @@
+#! /usr/bin/env python
+# encoding: utf-8
+TOP = '.'
+  
+def options(opt):
+    opt.recurse(['../externals/ecpp'])
+
+def configure(conf):
+    conf.recurse(['../externals/ecpp'])
+  
+    conf.ecpp_setupbuild(id='dab-player-pc', platform='native')
+    #conf.env.append_value('CXXFLAGS', ['-pg', '-ftemplate-depth=10000'])
+    #conf.env.append_value('LINKFLAGS', ['-pg'])
+    conf.env.append_value('CXXFLAGS', ['-ftemplate-depth=10000'])
+    conf.env.append_value('LINKFLAGS', [])
+    conf.env.append_value('LIB', ['pthread', 'rt'])
+    
+    conf.check_cfg(package='fftw3f', args=['--cflags', '--libs'])
+    
+def build(bld):
+    bld.recurse(['../externals/ecpp'])
+
+    bld.ecpp_build(
+        id= 'dab-player-pc',
+        source   = [
+            "src/DabParameterSet.cpp",
+            "src/main.cpp",
+            "src/DabSymbol.cpp",
+            "src/worker.cpp",
+        ],
+        target   = 'dab-player-pc',
+        features = 'cxx cxxprogram release',
+        use      = "FFTW3F",
+        includes = ['src', ],
+    )
+    
