@@ -20,9 +20,20 @@ class DabSymbol
 public:
   typedef fftwf_complex SampleType;
 
+  enum State
+  {
+    STATE_SAMPLE,
+    STATE_DFT,
+    STATE_FREQCOR,
+    STATE_OFDM,
+  };
+
 private:
   SampleType * const _pBuffer;
-  float              _Offset;
+  enum State         _State;
+
+  float              _CoarseOffset;
+  float              _FineOffset;
 
 public:
   DabSymbol();
@@ -30,7 +41,12 @@ public:
 
   SampleType * getBuffer() { return _pBuffer;}
 
-  void setOffset(float Offset) { _Offset = Offset;}
+  void  setOffsets(float Coarse, float Fine) { _CoarseOffset = Coarse; _FineOffset = Fine;}
+  float getCoarseOffset() const { return _CoarseOffset;}
+  float getFineOffset()   const { return _FineOffset;}
+
+  void setState(enum State State) {_State = State;}
+  enum State getState() const { return _State;}
 };
 
 

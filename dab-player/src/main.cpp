@@ -20,6 +20,10 @@
 #include <string.h>
 #include <fftw3.h>
 
+#include "ecpp/Filter.hpp"
+
+using namespace ecpp;
+
 class Event
 {
 public:
@@ -58,9 +62,13 @@ private:
 
   int  _symbolcnt;
   State _sofState;
+
   unsigned int  _sofOffset;
+  int            _corPhase;
+
 
   volatile bool _done;
+  PT1<float,16>    _OffsetCorrection;
 
   inline void updateSignalLevels(unsigned long index)
   {
@@ -76,6 +84,9 @@ private:
 
     _abs[index] = abs;
   }
+
+  static ::std::complex<float> * getSineTable();
+
 public:
 
   int getSymbolCnt() const {return _symbolcnt;};
@@ -91,13 +102,14 @@ public:
   int  findNextSymbol();
 
   void getSymbol(DabSymbol & symbol);
+  void updateOffset(const DabSymbol & Symbol);
 };
 
 InputFeeder::InputFeeder(DabParameterSetReference & Prm, Queue & queue, Event & event, const char *path) :
     _Prm(Prm),
     _queue(queue), _event(event), _avg_long(0) , _avg_short(0),
     _writeOffset(0), _readOffset(0), _symbolcnt(-1),
-    _sofState(SOF_STATE_PREFILL), _done(false)
+    _sofState(SOF_STATE_PREFILL), _done(false), _corPhase(0)
 {
   _fh = open(path, O_RDONLY);
 
@@ -249,20 +261,38 @@ int InputFeeder::findNextSymbol()
 
 void InputFeeder::getSymbol(DabSymbol & symbol)
 {
-  auto  readOffset  = _readOffset;
-  auto writeOffset  = _writeOffset;
-  auto  sofSymbol   = _sofOffset;
+  auto  readOffset   = _readOffset;
+  auto writeOffset   = _writeOffset;
+  auto  sofSymbol    = _sofOffset;
+  auto  corPhase     = _corPhase;
+
+
+  //printf("CorFreq: %d\n", corFreq);
+
 
   enum State state = _sofState;
 
   if(state == SOF_STATE_FRAME)
   {
+    const int MaxSampleRate = DabParameterSetReference::getMaxSampleRate();
+    int corFreq = _OffsetCorrection.getValue();
+
+    while (corFreq >= MaxSampleRate)
+      corFreq -= MaxSampleRate;
+
+    while (corFreq < -MaxSampleRate)
+      corFreq += MaxSampleRate;
+
     /* process frame */
     const auto samples = _Prm.getSamplesPerSymbol() + _Prm.getSamplesPerSymbolGuard();
 
     if (((unsigned int)(writeOffset - sofSymbol)) >= samples)
     {
       auto pBuffer = symbol.getBuffer();
+      auto pCor    = getSineTable();
+
+      if (_symbolcnt == 0)
+        corPhase = 0;
 
       /* a full symbol is available in ringbuffer */
       while(((unsigned int)(readOffset - sofSymbol)) < samples)
@@ -284,19 +314,31 @@ void InputFeeder::getSymbol(DabSymbol & symbol)
             const int8_t i = _data[readOffset % _nelements][0];
             const int8_t q = _data[readOffset % _nelements][1];
 
-            pBuffer[index][0] = i;
-            pBuffer[index][1] = q;
+            ::std::complex<float> sample(i,q);
+
+            sample = sample * pCor[corPhase];
+
+            pBuffer[index][0] = sample.real();
+            pBuffer[index][1] = sample.imag();
           }
 
           updateSignalLevels(readOffset);
           readOffset++;
+
+          if ((corPhase + corFreq) >= MaxSampleRate)
+            corPhase  = corPhase  + corFreq - MaxSampleRate;
+          else if ((corPhase + corFreq) < 0)
+            corPhase  = corPhase  + corFreq + MaxSampleRate;
+          else
+            corPhase  = corPhase  + corFreq;
         }
       }
+
+      symbol.setState(symbol.STATE_SAMPLE);
 
       _symbolcnt += 1;
       sofSymbol += samples;
     }
-
   }
 
   if(_symbolcnt >= _Prm.getSymbolsPerFrame() &&
@@ -308,6 +350,37 @@ void InputFeeder::getSymbol(DabSymbol & symbol)
   _sofState   = state;
   _sofOffset  = sofSymbol;
   _readOffset = readOffset;
+}
+
+void InputFeeder::updateOffset(const DabSymbol & Symbol)
+{
+  float Offset = 0;
+
+  Offset += Symbol.getCoarseOffset();
+  Offset += Symbol.getFineOffset();
+
+  _OffsetCorrection.addValue(_OffsetCorrection.getValue() - Offset);
+};
+
+::std::complex<float> * InputFeeder::getSineTable()
+{
+  static ::std::complex<float> * pTable = 0;
+
+  if(!pTable)
+  {
+    const auto  MaxSampleRate = DabParameterSetReference::getMaxSampleRate();
+    const float Factor = 2 * ::std::acos((float)-1) / MaxSampleRate;
+    unsigned int i;
+
+    pTable = new ::std::complex<float>[MaxSampleRate];
+
+    for(i = 0; i < MaxSampleRate; ++i)
+    {
+      pTable[i] = ::std::exp(::std::complex<float>(0, i * Factor));
+    }
+  }
+
+  return pTable;
 }
 
 class FFT : public Job
@@ -381,7 +454,8 @@ void FFT::run()
   }
 
   const float FreqPerSlot = (float)_Prm.getSampleRate() / SamplesPerSymbol;
-  float Offset = 0;
+  float CoarseOffset = 0;
+  float FineOffset = 0;
 
   {
     const auto *pInBuffer = _pSymbol->getBuffer();
@@ -392,13 +466,26 @@ void FFT::run()
       ::std::complex<float> a = {pInBuffer[i][0] , pInBuffer[i][1]};
       ::std::complex<float> b = {pInBuffer[j][0] , pInBuffer[j][1]};
 
-      Offset += ::std::arg(a*b);
+      FineOffset += ::std::arg(a*b);
     }
 
-    Offset = FreqPerSlot * Offset / i / _pi / 2;
+    FineOffset = FreqPerSlot * FineOffset / i / _pi / 2;
   }
 
   fftwf_execute_dft(_plan, _pSymbol->getBuffer(), _pOutBuffer);
+
+  { /* mapp fft data to carriers */
+    auto pBuffer      = _pSymbol->getBuffer();
+    auto MappingTable = _Prm.getMappingTable();
+
+    unsigned int i;
+
+    for(i = 0; i < NumCarriers; ++i)
+    {
+      pBuffer[i][0] = _pOutBuffer[MappingTable[i]][0];
+      pBuffer[i][1] = _pOutBuffer[MappingTable[i]][1];
+    }
+  }
 
   { /* calculate channel offset */
     float sum = 0, maxsum = 0;
@@ -430,11 +517,14 @@ void FFT::run()
       }
     }
 
-    Offset += FreqPerSlot * ((int)maxj - (int)(SamplesPerSymbol) + NumCarriers / 2);
+    int ChannelOffset = ((int)maxj - (int)(SamplesPerSymbol) + NumCarriers / 2);
+
+    CoarseOffset = FreqPerSlot * ChannelOffset;
   }
 
 
-  printf("%f\n", Offset);
+  _pSymbol->setOffsets(CoarseOffset, FineOffset);
+  _pSymbol->setState(_pSymbol->STATE_DFT);
 
   _running = false;
   _event.signal();
@@ -549,6 +639,19 @@ void DabManager::run()
 
   {
     MutexLocker lock(_mutex);
+    unsigned int j;
+
+    for(j = 0; j < SymbolsPerFrame; ++j)
+    {
+      auto & Symbol = _pSymbols[j];
+
+      if(Symbol.getState() == Symbol.STATE_DFT)
+      {
+        _feeder.updateOffset(Symbol);
+        Symbol.setState(Symbol.STATE_FREQCOR);
+      }
+    }
+
     if(_feeder.getSymbolCnt() >= SymbolsPerFrame)
     {
       for(i = 0; i < sizeof(_fft) / sizeof(_fft[0]); ++i)

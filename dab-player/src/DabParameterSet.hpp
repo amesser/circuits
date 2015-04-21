@@ -16,15 +16,12 @@ struct DabParameterSet
   uint16_t SamplesPerSymbol;
   uint16_t SamplesPerSymbolGuard;
   uint16_t Carriers;
-  int8_t   SymbolsPerFrame; /* excluding the phase reference symbol*/
+  uint8_t  SymbolsPerFrame; /* excluding the phase reference symbol*/
 };
 
 class DabParameterSetReference
 {
-private:
-  const struct DabParameterSet *_pCurrentParameters;
 public:
-
   enum DabMode
   {
     DAB_MODE0 = 0,
@@ -33,17 +30,31 @@ public:
     DAB_MODE3 = 3
   };
 
+  typedef uint16_t MappingTableType[1536];
+
+private:
+  struct DabParameterSet const *_pCurrentParameters;
+  enum DabMode            _Mode;
+  MappingTableType        _ChannelMapping;
+
+  void updateMappingTable();
+  void setDabMode(enum DabMode mode);
+public:
+
   DabParameterSetReference(enum DabMode mode);
   DabParameterSetReference(const DabParameterSetReference& rhs);
 
   DabParameterSetReference & operator = (const DabParameterSetReference & rhs);
 
-  static constexpr unsigned int getMaxSamples() { return 2048 + 504; }
+  static constexpr unsigned int getMaxSamples()    { return 2048 + 504; }
+  static constexpr unsigned int getMaxSampleRate() { return 2048000;    }
+
   unsigned int getSamplesPerSymbol()      const {return _pCurrentParameters->SamplesPerSymbol;}
   unsigned int getSamplesPerSymbolGuard() const {return _pCurrentParameters->SamplesPerSymbolGuard;}
-           int getSymbolsPerFrame()       const {return _pCurrentParameters->SymbolsPerFrame;}
+  unsigned int getSymbolsPerFrame()       const {return _pCurrentParameters->SymbolsPerFrame;}
   unsigned int getNumCarriers()           const {return _pCurrentParameters->Carriers;}
   unsigned int getSampleRate()            const {return _pCurrentParameters->SampleRate;}
+  const MappingTableType & getMappingTable() const {return _ChannelMapping;};
 };
 
 
