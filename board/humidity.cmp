@@ -1,0 +1,185 @@
+Cmp-Mod V01 Created by CvPcb (22-Jun-2014 BZR 4027)-stable date = Do 30 Apr 2015 19:38:54 CEST
+
+BeginCmp
+TimeStamp = /55411A26;
+Reference = C101;
+ValeurCmp = 2n2 NP0;
+IdModule  = SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /55411982;
+Reference = C102;
+ValeurCmp = Cm;
+IdModule  = capsensor_5x50;
+EndCmp
+
+BeginCmp
+TimeStamp = /55425EEB;
+Reference = C103;
+ValeurCmp = 2n2 NP0;
+IdModule  = SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /55411A20;
+Reference = C104;
+ValeurCmp = 2n2 NP0;
+IdModule  = SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /55411A1A;
+Reference = C105;
+ValeurCmp = 2n2 NP0;
+IdModule  = SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /55411A14;
+Reference = C106;
+ValeurCmp = 2n2 NP0;
+IdModule  = SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /554118FB;
+Reference = C107;
+ValeurCmp = 2n2 NP0;
+IdModule  = SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /554258FD;
+Reference = C108;
+ValeurCmp = 100n;
+IdModule  = SM0603_Capa;
+EndCmp
+
+BeginCmp
+TimeStamp = /55424D64;
+Reference = C109;
+ValeurCmp = 100n;
+IdModule  = SM0603_Capa;
+EndCmp
+
+BeginCmp
+TimeStamp = /554118D7;
+Reference = C110;
+ValeurCmp = 100n;
+IdModule  = SM0603_Capa;
+EndCmp
+
+BeginCmp
+TimeStamp = /55425767;
+Reference = D101;
+ValeurCmp = LED;
+IdModule  = SOT23-SPECIAL;
+EndCmp
+
+BeginCmp
+TimeStamp = /55424D2A;
+Reference = D102;
+ValeurCmp = DOUBLE_SCH_KCOM;
+IdModule  = SOT23-SPECIAL;
+EndCmp
+
+BeginCmp
+TimeStamp = /5541189A;
+Reference = IC101;
+ValeurCmp = ATTINY13A-SS;
+IdModule  = SO8E;
+EndCmp
+
+BeginCmp
+TimeStamp = /554261A0;
+Reference = P101;
+ValeurCmp = TST;
+IdModule  = PINTST;
+EndCmp
+
+BeginCmp
+TimeStamp = /55426186;
+Reference = P102;
+ValeurCmp = TST;
+IdModule  = PINTST;
+EndCmp
+
+BeginCmp
+TimeStamp = /55426179;
+Reference = P103;
+ValeurCmp = TST;
+IdModule  = PINTST;
+EndCmp
+
+BeginCmp
+TimeStamp = /554261A6;
+Reference = P104;
+ValeurCmp = TST;
+IdModule  = PINTST;
+EndCmp
+
+BeginCmp
+TimeStamp = /55411FEB;
+Reference = P105;
+ValeurCmp = CONN_2;
+IdModule  = AK300-2;
+EndCmp
+
+BeginCmp
+TimeStamp = /554258F0;
+Reference = Q101;
+ValeurCmp = PNP;
+IdModule  = SOT23_INV;
+EndCmp
+
+BeginCmp
+TimeStamp = /55425774;
+Reference = R101;
+ValeurCmp = 1k;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /554258E8;
+Reference = R102;
+ValeurCmp = 10k;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /55411930;
+Reference = R103;
+ValeurCmp = 1k;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5541191A;
+Reference = R104;
+ValeurCmp = 1k;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /55411908;
+Reference = R105;
+ValeurCmp = 100k;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /55411BC0;
+Reference = R106;
+ValeurCmp = 10k;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /554122CE;
+Reference = R107;
+ValeurCmp = 1k;
+IdModule  = SM0805;
+EndCmp
+
+EndListe

@@ -1,0 +1,54 @@
+PCBNEW-LibModule-V1  Sa 18 Apr 2015 17:59:26 CEST
+# encoding utf-8
+Units mm
+$INDEX
+HUMIDITY
+capsensor_5x50
+$EndINDEX
+$MODULE HUMIDITY
+Po 0 0 0 15 55323607 00000000 ~~
+Li HUMIDITY
+Sc 0
+AR 
+Op 0 0 0
+T0 0 0 1 1 0 0.15 N V 21 N "HUMIDITY"
+T1 0 0 1 1 0 0.15 N V 21 N "VAL**"
+$PAD
+Sh "1" R 5 100 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po -4 0
+$EndPAD
+$PAD
+Sh "2" R 5 100 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po 4 0
+$EndPAD
+$EndMODULE HUMIDITY
+$MODULE capsensor_5x50
+Po 0 0 0 15 55327F19 00000000 ~~
+Li capsensor_5x50
+Sc 0
+AR 
+Op 0 0 0
+T0 0 0 1 1 0 0.15 N V 21 N "HUMIDITY"
+T1 0 0 1 1 0 0.15 N V 21 N "VAL**"
+$PAD
+Sh "1" R 5 50 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po -4 0
+$EndPAD
+$PAD
+Sh "2" R 5 50 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po 4 0
+$EndPAD
+$EndMODULE capsensor_5x50
+$EndLIBRARY
