@@ -5,7 +5,7 @@ def configure(conf):
     conf.ecpp_setupbuild(id='attiny13a', 
                          device='attiny13a', arch='avr8')
     
-    conf.env.append_value('DEFINES', 'F_CPU=1000000UL')
+    conf.env.append_value('DEFINES', 'F_CPU=1200000UL')
     
     conf.ecpp_setupbuild(id='controller', 
                          device='atmega8', arch='avr8')

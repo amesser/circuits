@@ -48,11 +48,21 @@ initPort()
 
 struct measurement_data data __attribute__((section(".noinit")));
 
+#define USE_AC 1
+
 int main(void)
 {
 
   uint16_t count;
   initPort();
+
+#ifdef USE_AC
+  ADMUX  = 0;
+  ADCSRA = 0;
+  ADCSRB = _BV(ACME);
+
+  ACSR   = 0;
+#endif
 
   /* measure humidity */
   for (count = 0; count < 0xFFFF; count++)
@@ -61,11 +71,19 @@ int main(void)
      * hum capacitor */
     HumCapacitor.enableOutput();
 
+
     asm ( "nop");
 
+#ifdef USE_AC
+    asm ( "nop");
+
+    if(ACSR & _BV(ACO))
+      break;
+#else
     /* check if ref capacitor is charged */
     if(RefCapacitor.getInput())
       break;
+#endif
 
     HumCapacitor.disableOutput();
 
@@ -118,6 +136,9 @@ int main(void)
   /* setup adc */
   ADMUX  = _BV(REFS0) | _BV(MUX1);
   ADCSRA = _BV(ADEN) | _BV(ADSC) | _BV(ADPS1) | _BV(ADPS0);
+  ADCSRB = 0;
+
+  ADCSRA |= _BV(ADSC);
 
   while(ADCSRA & _BV(ADSC));
 

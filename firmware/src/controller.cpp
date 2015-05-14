@@ -392,6 +392,14 @@ public:
         }
         else if (m_UartStatus0 & _BV(PE))
         {
+          delta = -1;
+        }
+        else if (m_UartStatus0 & _BV(FE))
+        {
+          delta = +1;
+        }
+        else if (m_UartStatus0 & (_BV(PE << 3)))
+        {
           len = 0;
         }
 
@@ -708,16 +716,15 @@ public:
 
     if(m_UartState < UART_PROCESS)
     {
+      uint8_t mask   = _BV(PE) | _BV(FE);
       uint8_t offset = m_UartRecvLen;
 
       if(offset == 0)
       {
-        m_UartStatus0 = ((resh >> 1) & 0x01) | (status & 0xFE);
+        m_UartStatus0 = ((resh >> 1) & 0x01) | (status & mask);
       }
-      else
-      {
-        m_UartStatus0 |= (status & 0xFE);
-      }
+
+      m_UartStatus0 |= (status & mask) << 3;
 
       if(offset < sizeof(m_UartBuffer))
       {
@@ -745,7 +752,7 @@ int main()
 
   UCSRA = 0;
   UCSRB = _BV(RXCIE) | _BV(RXEN)  | _BV(UCSZ2);
-  UCSRC = _BV(URSEL) | _BV(UPM1)  | _BV(UPM0) | _BV(UCSZ1) | _BV(UCSZ0);
+  UCSRC = _BV(URSEL) | _BV(UPM1)  /* | _BV(UPM0) */ | _BV(UCSZ1) | _BV(UCSZ0);
 
   *(LCDDataPort.PORT) = 0x00;
   *(LCDDataPort.DDR)  = 0x0F;
