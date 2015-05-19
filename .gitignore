@@ -1,3 +1,6 @@
 .settings
 firmware/build
 firmware/.lock-waf_*
+board/*.bak
+board/*.kicad_pcb-bak
+board/*-cache.lib
