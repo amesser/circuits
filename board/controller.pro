@@ -1,5 +1,5 @@
-update=Di 19 Mai 2015 09:02:16 CEST
-last_client=cvpcb
+update=Mi 20 Mai 2015 14:23:48 CEST
+last_client=pcbnew
 [eeschema]
 version=1
 LibDir=../externals/kicadlib/symbols
@@ -44,8 +44,32 @@ LibName32=amesser-miscic
 LibName33=amesser-display
 LibName34=amesser-conn
 LibName35=amesser-switch
+[cvpcb]
+version=1
+NetIExt=net
+[cvpcb/libraries]
+EquName1=devcms
 [pcbnew]
+version=1
+LastNetListRead=controller.net
+UseCmpFile=1
+PadDrill=0.000000000000
+PadDrillOvalY=0.000000000000
+PadSizeH=2.180000000000
+PadSizeV=1.600000000000
+PcbTextSizeV=1.500000000000
+PcbTextSizeH=1.500000000000
+PcbTextThickness=0.300000000000
+ModuleTextSizeV=1.000000000000
+ModuleTextSizeH=1.000000000000
+ModuleTextSizeThickness=0.150000000000
+SolderMaskClearance=0.000000000000
+SolderMaskMinWidth=0.000000000000
+DrawSegmentWidth=0.200000000000
+BoardOutlineThickness=0.100000000000
+ModuleOutlineThickness=0.150000000000
 [pcbnew/libraries]
+LibDir=../externals/kicadlib/packages
 LibName1=sockets
 LibName2=connect
 LibName3=discret
@@ -60,10 +84,8 @@ LibName11=led
 LibName12=dip_sockets
 LibName13=pga_sockets
 LibName14=valves
-LibName15=/home/andi/Projekte/humidity/externals/kicadlib/packages/amesser-connector
-LibDir=
-[cvpcb]
-version=1
-NetIExt=net
-[cvpcb/libraries]
-EquName1=devcms
+LibName15=amesser-connector
+LibName16=amesser-display
+LibName17=amesser-cases
+LibName18=amesser-switch
+LibName19=case

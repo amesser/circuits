@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPcb (22-Jun-2014 BZR 4027)-stable date = Di 19 Mai 2015 09:14:05 CEST
+Cmp-Mod V01 Created by CvPcb (22-Jun-2014 BZR 4027)-stable date = Mi 20 Mai 2015 07:03:06 CEST
 
 BeginCmp
 TimeStamp = /5557688F;
@@ -60,28 +60,28 @@ BeginCmp
 TimeStamp = /5557E4ED;
 Reference = C109;
 ValeurCmp = CP;
-IdModule  = C2V8;
+IdModule  = C1V7;
 EndCmp
 
 BeginCmp
 TimeStamp = /5557B325;
 Reference = C110;
 ValeurCmp = CP;
-IdModule  = C2V8;
+IdModule  = C1V7;
 EndCmp
 
 BeginCmp
 TimeStamp = /5557E4E7;
 Reference = C111;
 ValeurCmp = CP;
-IdModule  = C2V8;
+IdModule  = C1V7;
 EndCmp
 
 BeginCmp
 TimeStamp = /5557B9DC;
 Reference = C112;
 ValeurCmp = CP;
-IdModule  = C2V8;
+IdModule  = C1V7;
 EndCmp
 
 BeginCmp
@@ -424,14 +424,14 @@ BeginCmp
 TimeStamp = /555A5A7F/5559888E;
 Reference = LCD201;
 ValeurCmp = UNKNOWN_LCD_C39363-A319-B70;
-IdModule  = ;
+IdModule  = unkown_lcd_c39363-a319-b70;
 EndCmp
 
 BeginCmp
 TimeStamp = /5557528E;
 Reference = P101;
 ValeurCmp = CONN_4;
-IdModule  = ;
+IdModule  = bopla_ak700_4h;
 EndCmp
 
 BeginCmp
@@ -459,7 +459,7 @@ BeginCmp
 TimeStamp = /555A5A7F/5559CED9;
 Reference = P203;
 ValeurCmp = MICROSD;
-IdModule  = ;
+IdModule  = hirose_dm3at;
 EndCmp
 
 BeginCmp
@@ -991,21 +991,21 @@ BeginCmp
 TimeStamp = /555A5A7F/555A2361;
 Reference = SW201;
 ValeurCmp = SWITCH_PUSH;
-IdModule  = ;
+IdModule  = te_fsmsm;
 EndCmp
 
 BeginCmp
 TimeStamp = /555A5A7F/555A237D;
 Reference = SW202;
 ValeurCmp = SWITCH_PUSH;
-IdModule  = ;
+IdModule  = te_fsmsm;
 EndCmp
 
 BeginCmp
 TimeStamp = /555A5A7F/555A2383;
 Reference = SW203;
 ValeurCmp = SWITCH_PUSH;
-IdModule  = ;
+IdModule  = te_fsmsm;
 EndCmp
 
 BeginCmp
@@ -1019,14 +1019,14 @@ BeginCmp
 TimeStamp = /5557E4DA;
 Reference = U102;
 ValeurCmp = 7805;
-IdModule  = TO220;
+IdModule  = LM78XX;
 EndCmp
 
 BeginCmp
 TimeStamp = /555A5A7F/555A3C6D;
 Reference = U201;
 ValeurCmp = LM6206N3-3.3;
-IdModule  = SOT-23;
+IdModule  = SOT23;
 EndCmp
 
 BeginCmp
@@ -1040,7 +1040,7 @@ BeginCmp
 TimeStamp = /555A5A7F/5559FA51;
 Reference = U203;
 ValeurCmp = 4066;
-IdModule  = DIP-14__300_ELL;
+IdModule  = SO14N;
 EndCmp
 
 BeginCmp

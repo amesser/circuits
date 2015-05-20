@@ -41,7 +41,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 3 3
 Title "CAN Interface"
-Date "19 may 2015"
+Date "20 may 2015"
 Rev "1"
 Comp "(c) 2015 Andreas Messer"
 Comment1 ""
@@ -289,7 +289,7 @@ F 1 "CONN_2X2" H 6160 4070 40  0000 C CNN
 F 2 "" H 6150 4200 60  0000 C CNN
 F 3 "" H 6150 4200 60  0000 C CNN
 	1    6150 4200
-	-1   0    0    1   
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	4200 5200 4200 5150
