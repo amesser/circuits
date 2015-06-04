@@ -41,7 +41,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 2 3
 Title "Display & Keyboard"
-Date "20 may 2015"
+Date "4 jun 2015"
 Rev "1"
 Comp "(c) 2015 Andreas Messer"
 Comment1 ""
@@ -316,12 +316,12 @@ $EndComp
 $Comp
 L C C203
 U 1 1 55599747
-P 4150 1900
-F 0 "C203" H 4150 2000 40  0000 L CNN
-F 1 "100n" H 4156 1815 40  0000 L CNN
-F 2 "~" H 4188 1750 30  0000 C CNN
-F 3 "~" H 4150 1900 60  0000 C CNN
-	1    4150 1900
+P 4600 2150
+F 0 "C203" H 4600 2250 40  0000 L CNN
+F 1 "100n" H 4606 2065 40  0000 L CNN
+F 2 "~" H 4638 2000 30  0000 C CNN
+F 3 "~" H 4600 2150 60  0000 C CNN
+	1    4600 2150
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -338,12 +338,12 @@ $EndComp
 $Comp
 L GND #PWR040
 U 1 1 55599845
-P 4150 2150
-F 0 "#PWR040" H 4150 2150 30  0001 C CNN
-F 1 "GND" H 4150 2080 30  0001 C CNN
-F 2 "" H 4150 2150 60  0000 C CNN
-F 3 "" H 4150 2150 60  0000 C CNN
-	1    4150 2150
+P 4600 2400
+F 0 "#PWR040" H 4600 2400 30  0001 C CNN
+F 1 "GND" H 4600 2330 30  0001 C CNN
+F 2 "" H 4600 2400 60  0000 C CNN
+F 3 "" H 4600 2400 60  0000 C CNN
+	1    4600 2400
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -371,23 +371,23 @@ $EndComp
 $Comp
 L C C213
 U 1 1 55599C28
-P 7550 2500
-F 0 "C213" H 7550 2600 40  0000 L CNN
-F 1 "100n" H 7556 2415 40  0000 L CNN
-F 2 "~" H 7588 2350 30  0000 C CNN
-F 3 "~" H 7550 2500 60  0000 C CNN
-	1    7550 2500
+P 7300 2550
+F 0 "C213" H 7300 2650 40  0000 L CNN
+F 1 "100n" H 7306 2465 40  0000 L CNN
+F 2 "~" H 7338 2400 30  0000 C CNN
+F 3 "~" H 7300 2550 60  0000 C CNN
+	1    7300 2550
 	0    -1   -1   0   
 $EndComp
 $Comp
 L GND #PWR041
 U 1 1 55599C38
-P 7300 2550
-F 0 "#PWR041" H 7300 2550 30  0001 C CNN
-F 1 "GND" H 7300 2480 30  0001 C CNN
-F 2 "" H 7300 2550 60  0000 C CNN
-F 3 "" H 7300 2550 60  0000 C CNN
-	1    7300 2550
+P 7550 2600
+F 0 "#PWR041" H 7550 2600 30  0001 C CNN
+F 1 "GND" H 7550 2530 30  0001 C CNN
+F 2 "" H 7550 2600 60  0000 C CNN
+F 3 "" H 7550 2600 60  0000 C CNN
+	1    7550 2600
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -911,9 +911,9 @@ Text HLabel 1950 2300 0    60   Input ~ 0
 Vdd
 Text HLabel 1950 2400 0    60   Input ~ 0
 GND
-Text HLabel 1950 2700 0    60   Input ~ 0
-RESET_LCD
 Text HLabel 1950 2600 0    60   Input ~ 0
+RESET_LCD
+Text HLabel 1950 2700 0    60   Input ~ 0
 CS_LCD
 Text HLabel 1950 3100 0    60   Input ~ 0
 CS_SD
@@ -1018,13 +1018,11 @@ Connection ~ 4750 1650
 Wire Wire Line
 	5150 1650 5150 1700
 Wire Wire Line
-	4150 1650 4150 1700
-Wire Wire Line
 	3100 1650 4200 1650
 Wire Wire Line
 	5650 2100 5650 2150
 Wire Wire Line
-	4150 2100 4150 2150
+	4600 2350 4600 2400
 Wire Wire Line
 	7800 3200 6850 3200
 Wire Wire Line
@@ -1036,10 +1034,6 @@ Wire Wire Line
 Connection ~ 7000 4000
 Wire Wire Line
 	6850 3900 6850 4000
-Wire Wire Line
-	7350 2500 7300 2500
-Wire Wire Line
-	7300 2500 7300 2550
 Wire Wire Line
 	7700 2600 7800 2600
 Connection ~ 6850 3200
@@ -1206,7 +1200,6 @@ Wire Wire Line
 Connection ~ 5850 4050
 Wire Wire Line
 	3950 1700 3950 1650
-Connection ~ 4150 1650
 Wire Wire Line
 	3050 3200 4800 3200
 Wire Wire Line
@@ -1318,11 +1311,9 @@ Wire Wire Line
 Wire Wire Line
 	2000 3600 1950 3600
 Wire Wire Line
-	7800 2500 7750 2500
+	7700 2500 7700 2700
 Wire Wire Line
-	7700 2700 7700 2600
-Wire Wire Line
-	5700 2700 7700 2700
+	7700 2700 5700 2700
 Wire Wire Line
 	5200 5200 5150 5200
 Wire Wire Line
@@ -1351,14 +1342,11 @@ Wire Wire Line
 Wire Wire Line
 	6950 2900 7800 2900
 Wire Wire Line
-	7050 2600 7050 2800
+	7050 2550 7050 2800
 Wire Wire Line
 	7050 2800 7800 2800
 Wire Wire Line
 	6750 2250 6750 2600
-Wire Wire Line
-	3950 2200 3950 2900
-Connection ~ 3950 2900
 Wire Wire Line
 	5700 3200 5950 3200
 Connection ~ 5950 3200
@@ -1423,4 +1411,22 @@ Connection ~ 3750 3400
 Wire Wire Line
 	3650 2200 3650 3500
 Connection ~ 3650 3500
+Wire Wire Line
+	4600 1950 4600 1850
+Wire Wire Line
+	4600 1850 4750 1850
+Connection ~ 4750 1850
+Wire Wire Line
+	3950 2200 3950 2800
+Connection ~ 3950 2800
+Wire Wire Line
+	7050 2550 7100 2550
+Connection ~ 7050 2600
+Wire Wire Line
+	7500 2550 7550 2550
+Wire Wire Line
+	7550 2550 7550 2600
+Wire Wire Line
+	7700 2500 7800 2500
+Connection ~ 7700 2600
 $EndSCHEMATC

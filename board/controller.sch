@@ -41,7 +41,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 3
 Title "noname.sch"
-Date "20 may 2015"
+Date "4 jun 2015"
 Rev ""
 Comp ""
 Comment1 ""
@@ -1061,17 +1061,6 @@ F 3 "~" H 6200 1300 30  0000 C CNN
 	1    0    0    1   
 $EndComp
 $Comp
-L R R117
-U 1 1 5557FB8C
-P 4850 2200
-F 0 "R117" H 4930 2200 40  0000 C CNN
-F 1 "10k" V 4857 2201 40  0000 C CNN
-F 2 "~" V 4780 2200 30  0000 C CNN
-F 3 "~" H 4850 2200 30  0000 C CNN
-	1    4850 2200
-	0    -1   1    0   
-$EndComp
-$Comp
 L DIODE D101
 U 1 1 5557FB9C
 P 1500 4000
@@ -1268,17 +1257,6 @@ F 3 "" H 5150 2250 60  0000 C CNN
 $EndComp
 Text Label 850  4600 2    60   ~ 0
 Vref
-$Comp
-L R R116
-U 1 1 555B6B92
-P 4850 1300
-F 0 "R116" V 4930 1300 40  0000 C CNN
-F 1 "10k" V 4857 1301 40  0000 C CNN
-F 2 "~" V 4780 1300 30  0000 C CNN
-F 3 "~" H 4850 1300 30  0000 C CNN
-	1    4850 1300
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	3400 2100 3350 2100
 Wire Wire Line
@@ -1697,11 +1675,7 @@ Wire Wire Line
 Wire Wire Line
 	7100 5200 4150 5200
 Wire Wire Line
-	5700 3800 4750 3800
-Wire Wire Line
 	4150 5400 4800 5400
-Wire Wire Line
-	4650 3900 5700 3900
 Wire Wire Line
 	4700 4000 5700 4000
 Wire Wire Line
@@ -1719,7 +1693,7 @@ Wire Wire Line
 Wire Wire Line
 	5700 4300 4900 4300
 Wire Wire Line
-	4150 4300 4650 4300
+	4650 4300 4150 4300
 Wire Wire Line
 	4800 3550 6900 3550
 Wire Wire Line
@@ -1769,8 +1743,6 @@ Connection ~ 1500 4300
 Connection ~ 1100 4500
 Wire Wire Line
 	5150 1250 5150 1350
-Wire Wire Line
-	5100 1300 5200 1300
 Connection ~ 5150 1300
 Wire Wire Line
 	5600 1300 5650 1300
@@ -1790,20 +1762,8 @@ Wire Wire Line
 	1100 3700 1100 3750
 Connection ~ 900  4600
 Wire Wire Line
-	4600 1300 4550 1300
-Wire Wire Line
-	4550 1300 4550 1650
-Wire Wire Line
-	4550 1650 4750 1650
-Wire Wire Line
-	5150 2200 5100 2200
+	4700 2200 5150 2200
 Connection ~ 5150 2200
-Wire Wire Line
-	4600 2200 4550 2200
-Wire Wire Line
-	4550 2200 4550 1850
-Wire Wire Line
-	4550 1850 4750 1850
 NoConn ~ 5750 1750
 Wire Wire Line
 	4150 5300 4200 5300
@@ -1855,46 +1815,9 @@ Wire Wire Line
 	6200 2200 6600 2200
 Wire Wire Line
 	6200 2200 6200 2150
-$Comp
-L DIODE D108
-U 1 1 555BD86B
-P 6600 1900
-F 0 "D108" H 6600 2000 40  0000 C CNN
-F 1 "DIODE" H 6600 1800 40  0000 C CNN
-F 2 "~" H 6600 1900 60  0000 C CNN
-F 3 "~" H 6600 1900 60  0000 C CNN
-	1    6600 1900
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	6600 2200 6600 2100
 Connection ~ 6400 2200
-Wire Wire Line
-	6600 1500 6600 1700
-$Comp
-L DIODE D107
-U 1 1 555BE08F
-P 6600 1300
-F 0 "D107" H 6600 1400 40  0000 C CNN
-F 1 "DIODE" H 6600 1200 40  0000 C CNN
-F 2 "~" H 6600 1300 60  0000 C CNN
-F 3 "~" H 6600 1300 60  0000 C CNN
-	1    6600 1300
-	0    -1   -1   0   
-$EndComp
-$Comp
-L +5V #PWR031
-U 1 1 555BE125
-P 6600 1050
-F 0 "#PWR031" H 6600 1140 20  0001 C CNN
-F 1 "+5V" H 6600 1140 30  0000 C CNN
-F 2 "" H 6600 1050 60  0000 C CNN
-F 3 "" H 6600 1050 60  0000 C CNN
-	1    6600 1050
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	6600 1050 6600 1100
 Connection ~ 6600 1600
 $Comp
 L DIODE D109
@@ -1963,7 +1886,33 @@ Wire Wire Line
 Wire Wire Line
 	4700 4500 4700 4000
 Wire Wire Line
-	4650 4300 4650 3900
+	4650 3800 4650 4300
 Wire Wire Line
-	4750 3800 4750 6200
+	4750 3900 4750 6200
+Wire Wire Line
+	5200 1300 5150 1300
+Wire Wire Line
+	4750 1850 4700 1850
+Wire Wire Line
+	4700 1650 4700 2200
+Wire Wire Line
+	4750 1650 4700 1650
+Connection ~ 4700 1850
+$Comp
+L ZENER D108
+U 1 1 555DCE9E
+P 6600 1900
+F 0 "D108" H 6600 2000 50  0000 C CNN
+F 1 "4V7" H 6600 1800 40  0000 C CNN
+F 2 "~" H 6600 1900 60  0000 C CNN
+F 3 "~" H 6600 1900 60  0000 C CNN
+	1    6600 1900
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	6600 1600 6600 1700
+Wire Wire Line
+	4750 3900 5700 3900
+Wire Wire Line
+	4650 3800 5700 3800
 $EndSCHEMATC

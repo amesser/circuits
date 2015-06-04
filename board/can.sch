@@ -41,7 +41,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 3 3
 Title "CAN Interface"
-Date "20 may 2015"
+Date "4 jun 2015"
 Rev "1"
 Comp "(c) 2015 Andreas Messer"
 Comment1 ""
