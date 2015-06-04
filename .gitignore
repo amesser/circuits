@@ -4,3 +4,6 @@ firmware/.lock-waf_*
 board/*.bak
 board/*.kicad_pcb-bak
 board/*-cache.lib
+board/*.svg
+board/*.ps
+board/*.png
