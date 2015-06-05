@@ -7,8 +7,6 @@
 
 #include "controller_bsp.hpp"
 
-static BSP                BoardSupportPackage;
-
 class HumidityController
 {
   Timer<uint16_t> LedTimer;
@@ -25,6 +23,18 @@ public:
 
       BoardSupportPackage.enableOutputs(cnt & 0x0C);
       cnt += 0x04;
+
+      auto line = BoardSupportPackage.getDisplayLine(0);
+      line[0] = 'a';
+      line[1] = 'b';
+      line[2] = 'c';
+      line[3] = 'd';
+      line[4] = 'e';
+      line[5] = 'f';
+      line[6] = 'g';
+      line[7] = 'h';
+      line[8] = 'j';
+      line[9] = 'k';
     }
 
     BoardSupportPackage.handleLCD();
@@ -46,16 +56,5 @@ int main()
   }
 }
 
-ISR(USART_RXC_vect)
-{
-  BoardSupportPackage.isrUartRecv();
-  Sys_AVR8::disableSleep();
-}
 
-ISR(TIMER0_OVF_vect)
-{
-  BoardSupportPackage.isrTimer0Ovf();
-  Sys_AVR8::disableSleep();
-
-}
 

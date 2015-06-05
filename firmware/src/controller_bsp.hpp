@@ -10,8 +10,10 @@
 #include "ecpp/Byteorder.hpp"
 #include "ecpp/Peripherals/SDCard.hpp"
 #include "ecpp/Ringbuffer.hpp"
-#include "protocol.hpp"
 #include <string.h>
+
+#include "protocol.hpp"
+#include "font.hpp"
 
 using namespace ecpp;
 
@@ -89,8 +91,16 @@ private:
     uint8_t State;
   } s_Outputs;
 
+  static struct LCD
+  {
+    char Lines[4][10];
+    char Status[10];
+  } s_LCD;
+
 public:
   static Clock<uint16_t> & get1MsClock() {return s_Time.Clock1Ms;}
+
+  static char (&getDisplayLine(uint8_t row))[10] {return s_LCD.Lines[row];}
 
   static void toggleLed()
   {
@@ -179,12 +189,12 @@ public:
     _delay_us(5);
 
     spi.transferByte(0xA2);
-    spi.transferByte(0xA1);
+    spi.transferByte(0xA1); /* this command is not working */
     spi.transferByte(0xC0);
 
     spi.transferByte(0x25);
     spi.transferByte(0x81);
-    spi.transferByte(0x2B);
+    spi.transferByte(0x2F);
     spi.transferByte(0x2F);
 
     spi.transferByte(0x40);
@@ -210,27 +220,8 @@ public:
   }
 
   static void handleOutputs();
-  static void handleLCD()
-  {
-    SPIMaster spi;
-    PinLCD_CS.clearOutput();
-
-    int offset = s_Time.Clock1Ms.value() / 128;
-
-    for (uint8_t page = 0; page < 8; ++page)
-    {
-      PinLCD_A0.clearOutput();
-
-      spi.transferByte(0xB0 + page);
-      spi.transferByte(0x10);
-      spi.transferByte(0x00);
-
-      PinLCD_A0.setOutput();
-      for(int i = 0; i < 101; ++i)
-        spi.transferByte(0x01 << ((i +offset)% 8));
-      PinLCD_A0.clearOutput();
-    }
-
-    PinLCD_CS.setOutput();
-  }
+  static void handleLCD();
 };
+
+
+extern BSP BoardSupportPackage;

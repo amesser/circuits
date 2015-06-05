@@ -22,7 +22,7 @@ def build(bld):
 
     bld.ecpp_build(
         id= 'controller',
-        source   = ['controller.cpp', 'controller_bsp.cpp'],
+        source   = ['controller.cpp', 'controller_bsp.cpp', 'font.cpp'],
         target   = 'controller.elf',
         features = 'cxx cxxprogram',  
         includes = ['.'],

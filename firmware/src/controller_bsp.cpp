@@ -10,6 +10,9 @@ struct BSP::Uart      BSP::s_Uart;
 struct BSP::Time      BSP::s_Time;
 struct BSP::Timers1Ms BSP::s_Timers1Ms;
 struct BSP::Outputs   BSP::s_Outputs;
+struct BSP::LCD       BSP::s_LCD;
+
+BSP BoardSupportPackage;
 
 void BSP::initialize()
 {
@@ -58,7 +61,7 @@ void BSP::initialize()
   TCCR0 = _BV(CS02);
 
   /* Prepare Timer 1 to generate a 20khz square on OC1A */
-  OCR1A  = 200;
+  OCR1A  = 200 - 1;
 
   /* Enable Timer 0 IRQ */
   TIMSK = _BV(TOIE0);
@@ -125,5 +128,133 @@ void BSP::handleOutputs()
     OutputsState = 0;
 
   PortD.updateOutputs(OutputsState,PinOut_ChA.MASK | PinOut_ChB.MASK);
+}
+
+static uint8_t displayChars(uint8_t pos, uint8_t a, uint8_t b)
+{
+  SPIMaster spi;
+
+  for (uint8_t y = sizeof(g_Font[0]); y > 0 ; --y)
+  {
+    uint8_t maska = 0, maskb = 0;
+
+    if(a)
+      maska = g_Font[a].bitmap[y - 1];
+
+    if(b)
+      maskb = g_Font[b].bitmap[y - 1];
+
+    uint8_t bitmask = 0;
+
+    switch(pos)
+    {
+    case 0: bitmask =  maska >> 6 | (maskb); break;
+    case 1: bitmask = (maska >> 4)| (maskb << 2); break;
+    case 2: bitmask = (maska >> 2)| (maskb << 4); break;
+    }
+
+    spi.transferByte(bitmask);
+  }
+
+  return sizeof(g_Font[0]);
+}
+
+void BSP::handleLCD()
+{
+  SPIMaster spi;
+  PinLCD_CS.clearOutput();
+
+#if 0
+  int offset = s_Time.Clock1Ms.value() / 128;
+
+  for (uint8_t page = 0; page < 8; ++page)
+  {
+    PinLCD_A0.clearOutput();
+
+    spi.transferByte(0xB0 + page);
+    spi.transferByte(0x10);
+    spi.transferByte(0x00);
+
+    PinLCD_A0.setOutput();
+    for(int i = 0; i < 101; ++i)
+      spi.transferByte(0x01 << ((i +offset)% 8));
+    PinLCD_A0.clearOutput();
+  }
+#endif
+
+  uint8_t pos     =  0;
+  uint8_t idxchar = -1;
+
+  for (uint8_t page = 0; page < 8; ++page)
+  {
+    uint8_t idxcharnext = idxchar + 1;
+    uint8_t row, line;
+
+    PinLCD_A0.clearOutput();
+
+    spi.transferByte(0xB0 + page);
+    spi.transferByte(0x10);
+    spi.transferByte(0x00);
+
+    PinLCD_A0.setOutput();
+
+    line = 0;
+    {
+      char a = 0, b = 0;
+      if (idxchar < sizeof(s_LCD.Status))
+        a = s_LCD.Status[idxchar];
+
+      if (idxcharnext < (sizeof(s_LCD.Status)))
+        b = s_LCD.Status[idxcharnext];
+
+      line += displayChars(pos,a,b);
+    }
+
+    for(; line < (101 - 32); ++line)
+    {
+      spi.transferByte(0);
+    }
+
+    for(row = 4; row > 0; row--)
+    {
+      char a = 0, b = 0;
+
+      if (idxchar < sizeof(s_LCD.Lines[0]))
+        a = s_LCD.Lines[row - 1][idxchar];
+
+      if (idxcharnext < (sizeof(s_LCD.Lines[0])))
+        b = s_LCD.Lines[row - 1][idxcharnext];
+
+      line += displayChars(pos, a,b);
+    }
+
+
+
+    if (pos > 0)
+    {
+      pos     -= 1;
+      idxchar += 1;
+    }
+    else
+    {
+      pos      = 2;
+      idxchar += 2;
+    }
+  }
+
+
+  PinLCD_CS.setOutput();
+}
+
+ISR(USART_RXC_vect)
+{
+  BoardSupportPackage.isrUartRecv();
+  Sys_AVR8::disableSleep();
+}
+
+ISR(TIMER0_OVF_vect)
+{
+  BoardSupportPackage.isrTimer0Ovf();
+  Sys_AVR8::disableSleep();
 
 }
