@@ -10,12 +10,15 @@
 #include "ecpp/Byteorder.hpp"
 #include "ecpp/Peripherals/SDCard.hpp"
 #include "ecpp/Ringbuffer.hpp"
+#include "ecpp/String.hpp"
 #include <string.h>
 
 #include "protocol.hpp"
 #include "font.hpp"
 
 using namespace ecpp;
+
+
 
 class BSP
 {
@@ -55,6 +58,28 @@ private:
   static IOPin<AVR_IO_PD6> PinSens_ChA;
   static IOPin<AVR_IO_PD7> PinSens_ChB;
 
+public:
+  enum OutputMask
+  {
+    OUTPUT_CHA = PinOut_ChA.MASK,
+    OUTPUT_CHB = PinOut_ChB.MASK,
+  };
+
+  enum AccuState
+  {
+    ACCU_EMPTY = 0,
+    ACCU_OK    = 1,
+  };
+
+  struct LCD
+  {
+    char Lines[4][10];
+    char Status[10];
+  };
+
+
+private:
+
   static struct Uart
   {
     uint8_t RcvLen;
@@ -64,13 +89,18 @@ private:
 
   static struct Time
   {
-    volatile uint8_t IsrTickCnt;
-    Clock<uint16_t>  Clock1Ms;
+    volatile uint8_t      IsrTickCnt;
+    Clock<uint16_t>       Clock1Ms;
+    Timer<uint16_t, 5000> SecondTimer;
   } s_Time;
 
   static struct Timers1Ms
   {
     SimpleTimer<uint16_t> Boost;
+    SimpleTimer<uint16_t> Accu;
+    SimpleTimer<uint16_t> Keyboard;
+    SimpleTimer<uint16_t> Ui;
+    SimpleTimer<uint16_t> UiRefresh;
   } s_Timers1Ms;
 
   enum BoostState
@@ -80,27 +110,38 @@ private:
     BOOST_ACTIVE
   };
 
-  enum OutputMask
-  {
-    OUTPUT_CHA = PinOut_ChA.MASK,
-    OUTPUT_CHB = PinOut_ChB.MASK,
-  };
 
   static struct Outputs
   {
     uint8_t State;
   } s_Outputs;
 
-  static struct LCD
+  static struct LCD s_LCD;
+  struct Keyboard
   {
-    char Lines[4][10];
-    char Status[10];
-  } s_LCD;
+    uint8_t mask;
+  } m_Keyboard;
+
+
+  static struct Accumulator
+  {
+    uint16_t Voltage;
+    uint8_t  State;
+  } s_Accu;
 
 public:
   static Clock<uint16_t> & get1MsClock() {return s_Time.Clock1Ms;}
 
-  static char (&getDisplayLine(uint8_t row))[10] {return s_LCD.Lines[row];}
+  static struct LCD &getDisplay() {return s_LCD;}
+
+  uint8_t  getKeyState() const {return m_Keyboard.mask >> 4;}
+  uint16_t getKeyTime()  const {return s_Timers1Ms.Keyboard.getElapsedTime(10000);}
+
+  SimpleTimer<uint16_t> & getUiTimer()        const { return s_Timers1Ms.Ui;}
+  SimpleTimer<uint16_t> & getUiRefreshTimer() const { return s_Timers1Ms.UiRefresh;}
+
+  static uint16_t getAccuVoltage() {return s_Accu.Voltage;}
+  static uint8_t  getAccuState()   {return s_Accu.State;}
 
   static void toggleLed()
   {
@@ -116,7 +157,22 @@ public:
 
   static void enableOutputs(uint8_t mask)
   {
-    s_Outputs.State = (s_Outputs.State & 0x3) | mask;
+    s_Outputs.State = s_Outputs.State | mask;
+  }
+
+  static void disableOutputs(uint8_t mask)
+  {
+    s_Outputs.State = s_Outputs.State & (~mask);
+  }
+
+  static uint8_t getOutputState()
+  {
+    return s_Outputs.State & (PinOut_ChA.MASK | PinOut_ChB.MASK);
+  }
+
+  static uint8_t getRealOutputState()
+  {
+    return PortD & (PinOut_ChA.MASK | PinOut_ChB.MASK);
   }
 
   static void initialize();
@@ -163,7 +219,7 @@ public:
     s_Time.IsrTickCnt += 8;
   }
 
-  static void cycle();
+  void cycle();
 
   static void transferCommand(uint8_t command)
   {
@@ -178,7 +234,7 @@ public:
   static void initLCD()
   {
     SPIMaster spi;
-    spi.configureMasterSPI<3,1000000>();
+    spi.configureMasterSPI<3,4000000>();
 
     PinLCD_A0.clearOutput();
     PinLCD_CS.clearOutput();
@@ -219,9 +275,11 @@ public:
 
   }
 
+  void handleKeyboard();
+
   static void handleOutputs();
   static void handleLCD();
 };
 
 
-extern BSP BoardSupportPackage;
+extern BSP bsp;

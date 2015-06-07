@@ -5,53 +5,200 @@
  *      Author: andi
  */
 
+#include "controller_app.hpp"
+#include "controller_ui.hpp"
 #include "controller_bsp.hpp"
 
-class HumidityController
+#define MAXWETTINGDURATION (60 * 60 * 4)
+
+static EEVariable<HumidityController::Parameters> s_ApplicationParameters EEMEM;
+
+HumidityController Application;
+
+void HumidityController::init()
 {
-  Timer<uint16_t> LedTimer;
+  s_ApplicationParameters.read(m_Parameters);
 
-  uint8_t cnt;
-public:
-
-  void cycle()
+  if(m_Parameters.m_WettingPeriod > MAXWETTINGDURATION)
   {
-    if (LedTimer.hasTimedOut(BoardSupportPackage.get1MsClock()))
+    m_Parameters.m_WettingPeriod = 0;
+  }
+
+  m_Parameters.m_WettingTime.incSecond(0);
+  m_Parameters.m_WettingTime.setWeekDay(m_Time.getWeekDay());
+
+  m_Parameters.m_WettingTimeout.incSecond(0);
+
+  if(m_Time - m_Parameters.m_WettingTime > (60UL * 60UL * 24UL))
+    m_Parameters.m_WettingTime.incHour(24);
+}
+
+void HumidityController::eventSecondTick()
+{
+  m_Time.incSecond(1);
+
+  if(bsp.getRealOutputState() & bsp.OUTPUT_CHA)
+    m_ChannelA.TimeEnabled.update(1);
+}
+
+void HumidityController::changeTime(int8_t dMinutes)
+{
+  auto & Time = m_Time;;
+
+  if(dMinutes > 0)
+  {
+    Time.setSecond(0);
+    Time.incMinute(dMinutes);
+  }
+  else if(dMinutes < 0)
+  {
+    Time.setSecond(0);
+    Time.decMinute(-dMinutes);
+  }
+  else
+  {
+    auto & LastWettingTime = m_ChannelA.TimeLastWetting;
+
+    LastWettingTime = Time;
+
+    LastWettingTime.decWeekday(m_Parameters.m_WettingTimeout.getWeekDay());
+    LastWettingTime.decHour(m_Parameters.m_WettingTimeout.getHour());
+
+    auto & WettingTime = m_Parameters.m_WettingTime;
+    WettingTime.setWeekDay(Time.getWeekDay());
+
+    if((WettingTime - Time) > (24UL * 60UL * 60UL))
+      WettingTime.incHour(24);
+
+  }
+}
+
+void HumidityController::changeWettingTime(int8_t dMinutes)
+{
+  auto & Time = m_Parameters.m_WettingTime;
+
+  if(dMinutes > 0)
+  {
+    Time.setSecond(0);
+    Time.incMinute(dMinutes);
+  }
+  else if(dMinutes < 0)
+  {
+    Time.setSecond(0);
+    Time.decMinute(-dMinutes);
+  }
+  else
+  { /* store parameters remanent */
+    s_ApplicationParameters = m_Parameters;
+  }
+}
+
+void HumidityController::changeWettingTimeout(int8_t dMinutes)
+{
+  auto & Time = m_Parameters.m_WettingTimeout;
+
+  if(dMinutes > 0)
+  {
+    Time.setSecond(0);
+    Time.incMinute(dMinutes);
+  }
+  else if(dMinutes < 0)
+  {
+    Time.setSecond(0);
+    Time.decMinute(-dMinutes);
+  }
+  else
+  { /* store parameters remanent */
+    s_ApplicationParameters = m_Parameters;
+  }
+}
+
+void HumidityController::changeWettingPeriod(int8_t delta)
+{
+
+  if(delta > 0)
+  {
+    if ((m_Parameters.m_WettingPeriod + delta) > MAXWETTINGDURATION)
+      m_Parameters.m_WettingPeriod = MAXWETTINGDURATION;
+    else
+      m_Parameters.m_WettingPeriod += delta;
+  }
+  else if (delta < 0)
+  {
+    delta = -delta;
+
+    if(m_Parameters.m_WettingPeriod > (uint8_t)delta)
+      m_Parameters.m_WettingPeriod -= delta;
+    else
+      m_Parameters.m_WettingPeriod = 0;
+  }
+  else
+  { /* store parameters remanent */
+    s_ApplicationParameters = m_Parameters;
+  }
+}
+
+void HumidityController::cycle()
+{
+  auto & Time = getTime();
+  auto & WettingTime = m_Parameters.m_WettingTime;
+
+  {
+    auto & channel = m_ChannelA;
+    uint8_t state  = channel.state;
+
+    if(!ui.isEditing() && state == CHANNEL_IDLE)
     {
-      LedTimer.updateTimeout(6000);
-      BoardSupportPackage.toggleLed();
+      if((Time - WettingTime) < (5 * 60))
+      {
+        /* we should start wetting the plants */
+        WettingTime.incHour(24);
 
-      BoardSupportPackage.enableOutputs(cnt & 0x0C);
-      cnt += 0x04;
+        auto x = Time - channel.TimeLastWetting;
 
-      auto line = BoardSupportPackage.getDisplayLine(0);
-      line[0] = 'a';
-      line[1] = 'b';
-      line[2] = 'c';
-      line[3] = 'd';
-      line[4] = 'e';
-      line[5] = 'f';
-      line[6] = 'g';
-      line[7] = 'h';
-      line[8] = 'j';
-      line[9] = 'k';
+        if(x > m_Parameters.m_WettingTimeout.getMonotonic())
+        {
+          state = CHANNEL_WETTING;
+          channel.TimeEnabled.start(0xFFFF);
+
+          bsp.enableOutputs(bsp.OUTPUT_CHA);
+          bsp.enableOutputs(bsp.OUTPUT_CHB); /* only for first implementation */
+        }
+      }
     }
 
-    BoardSupportPackage.handleLCD();
-  }
-};
+    if(state == CHANNEL_WETTING)
+    {
+      if (0 == (bsp.getOutputState() & bsp.OUTPUT_CHA))
+      {
+        /* for some reason the wetting was aborted */
+        state = CHANNEL_IDLE;
+      }
+      else if (channel.TimeEnabled.getElapsedTime(0xFFFF) >= m_Parameters.m_WettingPeriod)
+      {
+        bsp.disableOutputs(bsp.OUTPUT_CHA);
+        bsp.disableOutputs(bsp.OUTPUT_CHB); /* only for first implementation */
+        channel.TimeLastWetting = Time;
+        state = CHANNEL_IDLE;
+      }
+    }
 
-static HumidityController Application;
+    channel.state = state;
+  }
+}
+
 
 int main()
 {
-  BoardSupportPackage.initialize();
+  bsp.initialize();
+  Application.init();
 
   while(1)
   {
     Sys_AVR8::enableSleep();
 
-    BoardSupportPackage.cycle();
+    bsp.cycle();
+    ui.cycle();
     Application.cycle();
   }
 }

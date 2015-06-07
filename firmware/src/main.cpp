@@ -42,8 +42,8 @@ initPort()
                            LedCathode.MASK | LedAnode.MASK |
                            Temp.MASK;
 
-  *(Port.PORT) = 0;
-  *(Port.DDR)  = PortMask;
+  Port = 0;
+  Port.setDirection(PortMask);
 }
 
 struct measurement_data data __attribute__((section(".noinit")));

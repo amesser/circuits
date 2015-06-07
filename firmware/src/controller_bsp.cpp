@@ -5,14 +5,17 @@
  *      Author: andi
  */
 #include "controller_bsp.hpp"
+#include "controller_app.hpp"
+#include "controller_ui.hpp"
 
-struct BSP::Uart      BSP::s_Uart;
-struct BSP::Time      BSP::s_Time;
-struct BSP::Timers1Ms BSP::s_Timers1Ms;
-struct BSP::Outputs   BSP::s_Outputs;
-struct BSP::LCD       BSP::s_LCD;
+struct BSP::Uart        BSP::s_Uart;
+struct BSP::Time        BSP::s_Time;
+struct BSP::Timers1Ms   BSP::s_Timers1Ms;
+struct BSP::Outputs     BSP::s_Outputs;
+struct BSP::LCD         BSP::s_LCD;
+struct BSP::Accumulator BSP::s_Accu;
 
-BSP BoardSupportPackage;
+BSP bsp;
 
 void BSP::initialize()
 {
@@ -69,6 +72,14 @@ void BSP::initialize()
   Sys_AVR8::enableInterrupts();
 }
 
+static void updateTimers(SimpleTimer<uint16_t> *pTimer, uint8_t cnt, uint8_t dClock)
+{
+  while(cnt--)
+  {
+    (pTimer++)->update(dClock);
+  }
+}
+
 void BSP::cycle()
 {
   /* calculate number of milliseconds passewd since last update */
@@ -79,16 +90,86 @@ void BSP::cycle()
     s_Time.Clock1Ms.advance(dClock1Ms);
 
     SimpleTimer<uint16_t> *pTimer1Ms    = reinterpret_cast<SimpleTimer<uint16_t> *>(&s_Timers1Ms);
-    SimpleTimer<uint16_t> *pTimer1MsEnd = pTimer1Ms + sizeof(s_Timers1Ms) / sizeof(*pTimer1Ms);
+    updateTimers(pTimer1Ms, sizeof(s_Timers1Ms) / sizeof(*pTimer1Ms), dClock1Ms);
+  }
 
-    while(pTimer1Ms < pTimer1MsEnd)
+  if(s_Time.SecondTimer.hasTimedOut(s_Time.Clock1Ms))
+  {
+    s_Time.SecondTimer.updateTimeout(1000);
+
+    Application.eventSecondTick();
+    ui.eventSecondTick();
+
+    ADMUX  = _BV(REFS1) | _BV(REFS0) | _BV(MUX1) | _BV(MUX0);
+    ADCSRA = _BV(ADEN) | _BV(ADSC) | _BV(ADPS2) | _BV(ADPS1);
+  }
+
+  if(ADCSRA & _BV(ADEN))
+  {
+    if (ADCSRA &  _BV(ADIF))
     {
-      pTimer1Ms->update(dClock1Ms);
-      pTimer1Ms++;
+      uint16_t readout = ADC;
+      uint32_t voltage = (readout + 11) * (uint32_t)(28.51 * 0x10000);
+
+      ADCSRA &= ~_BV(ADEN);
+
+      s_Accu.Voltage = voltage >> 16;
+
+      if(s_Accu.State == ACCU_EMPTY)
+      {
+        if(s_Accu.Voltage < 12600)
+        {
+          s_Timers1Ms.Accu.start(30000);
+        }
+        else if (s_Timers1Ms.Accu.hasTimedOut())
+        {
+          s_Accu.State = ACCU_OK;
+        }
+      }
+      else if (s_Accu.State == ACCU_OK)
+      {
+        if(s_Accu.Voltage > 11800)
+        {
+          s_Timers1Ms.Accu.start(30000);
+        }
+        else if (s_Timers1Ms.Accu.hasTimedOut())
+        {
+          s_Accu.State = ACCU_EMPTY;
+        }
+      }
     }
   }
 
+
+  handleKeyboard();
   handleOutputs();
+}
+
+void BSP::handleKeyboard()
+{
+  const uint8_t mask = PinKey0.MASK | PinKey1.MASK | PinKey2.MASK;
+
+  uint8_t state = ((~PortC) & mask);
+
+
+  if((m_Keyboard.mask & 0x0F) == state)
+  {
+    if(s_Timers1Ms.Keyboard.getElapsedTime(10000) > 20)
+    {
+      state = state | state << 4;
+    }
+    else
+    {
+      state = state | (m_Keyboard.mask & 0xF0);
+    }
+  }
+  else
+  {
+    s_Timers1Ms.Keyboard.start(10000);
+    state = state | (m_Keyboard.mask & 0xF0);
+  }
+
+  m_Keyboard.mask = state;
 }
 
 void BSP::handleOutputs()
@@ -97,6 +178,11 @@ void BSP::handleOutputs()
 
   uint8_t OutputsState = State & (OUTPUT_CHA | OUTPUT_CHB);
   uint8_t BoostState   = State & 0x3;
+
+  if(s_Accu.State != ACCU_OK)
+  { /* if the cuu is empty refuse to activate switches */
+    OutputsState = 0;
+  }
 
   if(OutputsState)
   {
@@ -210,6 +296,9 @@ void BSP::handleLCD()
       line += displayChars(pos,a,b);
     }
 
+    spi.transferByte(0xFF);
+    line++;
+
     for(; line < (101 - 32); ++line)
     {
       spi.transferByte(0);
@@ -248,13 +337,13 @@ void BSP::handleLCD()
 
 ISR(USART_RXC_vect)
 {
-  BoardSupportPackage.isrUartRecv();
+  bsp.isrUartRecv();
   Sys_AVR8::disableSleep();
 }
 
 ISR(TIMER0_OVF_vect)
 {
-  BoardSupportPackage.isrTimer0Ovf();
+  bsp.isrTimer0Ovf();
   Sys_AVR8::disableSleep();
 
 }
