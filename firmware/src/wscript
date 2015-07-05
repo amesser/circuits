@@ -6,6 +6,7 @@ def configure(conf):
                          device='attiny13a', arch='avr8')
     
     conf.env.append_value('DEFINES', 'F_CPU=1200000UL')
+    conf.env.append_value('LINKFLAGS', ['-nostartfiles'])
     
     conf.ecpp_setupbuild(id='controller', 
                          device='atmega8', arch='avr8')
@@ -16,6 +17,14 @@ def build(bld):
         id= 'attiny13a',
         source   = ['main.cpp'],
         target   = 'attiny13a.elf',
+        features = 'cxx cxxprogram',  
+        includes = ['.'],
+    ) 
+
+    bld.ecpp_build(
+        id= 'attiny13a',
+        source   = ['sensor-attiny13a.S'],
+        target   = 'sensor-attiny13a.elf',
         features = 'cxx cxxprogram',  
         includes = ['.'],
     ) 

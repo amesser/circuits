@@ -7,7 +7,10 @@
 
 #include "ecpp/Target.hpp"
 #include "ecpp/Byteorder.hpp"
+#include "ecpp/Time.hpp"
+
 #include "protocol.hpp"
+#include "voltage-modulator.hpp"
 
 using namespace ecpp;
 
@@ -22,135 +25,386 @@ static IOPin<AVR_IO_PB5> Reset;
 
 static IOPort<AVR_IO_PB> Port;
 
-void delayBittime(); __attribute__((noinline))
-void delayLong();    __attribute__((noinline))
 
-void delayBittime()
+class BoardSupportPackage
 {
-  _delay_us( 1000000UL / 1200UL);
+public:
+  enum {
+    ADC_CHANNEL_VCC  = _BV(ADLAR) | _BV(MUX1),
+    ADC_CHANNEL_TEMP = _BV(MUX1),
+
+    AC_CHANNEL_HUM   = 0,
+  };
+
+  static void      enableADC     (uint8_t channel);
+  static void      enableAC      (uint8_t channel);
+  static void      disableAnalog ();
+
+  static uint8_t   getVcc()     {return ADCH;}
+  static uint16_t  getTemp()    {return ADC;}
+  static bool      getAcState() {return ACSR & _BV(ACO);}
+
+  enum {
+    TIMER_PRESCALE_8  = _BV(CS01),
+    TIMER_PRESCALE_64 = _BV(CS01) | _BV(CS00),
+  };
+  typedef SimpleTimer<uint16_t> TimerType;
+
+  static void enableTimer0(uint8_t prescaler, uint8_t max);
+
+  static TimerType startTimer(uint8_t max, uint16_t init)
+  {
+    enableTimer0(TIMER_PRESCALE_64, max);
+    return TimerType(init);
+  }
+
+  static TimerType startTimerMs(uint16_t timeout)
+  {
+    enableTimer0(TIMER_PRESCALE_8, 150);
+    return TimerType((uint64_t)F_CPU * timeout / 8 / 150 / 1000);
+  }
+
+  static bool      handleTimer();
+  static bool      handleTimer(TimerType & timer);
+
+  static void      waitTimer();
+
+  static void      setPortState(const IOPortState & state)
+  {
+    Port.setState(state);
+  }
+
+};
+
+
+static BoardSupportPackage bsp;
+
+void BoardSupportPackage::enableTimer0(uint8_t prescale, uint8_t max)
+{
+  uint8_t resetmask = _BV(PSR10) | _BV(TOV0);
+
+  /* configure timer */
+  OCR0A  = max;
+  TCCR0B = prescale;
+  TCCR0A = _BV(WGM01);
+
+  /* reste prescaler, timer and tov */
+  GTCCR  = resetmask;
+  TCNT0  = 0;
+  TIFR0  = resetmask;
 }
 
-void delayLong()
+/* start ADC conversion, ADC will be enabled in free running mode */
+void BoardSupportPackage::enableADC(uint8_t channel)
 {
-  _delay_ms(1000);
+  ADMUX  = channel;
+  ADCSRA = _BV(ADEN) | _BV(ADSC) | _BV(ADATE) | _BV(ADPS1) | _BV(ADPS0);
+
+  /* wait for first measurement */
+  while(!(ADCSRA & _BV(ADIF)));
 }
 
-static void
-initPort()
+void BoardSupportPackage::enableAC(uint8_t channel)
 {
-  const uint8_t PortMask = RefCapacitor.MASK | HumCapacitor.MASK |
-                           LedCathode.MASK | LedAnode.MASK |
-                           Temp.MASK;
-
-  Port = 0;
-  Port.setDirection(PortMask);
+  ADMUX  = channel;
+  ADCSRA = 0;
+  ADCSRB = _BV(ACME);
+  ACSR   = 0;
 }
 
+void
+BoardSupportPackage::disableAnalog()
+{
+  ADMUX  = 0;
+  ADCSRA = 0;
+  ADCSRB = 0;
+  ACSR   = 0;
+}
+
+bool
+BoardSupportPackage::handleTimer()
+{
+  uint8_t mask;
+
+  mask  = _BV(TOV0) & TIFR0;
+  TIFR0 = mask;
+
+  return mask != 0;
+}
+
+bool
+BoardSupportPackage::handleTimer(TimerType & timer)
+{
+  if (handleTimer())
+  {
+    timer.update(1);
+  }
+
+  return timer.hasTimedOut();
+}
+
+void
+BoardSupportPackage::waitTimer()
+{
+  while(!handleTimer());
+}
+
+
+class VoltageModulatorSupport
+{
+public:
+  enum
+  {
+    SUPPLY_5V = 2,
+    SUPPLY_4V = 1,
+    SUPPLY_3V = 0,
+  };
+
+
+  static BoardSupportPackage::TimerType startTimer(uint16_t Timeout1Ms)
+  {
+    return bsp.startTimerMs(Timeout1Ms);
+  }
+
+  static bool checkTimeout(BoardSupportPackage::TimerType & timer)
+  {
+    return bsp.handleTimer(timer);
+  }
+
+  static uint8_t getState();
+};
+
+
+uint8_t
+VoltageModulatorSupport::getState()
+{
+  /* check if we have 3, 4 or 5 V */
+  const uint8_t limit_a = 256. * 0.55 / (3. + 0.666);
+  const uint8_t limit_b = 256. * 0.55 / (4. + 0.333);
+
+  uint8_t readout = bsp.getVcc();
+  uint8_t  state  = SUPPLY_5V;
+
+  if(limit_b < readout)
+  { /* < 4.3 V */
+    state--;
+  }
+
+  if (limit_a < readout)
+  { /* < 3.6 V */
+    state--;
+  }
+
+  return state;
+}
+
+
+class Evaluator
+{
+private:
+  uint32_t m_Mult;
+  uint16_t m_Offset;
+  uint16_t m_Max;
+public:
+  uint16_t scale(uint16_t value) const;
+};
+
+static uint32_t mult32x16 (uint32_t lhs, uint16_t rhs) __attribute__((always_inline));
+static uint32_t mult32x16 (uint32_t lhs, uint16_t rhs)
+{
+  uint32_t result = 0;
+
+  while(rhs)
+  {
+    if(rhs & 0x0001)
+    {
+      result += lhs;
+    }
+
+    rhs >>= 1;
+    lhs <<= 1;
+  }
+
+  return result;
+}
+
+uint16_t Evaluator::scale(uint16_t value) const
+{
+  value = m_Offset + value;
+
+  if(value <= m_Max)
+  {
+    uint32_t result = mult32x16(m_Mult, value);
+    value = result >> 16U;
+  }
+  else
+  {
+    value = 0xFFFF;
+  }
+
+  return value;
+}
+
+struct Evaluators
+{
+  Evaluator Humidity;
+  Evaluator Light;
+  Evaluator Temperature;
+};
+
+EEVariable<struct Evaluators> calibration_parameters EEMEM;
+struct Evaluators calibrators __attribute__((section(".noinit")));
 struct measurement_data data __attribute__((section(".noinit")));
+
 
 #define USE_AC 1
 
-int main(void)
+void init(void) __attribute__((noreturn, naked, section (".vectors")));
+void init(void)
 {
 
-  uint16_t count;
-  initPort();
+  asm volatile ( "ldi r18, %0 \n"
+                 "out %1, r18 \n"
+                 "clr __zero_reg__ \n"
+                 "rjmp main \n"
+   :: "i" (RAMEND), "i" (_SFR_IO_ADDR(SPL)));
+}
 
-#ifdef USE_AC
-  ADMUX  = 0;
-  ADCSRA = 0;
-  ADCSRB = _BV(ACME);
 
-  ACSR   = 0;
-#endif
+int main(void) __attribute__ ((OS_main));
+int main(void)
+{
+  { /* Step 1: Check operating voltage */
 
-  /* measure humidity */
-  for (count = 0; count < 0xFFFF; count++)
+    /* forward bias temperature diode */
+    bsp.setPortState(RefCapacitor.OutLow | HumCapacitor.OutLow | LedCathode.OutHigh | LedAnode.OutHigh);
+    bsp.enableADC(bsp.ADC_CHANNEL_VCC);
+
+    auto    timer = bsp.startTimerMs(5000);
+    uint8_t state = VoltageModulatorSupport::SUPPLY_5V;
+
+    while(!bsp.handleTimer(timer))
+    {
+      state = VoltageModulatorSupport::getState();
+
+      if(state != VoltageModulatorSupport::SUPPLY_3V)
+        break;
+    }
+
+    if(state == VoltageModulatorSupport::SUPPLY_3V)
+    { /* supply voltage stayed at 3 volts for about 5 seconds
+       * calibration parameterization requested */
+
+      VoltageModulator<80,20,VoltageModulatorSupport> modulator;
+
+      uint8_t len_received = modulator.receive(&calibrators, static_cast<uint8_t>(sizeof(calibrators)));
+
+      if(len_received == sizeof(calibrators))
+      {
+        eeprom_update_block(&calibrators, &calibration_parameters, sizeof(calibration_parameters));
+      }
+    }
+  }
+
+  /* Step 2: measure humidity */
   {
-    /* measure voltage and discharge
-     * hum capacitor */
-    HumCapacitor.enableOutput();
-
-
-    asm ( "nop");
+    uint16_t count;
 
 #ifdef USE_AC
-    asm ( "nop");
-
-    if(ACSR & _BV(ACO))
-      break;
+    bsp.enableAC(bsp.AC_CHANNEL_HUM);
 #else
-    /* check if ref capacitor is charged */
-    if(RefCapacitor.getInput())
-      break;
+    bsp.disableAnalog();
+#endif
+    bsp.setPortState(HumCapacitor.OutLow | RefCapacitor.OutLow | LedCathode.OutLow | LedAnode.OutLow | Temp.OutLow);
+
+    for (count = 0xFFFF; count > 0; --count)
+    {
+      /* measure voltage and discharge
+       * hum capacitor */
+      HumCapacitor.enableOutput();
+      asm ( "nop");
+
+      /* check if ref capacitor is charged */
+#ifdef USE_AC
+      asm ("nop");
+      if(bsp.getAcState())
+        break;
+#else
+      if(RefCapacitor.getInput())
+        break;
 #endif
 
-    HumCapacitor.disableOutput();
+      HumCapacitor.disableOutput();
 
-    /* transfer charge */
+      /* transfer charge */
+      RefCapacitor.setOutput();
+      RefCapacitor.enableOutput();
 
-    RefCapacitor.setOutput();
-    RefCapacitor.enableOutput();
+      RefCapacitor.disableOutput();
+      RefCapacitor.clearOutput();
+    }
 
-    RefCapacitor.disableOutput();
-    RefCapacitor.clearOutput();
+    data.humidity_counts = count;
+
+#ifdef USE_AC
+    bsp.disableAnalog();
+#endif
   }
 
-  data.humidity_counts = hton16(count);
-
-  initPort();
-
-  /* measure light */
-  /* charge led */
-  LedCathode.setOutput();
-  delayBittime();
-
-  /* discharge capacitor via led and count time */
-  LedCathode.disableOutput();
-  LedCathode.clearOutput();
-
-  for (count = 0; count < 0xFFFF; count++)
+  /* Step 3: Measure Light */
   {
-    _delay_us(1000);
+    uint16_t count;
 
-    if (!LedCathode.getInput())
-      break;
+    /* charge led */
+    bsp.setPortState(HumCapacitor.OutLow | RefCapacitor.OutLow | LedCathode.OutHigh | LedAnode.OutLow | Temp.OutLow);
+
+    bsp.enableTimer0(bsp.TIMER_PRESCALE_8, F_CPU / 8 * 1 / 1000);
+    bsp.waitTimer();
+
+    /* discharge capacitor via led and count time */
+    LedCathode.disableOutput();
+    LedCathode.clearOutput();
+
+    for (count = 0xFFFF; count > 0; --count)
+    {
+      bsp.waitTimer();
+
+      if (!LedCathode.getInput())
+        break;
+    }
+
+    data.led_counts = count;
   }
 
-  data.led_counts = hton16(count);
+  /* Step 4: Measure Temperature */
+  {
+    bsp.setPortState(HumCapacitor.OutLow | RefCapacitor.OutLow | LedCathode.OutLow | LedAnode.OutHigh);
+    bsp.enableADC(bsp.ADC_CHANNEL_TEMP);
 
-  /* measure temperature */
+    auto    timer = bsp.startTimerMs(1000);
+    while(!bsp.handleTimer(timer));
 
-  /* activate current source */
-  LedCathode.clearOutput();
-  LedCathode.enableOutput();
+    data.temp = - bsp.getTemp();
 
-  LedAnode.setOutput();
-  LedAnode.enableOutput();
+    bsp.disableAnalog();
+  }
 
-  Temp.disableOutput();
 
-  /* let things settle */
-  delayLong();
+  calibrators = calibration_parameters;
 
-  /* setup adc */
-  ADMUX  = _BV(REFS0) | _BV(MUX1);
-  ADCSRA = _BV(ADEN) | _BV(ADSC) | _BV(ADPS1) | _BV(ADPS0);
-  ADCSRB = 0;
+  /* Step 5: Perform calibration */
+  {
 
-  ADCSRA |= _BV(ADSC);
+    data.sync = 0xC0;
+    data.type = 0;
 
-  while(ADCSRA & _BV(ADSC));
+    data.humidity_counts = hton16(calibrators.Humidity.scale(data.humidity_counts));
+    data.led_counts      = hton16(calibrators.Light.scale(data.led_counts));
+    data.temp            = hton16(calibrators.Temperature.scale(data.temp));
+  }
 
-  data.temp = hton16(ADC);
-
-  ADCSRA = 0;
-  ADMUX  = 0;
-
-  Temp.enableOutput();
-
-  data.sync = 0xC0;
-  data.type = 0;
+  /* RS232 */
+  bsp.setPortState(HumCapacitor.OutLow | RefCapacitor.OutLow | LedCathode.OutLow | LedAnode.OutHigh | Temp.OutLow);
 
   /* uart */
   while(1)
@@ -158,13 +412,17 @@ int main(void)
     const uint8_t *p = reinterpret_cast<const uint8_t*>(&(data));
     uint8_t  i = 0;
 
-    delayLong();
+    auto    timer = bsp.startTimerMs(1000);
+    while(!bsp.handleTimer(timer));
+
+    /* baud rate is 1200, 9 databits odd parity, 2 stopbits */
+    bsp.enableTimer0(bsp.TIMER_PRESCALE_8, F_CPU / 8  / 1200);
 
     for(i = 0; i < sizeof(data); ++i)
     {
       // Start Bit
       LedAnode.clearOutput();
-      delayBittime();
+      bsp.waitTimer();
 
       uint8_t mask = 0x01;
       uint8_t par  =    0;
@@ -180,101 +438,26 @@ int main(void)
           LedAnode.clearOutput();
         }
 
-        delayBittime();
-
+        bsp.waitTimer();
         mask = mask << 1;
       }
 
       LedAnode.clearOutput();
-      delayBittime(); /* 9th bit always zero */
+      bsp.waitTimer(); /* 9th data bit, always zero */
 
       if (par & 0x01)
         LedAnode.setOutput();
       else
         LedAnode.clearOutput();
 
-      delayBittime(); /* parity */
+      bsp.waitTimer(); /* parity bit */
 
       LedAnode.setOutput();
 
-      delayBittime(); /* stop bit */
-      delayBittime(); /* stop bit */
-      delayBittime(); /* delay */
+      bsp.waitTimer(); /* stop bit */
+      bsp.waitTimer(); /* stop bit */
+      bsp.waitTimer(); /* delay */
     }
   }
 
-
-#if 0
-  DDRC = 0xF;
-
-  PORTD &= ~ _BV(PD7);
-  DDRD  |=   _BV(PD7);
-  DDRD  |=   _BV(PD6);
-
-  _delay_us(1000);
-
-  while(1)
-  {
-    _delay_us(1000);
-    PORTD  ^=  _BV(PD6);
-  }
-
-  while(1)
-  {
-
-    /* measure voltage & discharge cx */
-    PORTB &= ~ _BV(PB0);
-    DDRB  |=   _BV(PB0);
-
-    asm ( "nop");
-
-    if(PIND & _BV(PD7))
-    {
-      /* cref charged */
-      lastcounts = counts;
-      counts     = 0;
-
-      /* discharge cref */
-      DDRD  |=  _BV(PD7);
-      _delay_us(1000);
-      DDRD  &= ~_BV(PD7);
-
-      PORTD  ^=  _BV(PD6);
-    }
-    else if(counts < 0xFFFF)
-    {
-      counts += 1;
-    }
-
-    /* transfer charge */
-    DDRB  &=  ~_BV(PB0);
-
-    PORTD |= _BV(PD7);
-    DDRD  |= _BV(PD7);
-
-    DDRD  &= ~_BV(PD7);
-    PORTD &= ~_BV(PD7);
-
-
-    if (lastcounts & 0xF000)
-      PORTC &= ~ _BV(PC3);
-    else
-      PORTC |=   _BV(PC3);
-
-    if (lastcounts & 0xFF00)
-      PORTC &= ~ _BV(PC2);
-    else
-      PORTC |=   _BV(PC2);
-
-    if (lastcounts & 0xFFF0)
-      PORTC &= ~ _BV(PC1);
-    else
-      PORTC |=   _BV(PC1);
-
-    if (lastcounts & 0xFFFF)
-      PORTC &= ~ _BV(PC0);
-    else
-      PORTC |=   _BV(PC0);
-  }
-#endif
 }
