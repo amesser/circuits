@@ -206,6 +206,9 @@ private:
   uint16_t m_Offset;
   uint16_t m_Max;
 public:
+  Evaluator() {};
+  constexpr Evaluator(uint32_t Mult, uint16_t Offset, uint16_t Max) : m_Mult(Mult), m_Offset(Offset), m_Max(Max) {};
+
   uint16_t scale(uint16_t value) const;
 };
 
@@ -250,9 +253,20 @@ struct Evaluators
   Evaluator Humidity;
   Evaluator Light;
   Evaluator Temperature;
+
+  Evaluators () {}
+  constexpr Evaluators (const Evaluator& hum, const Evaluator& light, const Evaluator& temp)
+    : Humidity(hum), Light(light), Temperature(temp) {}
 };
 
-EEVariable<struct Evaluators> calibration_parameters EEMEM;
+
+EEVariable<struct Evaluators> calibration_parameters EEMEM =
+{{
+  {0x10000UL, 0x0000, 0xFFFF},
+  {0x10000UL, 0x0000, 0xFFFF},
+  {0x10000UL, 0x0000, 0xFFFF}
+}} ;
+
 struct Evaluators calibrators __attribute__((section(".noinit")));
 struct measurement_data data __attribute__((section(".noinit")));
 
@@ -269,7 +283,6 @@ void init(void)
                  "rjmp main \n"
    :: "i" (RAMEND), "i" (_SFR_IO_ADDR(SPL)));
 }
-
 
 int main(void) __attribute__ ((OS_main));
 int main(void)
