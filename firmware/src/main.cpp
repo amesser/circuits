@@ -52,12 +52,6 @@ public:
 
   static void enableTimer0(uint8_t prescaler, uint8_t max);
 
-  static TimerType startTimer(uint8_t max, uint16_t init)
-  {
-    enableTimer0(TIMER_PRESCALE_64, max);
-    return TimerType(init);
-  }
-
   static TimerType startTimerMs(uint16_t timeout)
   {
     enableTimer0(TIMER_PRESCALE_8, 150);
@@ -88,7 +82,7 @@ void BoardSupportPackage::enableTimer0(uint8_t prescale, uint8_t max)
   TCCR0B = prescale;
   TCCR0A = _BV(WGM01);
 
-  /* reste prescaler, timer and tov */
+  /* reset prescaler, timer and tov */
   GTCCR  = resetmask;
   TCNT0  = 0;
   TIFR0  = resetmask;
@@ -159,7 +153,6 @@ public:
     SUPPLY_4V = 1,
     SUPPLY_3V = 0,
   };
-
 
   static BoardSupportPackage::TimerType startTimer(uint16_t Timeout1Ms)
   {
@@ -402,18 +395,21 @@ int main(void)
     bsp.disableAnalog();
   }
 
-
   calibrators = calibration_parameters;
 
   /* Step 5: Perform calibration */
   {
-
     data.sync = 0xC0;
     data.type = 0;
 
-    data.humidity_counts = hton16(calibrators.Humidity.scale(data.humidity_counts));
-    data.led_counts      = hton16(calibrators.Light.scale(data.led_counts));
-    data.temp            = hton16(calibrators.Temperature.scale(data.temp));
+    Evaluator * pe = &(calibrators.Humidity);
+    uint16_t  * pd = &(data.humidity_counts);
+
+    for(uint_fast8_t cnt = 3; cnt > 0; --cnt)
+    {
+      *pd = hton16(pe->scale(*pd));
+      ++pd; ++pe;
+    }
   }
 
   /* RS232 */
@@ -423,7 +419,6 @@ int main(void)
   while(1)
   {
     const uint8_t *p = reinterpret_cast<const uint8_t*>(&(data));
-    uint8_t  i = 0;
 
     auto    timer = bsp.startTimerMs(1000);
     while(!bsp.handleTimer(timer));
@@ -431,45 +426,40 @@ int main(void)
     /* baud rate is 1200, 9 databits odd parity, 2 stopbits */
     bsp.enableTimer0(bsp.TIMER_PRESCALE_8, F_CPU / 8  / 1200);
 
-    for(i = 0; i < sizeof(data); ++i)
-    {
-      // Start Bit
-      LedAnode.clearOutput();
-      bsp.waitTimer();
+    enum {
+      SRT_START  = 0,
+      SRT_DATA   = 1,
+      SRT_PARITY = 1 + 9,
+      SRT_STOP   = 1 + 9 + 1
+    };
 
-      uint8_t mask = 0x01;
-      uint8_t par  =    0;
-      while(mask)
+    for(uint_fast8_t bytes = sizeof(data); bytes > 0; --bytes)
+    {
+      /* to avoid unnecessary bit shifts, the whole data
+       * will be shift by one */
+
+      uint_fast16_t val     = (0x7 << (SRT_STOP - 1)) | *(p++);
+      val <<= 1; /* shift by one */
+
+      uint_fast16_t parmask = (0x1 << SRT_PARITY);
+
+      while(val)
       {
-        if(mask & p[i])
+        if(val & 0x01)
         {
           LedAnode.setOutput();
-          par += 1;
+          val ^= parmask;
         }
         else
         {
           LedAnode.clearOutput();
         }
 
+        val     >>= 1;
+        parmask >>= 1;
+
         bsp.waitTimer();
-        mask = mask << 1;
       }
-
-      LedAnode.clearOutput();
-      bsp.waitTimer(); /* 9th data bit, always zero */
-
-      if (par & 0x01)
-        LedAnode.setOutput();
-      else
-        LedAnode.clearOutput();
-
-      bsp.waitTimer(); /* parity bit */
-
-      LedAnode.setOutput();
-
-      bsp.waitTimer(); /* stop bit */
-      bsp.waitTimer(); /* stop bit */
-      bsp.waitTimer(); /* delay */
     }
   }
 
