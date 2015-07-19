@@ -75,44 +75,15 @@ static BoardSupportPackage bsp;
 
 void BoardSupportPackage::enableTimer0(uint8_t prescale, uint8_t max)
 {
-  uint8_t resetmask = _BV(PSR10) | _BV(TOV0);
-
   /* configure timer */
   OCR0A  = max;
   TCCR0B = prescale;
   TCCR0A = _BV(WGM01);
 
   /* reset prescaler, timer and tov */
-  GTCCR  = resetmask;
+  GTCCR  = _BV(PSR10);
   TCNT0  = 0;
-  TIFR0  = resetmask;
-}
-
-/* start ADC conversion, ADC will be enabled in free running mode */
-void BoardSupportPackage::enableADC(uint8_t channel)
-{
-  ADMUX  = channel;
-  ADCSRA = _BV(ADEN) | _BV(ADSC) | _BV(ADATE) | _BV(ADPS1) | _BV(ADPS0);
-
-  /* wait for first measurement */
-  while(!(ADCSRA & _BV(ADIF)));
-}
-
-void BoardSupportPackage::enableAC(uint8_t channel)
-{
-  ADMUX  = channel;
-  ADCSRA = 0;
-  ADCSRB = _BV(ACME);
-  ACSR   = 0;
-}
-
-void
-BoardSupportPackage::disableAnalog()
-{
-  ADMUX  = 0;
-  ADCSRA = 0;
-  ADCSRB = 0;
-  ACSR   = 0;
+  TIFR0  = _BV(OCF0A);
 }
 
 bool
@@ -120,7 +91,7 @@ BoardSupportPackage::handleTimer()
 {
   uint8_t mask;
 
-  mask  = _BV(TOV0) & TIFR0;
+  mask  = _BV(OCF0A) & TIFR0;
   TIFR0 = mask;
 
   return mask != 0;
@@ -142,6 +113,34 @@ BoardSupportPackage::waitTimer()
 {
   while(!handleTimer());
 }
+
+/* start ADC conversion, ADC will be enabled in free running mode */
+void BoardSupportPackage::enableADC(uint8_t channel)
+{
+  ADMUX  = channel;
+  ADCSRA = _BV(ADEN) | _BV(ADSC) | _BV(ADATE) | _BV(ADIF) | _BV(ADPS1) | _BV(ADPS0);
+
+  /* wait for first measurement */
+  while(!(ADCSRA & _BV(ADIF)));
+}
+
+void BoardSupportPackage::enableAC(uint8_t channel)
+{
+  ADMUX  = channel;
+  ADCSRA = 0;
+  ADCSRB = _BV(ACME);
+  ACSR   = 0;
+}
+
+void
+BoardSupportPackage::disableAnalog()
+{
+  ADMUX  = 0;
+  ADCSRA = 0;
+  ADCSRB = 0;
+  ACSR   = _BV(ACD);
+}
+
 
 
 class VoltageModulatorSupport
@@ -333,6 +332,7 @@ int main(void)
       /* check if ref capacitor is charged */
 #ifdef USE_AC
       asm ("nop");
+
       if(bsp.getAcState())
         break;
 #else
@@ -395,7 +395,7 @@ int main(void)
     bsp.disableAnalog();
   }
 
-  calibrators = calibration_parameters;
+  calibration_parameters.read(calibrators);
 
   /* Step 5: Perform calibration */
   {
@@ -408,6 +408,7 @@ int main(void)
     for(uint_fast8_t cnt = 3; cnt > 0; --cnt)
     {
       *pd = hton16(pe->scale(*pd));
+      //*pd = hton16(*pd);
       ++pd; ++pe;
     }
   }

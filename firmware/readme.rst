@@ -1,0 +1,1 @@
+- Fuses for Sensor: H:0xFB, L:0x6A
