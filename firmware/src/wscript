@@ -12,6 +12,12 @@ def configure(conf):
                          device='atmega8', arch='avr8')
     
     conf.env.append_value('DEFINES', 'F_CPU=8000000UL')
+
+    conf.ecpp_setupbuild(id='calibrator', 
+                         device='atmega8', arch='avr8')
+    
+    conf.env.append_value('DEFINES', 'F_CPU=1000000UL')
+
 def build(bld):
     bld.ecpp_build(
         id= 'attiny13a',
@@ -33,6 +39,14 @@ def build(bld):
         id= 'controller',
         source   = ['controller.cpp', 'controller_bsp.cpp', 'controller_ui.cpp', 'font.cpp'],
         target   = 'controller.elf',
+        features = 'cxx cxxprogram',  
+        includes = ['.'],
+    ) 
+
+    bld.ecpp_build(
+        id= 'calibrator',
+        source   = ['calibrator.cpp'],
+        target   = 'calibrator.elf',
         features = 'cxx cxxprogram',  
         includes = ['.'],
     ) 
