@@ -7,21 +7,33 @@
 
 #include "calibrator_bsp.hpp"
 
-static CalibratorBsp g_bsp;
-static const char abTest[] = "ABCDEFGH";
+class CalibratorApp
+{
+public:
+  void readSensor();
+};
+
+
+
+void
+CalibratorApp::readSensor()
+{
+
+}
 
 int main(void) __attribute__ ((OS_main));
 int main(void)
 {
-  CalibratorBsp::LCDType lcd;
+  auto & bsp = CalibratorBsp::getBsp();
 
-  g_bsp.init();
+  bsp.init();
 
 
   while(1)
   {
-    lcd.moveCursor(0);
-    lcd.writeData(abTest, 8);
+    bsp.handle();
+    /* lcd.moveCursor(0);
+     * lcd.writeData(abTest, 8); */
   }
 }
 
