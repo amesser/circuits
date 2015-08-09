@@ -9,6 +9,12 @@
 
 CalibratorBsp CalibratorBsp::s_Instance;
 
+void  CalibratorBsp::LcdBsp::delay(uint_fast16_t us)
+{
+  while(us--) _delay_us(1);
+}
+
+
 /** LCD Display Initialization command sequence */
 const FlashVariable<HD44780_CMD, 5> CalibratorBsp::LcdBsp::InitSequence PROGMEM =
 {
@@ -32,7 +38,8 @@ public:
 void CalibratorBsp::init()
 {
   /* initialize IO Ports */
-  PortLcdControl = PinE.OutHigh | PinRw.OutHigh | PinRs.OutHigh;
+  PortLcdControl = PinE.OutHigh | PinRw.OutHigh | PinRs.OutHigh | Pin1k8.OutLow | Pin8k2.OutLow;
+  PortB          = Pin3k3.OutLow;
 
   /* Setup timer 0 to count us */
   TCCR1B = 0;
@@ -40,7 +47,7 @@ void CalibratorBsp::init()
   OCR1A  = 1000;
 
   TCCR1A = 0;
-  TCCR1B = _BV(CS10);
+  TCCR1B = _BV(CS11);
 
   /* enable interrupts */
   TIMSK = _BV(OCIE1A);
@@ -48,19 +55,24 @@ void CalibratorBsp::init()
   Sys_AVR8::enableInterrupts();
 
   /* Setup LCD */
-  LCDType().init();
+  getBsp().getLCD().init();
 }
 
 void CalibratorBsp::handleTimers()
 { /* hopefully we get called every 256 ms */
   const uint8_t Ticks1Ms = m_IsrTicks1ms - m_HandledTicks1ms;
-  m_HandledTicks1ms += Ticks1Ms;
 
-  auto & Globals = m_Globals;
-
-  for(uint_fast8_t i = 0; i < ElementCount(Globals.m_Timers); ++i)
+  if(Ticks1Ms)
   {
-    Globals.m_Timers[i].update(Ticks1Ms);
+    m_HandledTicks1ms += Ticks1Ms;
+
+    auto & Globals = m_Globals;
+
+    for(uint_fast8_t i = 0; i < ElementCount(Globals.m_Timers); ++i)
+    {
+      Globals.m_Timers[i].update(Ticks1Ms);
+    }
+
   }
 }
 
@@ -81,14 +93,17 @@ ISR(TIMER1_COMPA_vect)
 ISR(USART_RXC_vect)
 {
   auto & bsp = CalibratorBsp::getBsp();
-  uint8_t status, resh, resl;
+  uint8_t status;
+  uint8_t resh;
+  uint8_t resl;
 
   status = UCSRA & (_BV(PE) | _BV(FE)); /* parity & frame error bits */
   resh   = UCSRB & _BV(RXB8); /* 9th bit */
   resl   = UDR;
 
   /* combine error bits and 9th bit */
-  status = (status | resh) >> 1;
+  status = (status | resh);
+  status = status >> 1;
 
   if(bsp.m_UartState == bsp.UART_STATE_RECV)
   {
@@ -102,18 +117,18 @@ ISR(USART_RXC_vect)
     if(offset < sizeof(*(bsp.m_pUartBuffer)))
     {
       /* store error bits in status */
-      bsp.m_UartStatus0 |= status << 4;
+      bsp.m_UartStatus0 |= (status << 4) & 0xF0;
 
       (*(bsp.m_pUartBuffer))[offset] = resl;
     }
 
-    offset += 1;
-
-    if(offset == 0)
-      offset--;
+    if(offset < TypeProperties<uint8_t>::MaxUnsigned)
+    {
+      offset += 1;
+    }
 
     bsp.m_UartRecvLen = offset;
-    bsp.getUARTTimer().start(20);
+    bsp.getUARTTimer().start(100);
   }
 }
 
@@ -125,7 +140,7 @@ void CalibratorBsp::handleUART()
   uint8_t state = m_UartState;
   uint8_t  len  = m_UartRecvLen;
 
-  if(len > 0 and UART_STATE_RECV == state and Timer.hasTimedOut())
+  if((len > 0) && (UART_STATE_RECV == state) && Timer.hasTimedOut())
   {
     /* the first byte transmitted by the sensor is a sync byte
      * with value 0x0C0. (9 bits). Together with the parity bit
@@ -221,4 +236,65 @@ void CalibratorBsp::handleUART()
   }
 }
 
+void
+CalibratorBsp::receiveUART(UartBuffer *buffer)
+{
+  UCSRB = 0; /* disable uart */
 
+  m_UartState   = UART_STATE_RECV;
+  m_UartRecvLen = 0;
+  m_pUartBuffer = buffer;
+
+  /* | _BV(UPM0) */
+  UBRRH = (0x7F & (416 >> 8));
+  UBRRL = (0xFF &  416);
+
+  UCSRA = 0;
+  UCSRC = _BV(URSEL) | _BV(UPM1)  | _BV(UCSZ1) | _BV(UCSZ0);
+  UCSRB = _BV(RXCIE) | _BV(RXEN)  | _BV(UCSZ2);
+}
+
+uint_fast8_t
+CalibratorBsp::checkRecvDone()
+{
+  uint_fast8_t Length;
+
+  if(m_UartState == UART_STATE_DONE)
+  {
+    Length = m_UartRecvLen;
+  }
+  else
+  {
+    Length = 0;
+  }
+
+  return Length;
+}
+
+void
+CalibratorBsp::setSensorVoltage(uint8_t state)
+{
+  switch(state)
+  {
+  case SUPPLY_5V:
+    Pin1k8 = 1;
+    Pin3k3.disableOutput();
+    Pin8k2.disableOutput();
+    break;
+  case SUPPLY_4V:
+    Pin1k8 = 1;
+    Pin3k3.disableOutput();
+    Pin3k3.enableOutput();
+    break;
+  case SUPPLY_3V:
+    Pin1k8 = 1;
+    Pin3k3.enableOutput();
+    Pin8k2.disableOutput();
+    break;
+  default:
+    Pin1k8 = 0;
+    Pin3k3.disableOutput();
+    Pin8k2.disableOutput();
+    break;
+  }
+}
