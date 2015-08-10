@@ -10,7 +10,9 @@
 
 #include "ecpp/Target.hpp"
 #include "ecpp/Time.hpp"
+
 #include "ecpp/Peripherals/LCD_HD44780.hpp"
+#include "uart_atmega.hpp"
 
 using namespace ecpp;
 using namespace ecpp::Peripherals;
@@ -20,16 +22,6 @@ extern "C"
 {
   void TIMER1_COMPA_vect (void) __attribute__ ((signal,__INTR_ATTRS));
   void USART_RXC_vect (void) __attribute__ ((signal,__INTR_ATTRS));
-};
-
-class CalibratorGlobals
-{
-protected:
-  typedef SimpleTimer<uint16_t> MillisecondTimer;
-
-  MillisecondTimer m_Timers[1];
-
-  friend class CalibratorBsp;
 };
 
 class CalibratorBsp
@@ -65,32 +57,16 @@ protected:
   };
 
 public:
-  typedef CalibratorGlobals::MillisecondTimer MillisecondTimer;
   typedef LCD_HD44780<HD44780_MODE_4BIT, LcdBsp> LCDType;
-  typedef uint8_t UartBuffer[8];
-protected:
-  enum
-  {
-    UART_STATE_OFF   = 0,
-    UART_STATE_RECV  = 1,
-    UART_STATE_DONE  = 2,
-  };
+  typedef AdaptingUart<8> UartHandlerType;
 
+protected:
   static CalibratorBsp s_Instance;
 
   volatile uint8_t     m_IsrTicks1ms;
   uint8_t              m_HandledTicks1ms;
-
-  UartBuffer          *m_pUartBuffer;
-  volatile uint8_t     m_UartRecvLen;
-  volatile uint8_t     m_UartState;
-  uint8_t              m_UartStatus0;
-
+  UartHandlerType      m_UartHandler;
   LCDType              m_Lcd;
-  CalibratorGlobals    m_Globals;
-
-  MillisecondTimer & getUARTTimer() {return m_Globals.m_Timers[0];};
-
 public:
   enum
   {
@@ -103,14 +79,11 @@ public:
   static CalibratorBsp & getBsp() {return s_Instance;}
 
   LCDType & getLCD() {return m_Lcd;}
+  UartHandlerType & getUartHandler() {return m_UartHandler;}
 
   static void init();
 
   void handleTimers();
-
-  void receiveUART(UartBuffer *buffer);
-  void handleUART();
-  uint_fast8_t checkRecvDone();
 
   static uint_fast16_t getDivisor() {return (UBRRH << 8) | UBRRL;}
 
@@ -119,9 +92,7 @@ public:
   void handle()
   {
     handleTimers();
-    handleUART();
   }
-
 
   friend void TIMER1_COMPA_vect (void);
   friend void USART_RXC_vect (void);

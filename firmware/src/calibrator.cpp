@@ -5,28 +5,11 @@
  *      Author: andi
  */
 
-#include "calibrator_bsp.hpp"
 #include <ecpp/String.hpp>
 #include <string.h>
 
-using namespace ecpp;
+#include "calibrator_app.hpp"
 
-class CalibratorApp
-{
-private:
-  enum {
-    STATE_POWERUP = 0,
-    STATE_READSENSOR,
-    STATE_READDONE
-  };
-
-  uint8_t                   m_State;
-  CalibratorBsp::UartBuffer m_UartBuffer;
-
-public:
-  void readSensor();
-  void handleState();
-};
 
 static const FlashVariable<char, 16> s_TextRead PROGMEM     = "Reading Sensor  ";
 static const FlashVariable<char, 16> s_TextReadDone PROGMEM = "Read Sensor     ";
@@ -40,7 +23,9 @@ CalibratorApp::handleState()
 
   if(State == STATE_POWERUP)
   {
-    bsp.receiveUART(&m_UartBuffer);
+    auto & uart = bsp.getUartHandler();
+
+    uart.activate();
     bsp.setSensorVoltage(bsp.SUPPLY_5V);
 
     State = STATE_READSENSOR;
@@ -58,8 +43,11 @@ CalibratorApp::handleState()
     auto & lcd = bsp.getLCD();
     auto & buffer = lcd.getBuffer();
 
+    auto & uart = bsp.getUartHandler();
 
-    if(bsp.checkRecvDone())
+    uart.handleCyclic();
+
+    if(uart.finished())
     {
       State = STATE_READDONE;
 
@@ -70,25 +58,30 @@ CalibratorApp::handleState()
       lcd.writeTextBuffer(sizeof(s_TextReadDone));
     }
 
+    memset(buffer, ' ', sizeof(buffer));
+
     if(1)
     {
+      auto & ubuffer = uart.getBuffer();
       uint_fast8_t Idx;
 
-      for(Idx = 0; Idx < sizeof(m_UartBuffer); ++Idx)
+      for(Idx = 0; Idx < sizeof(ubuffer); ++Idx)
       {
-        buffer[Idx * 2]     = (m_UartBuffer[Idx] >> 4) & 0x0F;
-        buffer[Idx * 2 + 1] = (m_UartBuffer[Idx]) & 0x0F;
+        buffer[Idx * 2]     = (ubuffer[Idx] >> 4) & 0x0F;
+        buffer[Idx * 2 + 1] = (ubuffer[Idx]) & 0x0F;
       }
 
       for(Idx = 0; Idx < sizeof(buffer); ++Idx)
       {
-        buffer[Idx] = s_FormatHex[buffer[Idx]];
+        uint8_t c = buffer[Idx];
+
+        if (c < 16)
+          buffer[Idx] = s_FormatHex[buffer[Idx] % 16];
       }
     }
     else
     {
-      memset(buffer, ' ', sizeof(buffer));
-      String::formatDecimal(&(buffer[11]), 5, bsp.getDivisor());
+      String::formatDecimal(&(buffer[11]), 5, Globals::getGlobals().getUartTimer().getRemainingTime());
     }
     lcd.moveCursor(0x40);
     lcd.writeTextBuffer(16);

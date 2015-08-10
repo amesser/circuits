@@ -45,8 +45,8 @@ def build(bld):
 
     bld.ecpp_build(
         id= 'calibrator',
-        source   = ['calibrator.cpp', 'calibrator_bsp.cpp'],
+        source   = ['calibrator.cpp', 'calibrator/bsp.cpp', 'calibrator/globals.cpp'],
         target   = 'calibrator.elf',
         features = 'cxx cxxprogram',  
-        includes = ['.'],
+        includes = ['calibrator', '.'],
     ) 
