@@ -10,88 +10,147 @@
 
 #include "calibrator_app.hpp"
 
+typedef FlashVariable<char, 16> LcdStringType;
 
-static const FlashVariable<char, 16> s_TextRead PROGMEM     = "Reading Sensor  ";
-static const FlashVariable<char, 16> s_TextReadDone PROGMEM = "Read Sensor     ";
+struct LcdStrings
+{
+  const LcdStringType StatusReady;
+  const LcdStringType MenuitemMeasure;
+  const LcdStringType MenuitemReset;
+  const LcdStringType MenuitemCalibrate;
+  const LcdStringType StatusMeasuring;
+  const LcdStringType StatusRead;
+  const LcdStringType StatusErasing;
+  const LcdStringType StatusCalibrating;
+};
+
+static constexpr struct LcdStrings s_LcdStrings PROGMEM =
+{
+  .StatusReady       = "Bereit          ",
+  .MenuitemMeasure   = "Sensor auslesen ",
+  .MenuitemReset     = "Sensor zurücksetzen",
+  .MenuitemCalibrate = "Sensor kalibrieren",
+  .StatusMeasuring   = "Lese Sensor     ",
+  .StatusRead        = "Sensor gelesen  ",
+  .StatusErasing     = "Lösche Sensor   ",
+  .StatusCalibrating = "Kalibriere Sensor",
+};
+
+
+struct StateHandler
+{
+  const FlashVariable<CalibratorApp::Handler> leaveState;
+  const FlashVariable<CalibratorApp::Handler> enterState;
+  const FlashVariable<CalibratorApp::Handler> pollState;
+};
+
+/*
+APP_STATE_POWERUP = 0,
+APP_STATE_IDLE,
+APP_STATE_READSENSOR,
+APP_STATE_WRITESENSOR,
+APP_STATE_MAX,
+*/
+static constexpr struct StateHandler s_CalibratorAppStateHandlers[CalibratorApp::APP_STATE_MAX] PROGMEM =
+{
+  {&CalibratorApp::leaveStatePowerUp, 0},
+  {0 , 0},
+  {&CalibratorApp::leaveStateReadSensor, &CalibratorApp::enterStateReadSensor, &CalibratorApp::pollStateReadSensor},
+};
+
+void CalibratorApp::changeState(enum AppState NextState)
+{
+  m_MenuState = MENU_STATE_IDLE;
+
+  invoke(s_CalibratorAppStateHandlers[m_State].leaveState);
+  invoke(s_CalibratorAppStateHandlers[NextState].enterState);
+
+  m_State = NextState;
+}
+
+
+struct MenuStateHandler
+{
+  const FlashVariable<uint8_t>                LcdStringOffset;
+  const FlashVariable<CalibratorApp::Handler> updateMenu;
+};
+
+static constexpr struct MenuStateHandler
+s_CalibratorMenuStateHandlers[CalibratorApp::MENU_STATE_IDLE] PROGMEM =
+{
+  {offsetof(struct LcdStrings, MenuitemMeasure), 0},
+};
+
+void
+CalibratorApp::changeMenuState(enum MenuState NextState)
+{
+  if(NextState < MENU_STATE_IDLE)
+  {
+    auto & bsp = CalibratorBsp::getBsp();
+    auto & lcd = bsp.getLCD();
+    auto & buffer = lcd.getBuffer();
+
+    const uint8_t * p      = reinterpret_cast<const uint8_t*>(&s_LcdStrings);
+    const LcdStringType *pString = reinterpret_cast<const LcdStringType*>(
+        p + s_CalibratorMenuStateHandlers[NextState].LcdStringOffset);
+
+    pString->read(buffer);
+    lcd.moveCursor(0);
+    lcd.writeTextBuffer(16);
+  }
+
+  m_MenuState = NextState;
+
+}
+
 static const FlashVariable<char, 16> s_FormatHex PROGMEM    = "0123456789ABCDEF";
+
+void
+CalibratorApp::handleKeys()
+{
+  auto & bsp    = CalibratorBsp::getBsp();
+
+  const auto laststate = m_KeyState;
+  const auto newstate  = bsp.getKeyState();
+  const auto keydown   = (newstate ^ laststate) & newstate;
+
+  if (keydown & 0x01)
+  { /* next/abort pressed */
+    if(m_State == APP_STATE_IDLE)
+    {
+      auto nextstate = m_MenuState + 1;
+
+      if(nextstate >= MENU_STATE_IDLE)
+      {
+        nextstate = 0;
+      }
+
+      changeMenuState(static_cast<enum MenuState>(nextstate));
+    }
+  }
+  else if (keydown & 0x02)
+  { /* ok pressed */
+    if (m_MenuState == MENU_STATE_READSENSOR)
+    {
+       changeState(APP_STATE_READSENSOR);
+    }
+  }
+
+  m_KeyState = newstate;
+}
+
 
 void
 CalibratorApp::handleState()
 {
-  auto & bsp = CalibratorBsp::getBsp();
-  auto State = m_State;
-
-  if(State == STATE_POWERUP)
+  if(m_State == APP_STATE_POWERUP)
   {
-    auto & uart = bsp.getUartHandler();
-
-    uart.activate();
-    bsp.setSensorVoltage(bsp.SUPPLY_5V);
-
-    State = STATE_READSENSOR;
-
-    auto & lcd = bsp.getLCD();
-    auto & buffer = lcd.getBuffer();
-
-    lcd.moveCursor(0);
-    s_TextRead.read(buffer);
-    lcd.writeTextBuffer(sizeof(s_TextRead));
-
+    changeState(APP_STATE_IDLE);
   }
-  else if(State == STATE_READSENSOR)
+  else
   {
-    auto & lcd = bsp.getLCD();
-    auto & buffer = lcd.getBuffer();
-
-    auto & uart = bsp.getUartHandler();
-
-    uart.handleCyclic();
-
-    if(uart.finished())
-    {
-      State = STATE_READDONE;
-
-      bsp.setSensorVoltage(bsp.SUPPLY_OFF);
-
-      lcd.moveCursor(0);
-      s_TextReadDone.read(buffer);
-      lcd.writeTextBuffer(sizeof(s_TextReadDone));
-    }
-
-    memset(buffer, ' ', sizeof(buffer));
-
-    if(1)
-    {
-      auto & ubuffer = uart.getBuffer();
-      uint_fast8_t Idx;
-
-      for(Idx = 0; Idx < sizeof(ubuffer); ++Idx)
-      {
-        buffer[Idx * 2]     = (ubuffer[Idx] >> 4) & 0x0F;
-        buffer[Idx * 2 + 1] = (ubuffer[Idx]) & 0x0F;
-      }
-
-      for(Idx = 0; Idx < sizeof(buffer); ++Idx)
-      {
-        uint8_t c = buffer[Idx];
-
-        if (c < 16)
-          buffer[Idx] = s_FormatHex[buffer[Idx] % 16];
-      }
-    }
-    else
-    {
-      String::formatDecimal(&(buffer[11]), 5, Globals::getGlobals().getUartTimer().getRemainingTime());
-    }
-    lcd.moveCursor(0x40);
-    lcd.writeTextBuffer(16);
+    invoke(s_CalibratorAppStateHandlers[m_State].pollState);
   }
-  else if(State == STATE_READDONE)
-  {
-
-  }
-
-  m_State = State;
 }
 
 void
@@ -100,6 +159,95 @@ CalibratorApp::readSensor()
   auto & bsp = CalibratorBsp::getBsp();
 
 }
+
+void CalibratorApp::leaveStatePowerUp()
+{
+  auto & bsp = CalibratorBsp::getBsp();
+  auto & lcd = bsp.getLCD();
+  auto & buffer = lcd.getBuffer();
+
+  s_LcdStrings.StatusReady.read(buffer);
+  lcd.moveCursor(0);
+  lcd.writeTextBuffer(16);
+
+  memset(buffer, ' ', sizeof(buffer));
+  lcd.moveCursor(0x40);
+  lcd.writeTextBuffer(16);
+}
+
+void CalibratorApp::leaveStateReadSensor()
+{
+  auto & bsp = CalibratorBsp::getBsp();
+  auto & lcd = bsp.getLCD();
+  auto & buffer = lcd.getBuffer();
+  auto & uart = bsp.getUartHandler();
+
+  s_LcdStrings.StatusRead.read(buffer);
+  lcd.moveCursor(0);
+  lcd.writeTextBuffer(16);
+}
+
+void CalibratorApp::enterStateReadSensor()
+{
+  auto & bsp = CalibratorBsp::getBsp();
+  auto & lcd = bsp.getLCD();
+  auto & buffer = lcd.getBuffer();
+  auto & uart = bsp.getUartHandler();
+
+  uart.activate();
+  bsp.setSensorVoltage(bsp.SUPPLY_5V);
+
+  s_LcdStrings.StatusMeasuring.read(buffer);
+  lcd.moveCursor(0);
+  lcd.writeTextBuffer(16);
+}
+
+void
+CalibratorApp::pollStateReadSensor()
+{
+  auto & bsp = CalibratorBsp::getBsp();
+  auto & lcd = bsp.getLCD();
+  auto & buffer = lcd.getBuffer();
+  auto & uart = bsp.getUartHandler();
+
+  uart.handleCyclic();
+
+  memset(buffer, ' ', sizeof(buffer));
+
+  if(1)
+  {
+    auto & ubuffer = uart.getBuffer();
+    uint_fast8_t Idx;
+
+    for(Idx = 0; Idx < sizeof(ubuffer); ++Idx)
+    {
+      buffer[Idx * 2]     = (ubuffer[Idx] >> 4) & 0x0F;
+      buffer[Idx * 2 + 1] = (ubuffer[Idx]) & 0x0F;
+    }
+
+    for(Idx = 0; Idx < sizeof(buffer); ++Idx)
+    {
+      uint8_t c = buffer[Idx];
+
+      if (c < 16)
+        buffer[Idx] = s_FormatHex[buffer[Idx] % 16];
+    }
+  }
+  lcd.moveCursor(0x40);
+  lcd.writeTextBuffer(16);
+
+  if(uart.finished())
+  {
+    bsp.setSensorVoltage(bsp.SUPPLY_OFF);
+    changeState(APP_STATE_IDLE);
+
+    s_LcdStrings.StatusRead.read(buffer);
+    lcd.moveCursor(0);
+    lcd.writeTextBuffer(0);
+  }
+}
+
+
 
 static CalibratorApp app;
 
@@ -111,8 +259,9 @@ int main(void)
   bsp.init();
   while(1)
   {
+    bsp.cycle();
+    app.handleKeys();
     app.handleState();
-    bsp.handle();
 
     {
     }

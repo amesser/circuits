@@ -25,7 +25,6 @@ static IOPin<AVR_IO_PB5> Reset;
 
 static IOPort<AVR_IO_PB> Port;
 
-
 class BoardSupportPackage
 {
 public:
@@ -140,7 +139,6 @@ BoardSupportPackage::disableAnalog()
   ADCSRB = 0;
   ACSR   = _BV(ACD);
 }
-
 
 
 class VoltageModulatorSupport

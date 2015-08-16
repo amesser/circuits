@@ -11,67 +11,10 @@
 #include "ecpp/Datatypes.hpp"
 #include "ecpp/Operators.hpp"
 #include "ecpp/Target.hpp"
+#include "ecpp/WrappedNumbers.hpp"
 
 using namespace ecpp;
 
-template<typename T, int MAX>
-class WrappedInteger
-{
-};
-
-const FlashVariable<uint8_t, 6> s_WrappedInteger2 PROGMEM = {0,1,2,0,1, 2};
-
-template<typename T>
-class WrappedInteger<T, 2>
-{
-private:
-  T m_value;
-public:
-  constexpr WrappedInteger(const T init) : m_value(init) {};
-
-  WrappedInteger operator - (const WrappedInteger & rhs)
-  {
-    return s_WrappedInteger2[m_value - rhs.m_value];
-  }
-
-  WrappedInteger & operator ++ ()
-  {
-    m_value = s_WrappedInteger2[m_value + 1];
-    return *this;
-  }
-
-  WrappedInteger operator ++ (int)
-  {
-    T backup = m_value;
-    ++(*this);
-    return backup;
-  }
-
-  WrappedInteger & operator -- ()
-  {
-    m_value = s_WrappedInteger2[m_value + 3 - 1];
-    return *this;
-  }
-
-  WrappedInteger operator -- (int)
-  {
-    T backup = m_value;
-    --(*this);
-    return backup;
-  }
-
-  bool operator == (const WrappedInteger & rhs) const
-  {
-    return m_value == rhs.m_value;
-  }
-
-  bool operator != (const WrappedInteger & rhs) const
-  {
-    return m_value == rhs.m_value;
-  }
-
-  constexpr T asInteger() {return m_value;}
-};
 
 
 template<int BITTIME, int GUARD, class BASE>
@@ -85,14 +28,14 @@ public:
     VOLTAGE_C = 2,
   };
 
-  typedef WrappedInteger<uint8_t, VOLTAGE_C> StateType;
+  typedef WrappedInteger<uint8_t, VOLTAGE_C > StateType;
 
   static void transmitt(const void* ptr, size_t len);
 
   template<typename SIZE>
   static bool receive(void* ptr, SIZE maxlen);
-
 };
+
 
 template<int BITTIME, int GUARD, class BASE>
 void VoltageModulator<BITTIME, GUARD, BASE>::transmitt(const void* ptr, size_t len)

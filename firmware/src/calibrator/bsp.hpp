@@ -31,13 +31,16 @@ protected:
   static IOPin<AVR_IO_PD2> PinRw;
   static IOPin<AVR_IO_PD3> PinRs;
 
-  static IOPort<AVR_IO_PC> PortB;
+  static IOPort<AVR_IO_PB> PortB;
   static IOPort<AVR_IO_PC> PortNibble;
   static IOPort<AVR_IO_PD> PortLcdControl;
 
   static IOPin<AVR_IO_PD6> Pin1k8;
   static IOPin<AVR_IO_PD7> Pin8k2;
   static IOPin<AVR_IO_PB0> Pin3k3;
+
+  static IOPin<AVR_IO_PB2> PinKeyA;
+  static IOPin<AVR_IO_PB1> PinKeyB;
 
 
   class LcdBsp
@@ -63,8 +66,10 @@ public:
 protected:
   static CalibratorBsp s_Instance;
 
-  volatile uint8_t     m_IsrTicks1ms;
-  uint8_t              m_HandledTicks1ms;
+  volatile uint_fast8_t m_IsrTicks1ms;
+  uint_fast8_t          m_HandledTicks1ms;
+  uint_fast8_t          m_KeyState;
+
   UartHandlerType      m_UartHandler;
   LCDType              m_Lcd;
 public:
@@ -83,16 +88,13 @@ public:
 
   static void init();
 
-  void handleTimers();
 
   static uint_fast16_t getDivisor() {return (UBRRH << 8) | UBRRL;}
 
   static void setSensorVoltage(uint8_t state);
 
-  void handle()
-  {
-    handleTimers();
-  }
+  void cycle();
+  constexpr uint_fast8_t getKeyState() const {return m_KeyState & 0x0F;}
 
   friend void TIMER1_COMPA_vect (void);
   friend void USART_RXC_vect (void);

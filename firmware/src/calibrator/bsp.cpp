@@ -29,8 +29,8 @@ const FlashVariable<HD44780_CMD, 5> CalibratorBsp::LcdBsp::InitSequence PROGMEM 
 void CalibratorBsp::init()
 {
   /* initialize IO Ports */
-  PortLcdControl = PinE.OutHigh | PinRw.OutHigh | PinRs.OutHigh | Pin1k8.OutLow | Pin8k2.OutLow;
-  PortB          = Pin3k3.OutLow;
+  PortLcdControl = PinE.OutHigh  | PinRw.OutHigh | PinRs.OutHigh | Pin1k8.OutLow | Pin8k2.OutLow;
+  PortB          = Pin3k3.OutLow | PinKeyA.InPullUp | PinKeyB.InPullUp;
 
   /* Setup timer 0 to count us */
   TCCR1B = 0;
@@ -38,7 +38,7 @@ void CalibratorBsp::init()
   OCR1A  = 1000;
 
   TCCR1A = 0;
-  TCCR1B = _BV(CS11);
+  TCCR1B = _BV(CS11); /* divide by 8 */
 
   /* enable interrupts */
   TIMSK = _BV(OCIE1A);
@@ -49,19 +49,50 @@ void CalibratorBsp::init()
   getBsp().getLCD().init();
 }
 
-void CalibratorBsp::handleTimers()
-{ /* hopefully we get called every 256 ms */
-  const uint8_t Ticks1Ms = m_IsrTicks1ms - m_HandledTicks1ms;
+void CalibratorBsp::cycle()
+{
+  Globals & g = Globals::getGlobals();
 
-  if(Ticks1Ms)
-  {
-    m_HandledTicks1ms += Ticks1Ms;
+  { /* Update all timers, hopefully we get called every 256 ms */
+    const auto Ticks1Ms = m_IsrTicks1ms - m_HandledTicks1ms;
 
-    Globals & g = Globals::getGlobals();
+    if(Ticks1Ms)
+    {
+      m_HandledTicks1ms += Ticks1Ms;
 
-    Sys_AVR8::disableInterupts();
-    g.handleTimers(Ticks1Ms);
-    Sys_AVR8::enableInterrupts();
+      Sys_AVR8::disableInterupts();
+      g.handleTimers(Ticks1Ms);
+      Sys_AVR8::enableInterrupts();
+    }
+  }
+
+  { /* handle key presses */
+    auto & timer = g.getKeyTimer();
+
+    uint_fast8_t newstate = 0;
+
+    if (!PinKeyA)
+    {
+      newstate |= 0x10;
+    }
+
+    if (!PinKeyB)
+    {
+      newstate |= 0x20;
+    }
+
+    if ((m_KeyState & 0xF0) != newstate)
+    {
+      timer.start(50);
+      m_KeyState = newstate | (m_KeyState & 0x0F);
+    }
+    else
+    {
+      if(timer.hasTimedOut())
+      {
+        m_KeyState = newstate | ((newstate >> 4) & 0x0F);
+      }
+    }
   }
 }
 
