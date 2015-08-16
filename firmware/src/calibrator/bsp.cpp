@@ -47,6 +47,7 @@ void CalibratorBsp::init()
 
   /* Setup LCD */
   getBsp().getLCD().init();
+  getBsp().getUartHandler().init();
 }
 
 void CalibratorBsp::cycle()
@@ -131,7 +132,7 @@ CalibratorBsp::setSensorVoltage(uint8_t state)
   case SUPPLY_4V:
     Pin1k8 = 1;
     Pin3k3.disableOutput();
-    Pin3k3.enableOutput();
+    Pin8k2.enableOutput();
     break;
   case SUPPLY_3V:
     Pin1k8 = 1;

@@ -77,8 +77,14 @@ public:
   }
 
   void handleCyclic();
-  void activate();
 
+  static void init()
+  {
+    UBRRH = (0x7F & (416 >> 8));
+    UBRRL = (0xFF &  416);
+  }
+
+  void activate();
   bool finished() const {return m_State == STATE_DONE;}
 };
 
@@ -197,8 +203,6 @@ void AdaptingUart<LENGTH>::activate()
   memset(m_Buffer, 0x00, sizeof(m_Buffer));
 
   /* | _BV(UPM0) */
-  UBRRH = (0x7F & (416 >> 8));
-  UBRRL = (0xFF &  416);
 
   UCSRA = 0;
   UCSRC = _BV(URSEL) | _BV(UPM1)  | _BV(UCSZ1) | _BV(UCSZ0);

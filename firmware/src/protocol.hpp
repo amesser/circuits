@@ -19,4 +19,18 @@ struct measurement_data
   uint16_t temp;
 };
 
+struct calibration_param
+{
+  uint32_t Mult;
+  uint16_t Offset;
+  uint16_t Max;
+};
+
+struct calibration_data
+{
+  calibration_param Humidity;
+  calibration_param Light;
+  calibration_param Temperature;
+};
+
 #endif /* PROTOCOL_HPP_ */

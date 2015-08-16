@@ -15,32 +15,48 @@
 
 using namespace ecpp;
 
-
-
-template<int BITTIME, int GUARD, class BASE>
+template<int LENGTH, int BITTIME, int GUARD, class BASE>
 class VoltageModulator : public BASE
 {
 public:
+  typedef uint8_t BuffertType[LENGTH];
   enum VoltageState
   {
     VOLTAGE_A = 0,
     VOLTAGE_B = 1,
     VOLTAGE_C = 2,
   };
-
+private:
   typedef WrappedInteger<uint8_t, VOLTAGE_C > StateType;
 
-  static void transmitt(const void* ptr, size_t len);
 
-  template<typename SIZE>
-  static bool receive(void* ptr, SIZE maxlen);
+  StateType      m_State;
+  uint_least8_t  m_Offset;
+  uint_least8_t  m_BitCnt;
+  uint_least8_t  m_Value;
+  BuffertType    m_Buffer;
+public:
+  template<typename T = BuffertType>
+  T & getBuffer() {return *reinterpret_cast<T*>(&m_Buffer);}
+
+  uint_least8_t getNumTransferred() const {return (m_BitCnt > 0) ? (m_Offset - 1) : (m_Offset);}
+  uint_least8_t getTransferring()    const {return m_Offset;}
+  bool          hasFinished()       const {return (m_BitCnt == 0) && (m_Offset == LENGTH);}
+
+  /* event based interface */
+  void startTransmission();
+  void handleTransmission();
+
+  static void transmitt(const void* ptr);
+  static bool receive(void* ptr);
 };
 
 
-template<int BITTIME, int GUARD, class BASE>
-void VoltageModulator<BITTIME, GUARD, BASE>::transmitt(const void* ptr, size_t len)
+template<int LENGTH, int BITTIME, int GUARD, class BASE>
+void VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::transmitt(const void* ptr)
 {
   const uint8_t *buf = ptr;
+  uint8_t len = LENGTH;
   StateType state = VOLTAGE_A;
 
   BASE::setState(state);
@@ -67,19 +83,77 @@ void VoltageModulator<BITTIME, GUARD, BASE>::transmitt(const void* ptr, size_t l
   }
 }
 
-template<int BITTIME, int GUARD, class BASE>
-template<typename SIZE>
+template<int LENGTH, int BITTIME, int GUARD, class BASE>
+void VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::startTransmission()
+{
+  StateType State = VOLTAGE_A;
+
+  m_State   = State;
+  m_Offset  = 0;
+  m_BitCnt  = 1;
+
+  BASE::setVoltageState(State.asInteger());
+}
+
+template<int LENGTH, int BITTIME, int GUARD, class BASE>
+void VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::handleTransmission()
+{
+  if (!hasFinished())
+  {
+    auto & Timer = BASE::getTimer();
+
+    if(Timer.hasTimedOut())
+    {
+      StateType State = m_State;
+
+      m_BitCnt -= 1;
+
+      if (m_Offset < LENGTH || m_BitCnt > 0)
+      {
+
+        if(m_BitCnt == 0)
+        {
+          m_BitCnt = 8;
+          m_Value  = m_Buffer[m_Offset++];
+        }
+
+        if(m_Value & 0x80)
+        {
+          State += StateType(2);
+        }
+        else
+        {
+          State += StateType(1);
+        }
+
+        m_Value <<= 1;
+
+        Timer.start(BITTIME + GUARD);
+      }
+      else
+      {
+        State = StateType(VOLTAGE_A);
+      }
+
+      m_State = State;
+      BASE::setVoltageState(State.asInteger());
+    }
+  }
+}
+
+template<int LENGTH, int BITTIME, int GUARD, class BASE>
 bool
-VoltageModulator<BITTIME, GUARD, BASE>::receive(void* ptr, SIZE maxlen)
+VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::receive(void* ptr)
 {
   uint8_t *buf = static_cast<uint8_t*>(ptr);
+  uint8_t maxlen = LENGTH;
 
-  SIZE    offset;
+  uint8_t offset;
   uint8_t value, count;
 
   decltype(BASE::startTimer(30000)) timer;
 
-  StateType state     = BASE::getState();
+  StateType State     = BASE::getState();
   uint8_t   laststate = 4; /* force initial reset of timer */
 
   offset = 0;
@@ -87,19 +161,19 @@ VoltageModulator<BITTIME, GUARD, BASE>::receive(void* ptr, SIZE maxlen)
 
   while(maxlen > 0)
   {
-    StateType curstate = BASE::getState();
+    StateType NextState = BASE::getState();
 
-    if(curstate.asInteger() != laststate)
+    if(NextState.asInteger() != laststate)
     {
-      laststate = curstate.asInteger();
+      laststate = NextState.asInteger();
       timer = BASE::startTimer(30000);
     }
-    else if (curstate != state)
+    else if (NextState != State)
     {
       if (timer.getElapsedTime(30000) > BITTIME)
       {
-        const auto delta = (curstate - state).asInteger();
-        state = curstate;
+        const auto delta = (NextState - State).asInteger();
+        State = NextState;
 
         value  = (value << 1) | (delta - 1);
         count += (256 / 8);

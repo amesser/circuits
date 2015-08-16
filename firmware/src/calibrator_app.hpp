@@ -30,6 +30,7 @@ public:
   enum MenuState
   {
     MENU_STATE_READSENSOR = 0,
+    MENU_STATE_RESETSENSOR,
     MENU_STATE_IDLE,
   };
 
@@ -37,9 +38,9 @@ public:
   typedef void (CalibratorApp::* Handler)();
 
 private:
-  uint_fast8_t m_State;
-  uint_fast8_t m_MenuState;
-  uint_fast8_t m_KeyState;
+  uint_fast8_t   m_State;
+  uint_fast8_t   m_MenuState;
+  uint_fast8_t   m_KeyState;
 
   template<typename T>
   void invoke(const T& ptr);
@@ -49,9 +50,14 @@ private:
 public:
   void leaveStatePowerUp();
 
+  void enterStateIdle();
+
   void leaveStateReadSensor();
   void enterStateReadSensor();
   void pollStateReadSensor();
+
+  void enterStateWriteSensor();
+  void pollStateWriteSensor();
 
   void changeState(    enum AppState  NextState);
   void changeMenuState(enum MenuState NextState);

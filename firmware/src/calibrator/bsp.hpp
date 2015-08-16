@@ -14,6 +14,10 @@
 #include "ecpp/Peripherals/LCD_HD44780.hpp"
 #include "uart_atmega.hpp"
 
+#include "voltage-modulator.hpp"
+#include "protocol.hpp"
+#include "globals.hpp"
+
 using namespace ecpp;
 using namespace ecpp::Peripherals;
 
@@ -23,6 +27,7 @@ extern "C"
   void TIMER1_COMPA_vect (void) __attribute__ ((signal,__INTR_ATTRS));
   void USART_RXC_vect (void) __attribute__ ((signal,__INTR_ATTRS));
 };
+
 
 class CalibratorBsp
 {
@@ -42,13 +47,19 @@ protected:
   static IOPin<AVR_IO_PB2> PinKeyA;
   static IOPin<AVR_IO_PB1> PinKeyB;
 
+  class VoltageModulatorBsp
+  {
+  protected:
+    void                        setVoltageState(uint_fast8_t State) {CalibratorBsp::setSensorVoltage(State);}
+    Globals::MillisecondTimer & getTimer() {return Globals::getGlobals().getVoltageModulatorTimer();}
+  };
+
 
   class LcdBsp
   {
   protected:
     static const FlashVariable<HD44780_CMD, 5> InitSequence PROGMEM;
 
-  protected:
     static void delay(uint_fast16_t us);
     static void setRW()       {PortNibble.updateDirection(0x0F,0x00); PinRw = 1; }
     static void clearRW()     {PinRw = 0; PortNibble.updateDirection(0x0F,0x0F);}
@@ -60,8 +71,9 @@ protected:
   };
 
 public:
-  typedef LCD_HD44780<HD44780_MODE_4BIT, LcdBsp> LCDType;
-  typedef AdaptingUart<8> UartHandlerType;
+  typedef LCD_HD44780<HD44780_MODE_4BIT, LcdBsp>                                 LCDType;
+  typedef AdaptingUart<8>                                                        UartHandlerType;
+  typedef VoltageModulator<sizeof(calibration_data), 80,20, VoltageModulatorBsp> VoltageModulatorType;
 
 protected:
   static CalibratorBsp s_Instance;
@@ -70,8 +82,10 @@ protected:
   uint_fast8_t          m_HandledTicks1ms;
   uint_fast8_t          m_KeyState;
 
-  UartHandlerType      m_UartHandler;
-  LCDType              m_Lcd;
+  UartHandlerType       m_UartHandler;
+
+  LCDType               m_Lcd;
+  VoltageModulatorType  m_VoltageModulator;
 public:
   enum
   {
@@ -83,8 +97,9 @@ public:
 
   static CalibratorBsp & getBsp() {return s_Instance;}
 
-  LCDType & getLCD() {return m_Lcd;}
-  UartHandlerType & getUartHandler() {return m_UartHandler;}
+  LCDType & getLCD()                           {return m_Lcd;}
+  UartHandlerType & getUartHandler()           {return m_UartHandler;}
+  VoltageModulatorType & getVoltageModulator() {return m_VoltageModulator;}
 
   static void init();
 
@@ -94,7 +109,7 @@ public:
   static void setSensorVoltage(uint8_t state);
 
   void cycle();
-  constexpr uint_fast8_t getKeyState() const {return m_KeyState & 0x0F;}
+  uint_fast8_t getKeyState() const {return m_KeyState & 0x0F;}
 
   friend void TIMER1_COMPA_vect (void);
   friend void USART_RXC_vect (void);

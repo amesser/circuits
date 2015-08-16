@@ -29,8 +29,8 @@ class BoardSupportPackage
 {
 public:
   enum {
-    ADC_CHANNEL_VCC  = _BV(ADLAR) | _BV(MUX1),
-    ADC_CHANNEL_TEMP = _BV(MUX1),
+    ADC_CHANNEL_VCC  = _BV(MUX1),
+    ADC_CHANNEL_TEMP = _BV(REFS0) | _BV(MUX1),
 
     AC_CHANNEL_HUM   = 0,
   };
@@ -39,7 +39,7 @@ public:
   static void      enableAC      (uint8_t channel);
   static void      disableAnalog ();
 
-  static uint8_t   getVcc()     {return ADCH;}
+  static uint8_t   getVcc()     {return ADC;}
   static uint16_t  getTemp()    {return ADC;}
   static bool      getAcState() {return ACSR & _BV(ACO);}
 
@@ -75,7 +75,7 @@ static BoardSupportPackage bsp;
 void BoardSupportPackage::enableTimer0(uint8_t prescale, uint8_t max)
 {
   /* configure timer */
-  OCR0A  = max;
+  OCR0A  = max - 1;
   TCCR0B = prescale;
   TCCR0A = _BV(WGM01);
 
@@ -169,8 +169,8 @@ uint8_t
 VoltageModulatorSupport::getState()
 {
   /* check if we have 3, 4 or 5 V */
-  const uint8_t limit_a = 256. * 0.55 / (3. + 0.666);
-  const uint8_t limit_b = 256. * 0.55 / (4. + 0.333);
+  const uint8_t limit_a = 1024. * 0.7 / (3. + 0.666);
+  const uint8_t limit_b = 1024. * 0.7 / (4. + 0.333);
 
   uint8_t readout = bsp.getVcc();
   uint8_t  state  = SUPPLY_5V;
@@ -189,16 +189,9 @@ VoltageModulatorSupport::getState()
 }
 
 
-class Evaluator
+class Evaluator : public calibration_param
 {
-private:
-  uint32_t m_Mult;
-  uint16_t m_Offset;
-  uint16_t m_Max;
 public:
-  Evaluator() {};
-  constexpr Evaluator(uint32_t Mult, uint16_t Offset, uint16_t Max) : m_Mult(Mult), m_Offset(Offset), m_Max(Max) {};
-
   uint16_t scale(uint16_t value) const;
 };
 
@@ -223,11 +216,11 @@ static uint32_t mult32x16 (uint32_t lhs, uint16_t rhs)
 
 uint16_t Evaluator::scale(uint16_t value) const
 {
-  value = m_Offset + value;
+  value = Offset + value;
 
-  if(value <= m_Max)
+  if(value <= Max)
   {
-    uint32_t result = mult32x16(m_Mult, value);
+    uint32_t result = mult32x16(Mult, value);
     value = result >> 16U;
   }
   else
@@ -238,27 +231,20 @@ uint16_t Evaluator::scale(uint16_t value) const
   return value;
 }
 
-struct Evaluators
+const FlashVariable<struct calibration_param> calibration_default PROGMEM =
 {
-  Evaluator Humidity;
-  Evaluator Light;
-  Evaluator Temperature;
-
-  Evaluators () {}
-  constexpr Evaluators (const Evaluator& hum, const Evaluator& light, const Evaluator& temp)
-    : Humidity(hum), Light(light), Temperature(temp) {}
+  {0x10000UL, 0x0000, 0xFFFF},
 };
 
-
-EEVariable<struct Evaluators> calibration_parameters EEMEM =
+EEVariable<struct calibration_data> calibration_parameters EEMEM =
 {{
   {0x10000UL, 0x0000, 0xFFFF},
   {0x10000UL, 0x0000, 0xFFFF},
   {0x10000UL, 0x0000, 0xFFFF}
 }} ;
 
-struct Evaluators calibrators __attribute__((section(".noinit")));
-struct measurement_data data __attribute__((section(".noinit")));
+struct calibration_data calibrators __attribute__((section(".noinit")));
+struct measurement_data data        __attribute__((section(".noinit")));
 
 
 #define USE_AC 1
@@ -298,9 +284,9 @@ int main(void)
     { /* supply voltage stayed at 3 volts for about 5 seconds
        * calibration parameterization requested */
 
-      VoltageModulator<80,20,VoltageModulatorSupport> modulator;
+      typedef VoltageModulator<sizeof(calibrators), 80,20,VoltageModulatorSupport> VoltageModulatorType;
 
-      uint8_t len_received = modulator.receive(&calibrators, static_cast<uint8_t>(sizeof(calibrators)));
+      uint8_t len_received = VoltageModulatorType::receive(&calibrators);
 
       if(len_received == sizeof(calibrators))
       {
@@ -400,11 +386,16 @@ int main(void)
     data.sync = 0xC0;
     data.type = 0;
 
-    Evaluator * pe = &(calibrators.Humidity);
+    Evaluator * pe = reinterpret_cast<Evaluator*>(&(calibrators.Humidity));
     uint16_t  * pd = &(data.humidity_counts);
 
     for(uint_fast8_t cnt = 3; cnt > 0; --cnt)
     {
+      if (calibration_default != *pe)
+      {
+        data.type = 1;
+      }
+
       *pd = hton16(pe->scale(*pd));
       //*pd = hton16(*pd);
       ++pd; ++pe;
@@ -412,14 +403,14 @@ int main(void)
   }
 
   /* RS232 */
-  bsp.setPortState(HumCapacitor.OutLow | RefCapacitor.OutLow | LedCathode.OutLow | LedAnode.OutHigh | Temp.OutLow);
+  bsp.setPortState(HumCapacitor.OutLow | RefCapacitor.OutLow | LedCathode.OutLow | LedAnode.OutHigh);
 
   /* uart */
   while(1)
   {
     const uint8_t *p = reinterpret_cast<const uint8_t*>(&(data));
 
-    auto    timer = bsp.startTimerMs(1000);
+    auto    timer = bsp.startTimerMs(250);
     while(!bsp.handleTimer(timer));
 
     /* baud rate is 1200, 9 databits odd parity, 2 stopbits */
@@ -446,12 +437,12 @@ int main(void)
       {
         if(val & 0x01)
         {
-          LedAnode.setOutput();
+          LedCathode.clearOutput();
           val ^= parmask;
         }
         else
         {
-          LedAnode.clearOutput();
+          LedCathode.setOutput();
         }
 
         val     >>= 1;

@@ -10,6 +10,8 @@
 
 #include "calibrator_app.hpp"
 
+using namespace ecpp;
+
 typedef FlashVariable<char, 16> LcdStringType;
 
 struct LcdStrings
@@ -22,18 +24,22 @@ struct LcdStrings
   const LcdStringType StatusRead;
   const LcdStringType StatusErasing;
   const LcdStringType StatusCalibrating;
+  const LcdStringType StatusInitTransfer;
+  const LcdStringType StatusTransfer;
 };
 
 static constexpr struct LcdStrings s_LcdStrings PROGMEM =
 {
-  .StatusReady       = "Bereit          ",
-  .MenuitemMeasure   = "Sensor auslesen ",
-  .MenuitemReset     = "Sensor zurücksetzen",
-  .MenuitemCalibrate = "Sensor kalibrieren",
-  .StatusMeasuring   = "Lese Sensor     ",
-  .StatusRead        = "Sensor gelesen  ",
-  .StatusErasing     = "Lösche Sensor   ",
-  .StatusCalibrating = "Kalibriere Sensor",
+  .StatusReady        = "Bereit          ",
+  .MenuitemMeasure    = "Sensor auslesen ",
+  .MenuitemReset      = "Sensor zur" "\xf5" "cksetzen",
+  .MenuitemCalibrate  = "Sensor kalibrieren",
+  .StatusMeasuring    = "Lese Sensor     ",
+  .StatusRead         = "Sensor gelesen  ",
+  .StatusErasing      = "L" "\xef" "sche Sensor   ",
+  .StatusCalibrating  = "Kalibriere Sensor",
+  .StatusInitTransfer = "Initialisiere...",
+  .StatusTransfer     = "\xf5" "bertrage  XX/24",
 };
 
 
@@ -53,9 +59,10 @@ APP_STATE_MAX,
 */
 static constexpr struct StateHandler s_CalibratorAppStateHandlers[CalibratorApp::APP_STATE_MAX] PROGMEM =
 {
-  {&CalibratorApp::leaveStatePowerUp, 0},
-  {0 , 0},
-  {&CalibratorApp::leaveStateReadSensor, &CalibratorApp::enterStateReadSensor, &CalibratorApp::pollStateReadSensor},
+  {&CalibratorApp::leaveStatePowerUp},
+  {0,                                    &CalibratorApp::enterStateIdle},
+  {&CalibratorApp::leaveStateReadSensor, &CalibratorApp::enterStateReadSensor,  &CalibratorApp::pollStateReadSensor},
+  {0,                                    &CalibratorApp::enterStateWriteSensor, &CalibratorApp::pollStateWriteSensor},
 };
 
 void CalibratorApp::changeState(enum AppState NextState)
@@ -79,6 +86,7 @@ static constexpr struct MenuStateHandler
 s_CalibratorMenuStateHandlers[CalibratorApp::MENU_STATE_IDLE] PROGMEM =
 {
   {offsetof(struct LcdStrings, MenuitemMeasure), 0},
+  {offsetof(struct LcdStrings, MenuitemReset),   0},
 };
 
 void
@@ -104,6 +112,10 @@ CalibratorApp::changeMenuState(enum MenuState NextState)
 }
 
 static const FlashVariable<char, 16> s_FormatHex PROGMEM    = "0123456789ABCDEF";
+static const FlashVariable<struct calibration_param> s_ResetCalibrationParam PROGMEM =
+{
+  {0x10000UL, 0x0000, 0xFFFF},
+};
 
 void
 CalibratorApp::handleKeys()
@@ -133,6 +145,22 @@ CalibratorApp::handleKeys()
     if (m_MenuState == MENU_STATE_READSENSOR)
     {
        changeState(APP_STATE_READSENSOR);
+    }
+    else if (m_MenuState == MENU_STATE_RESETSENSOR)
+    {
+       auto & data = bsp.getVoltageModulator().getBuffer<calibration_data>();
+       auto & lcd = bsp.getLCD();
+       auto & buffer = lcd.getBuffer();
+
+       s_ResetCalibrationParam.read(data.Humidity);
+       s_ResetCalibrationParam.read(data.Light);
+       s_ResetCalibrationParam.read(data.Temperature);
+
+       s_LcdStrings.StatusErasing.read(buffer);
+       lcd.moveCursor(0);
+       lcd.writeTextBuffer(16);
+
+       changeState(APP_STATE_WRITESENSOR);
     }
   }
 
@@ -173,6 +201,13 @@ void CalibratorApp::leaveStatePowerUp()
   memset(buffer, ' ', sizeof(buffer));
   lcd.moveCursor(0x40);
   lcd.writeTextBuffer(16);
+}
+
+void CalibratorApp::enterStateIdle()
+{
+  auto & bsp = CalibratorBsp::getBsp();
+
+  bsp.setSensorVoltage(bsp.SUPPLY_OFF);
 }
 
 void CalibratorApp::leaveStateReadSensor()
@@ -238,12 +273,53 @@ CalibratorApp::pollStateReadSensor()
 
   if(uart.finished())
   {
-    bsp.setSensorVoltage(bsp.SUPPLY_OFF);
     changeState(APP_STATE_IDLE);
 
     s_LcdStrings.StatusRead.read(buffer);
     lcd.moveCursor(0);
-    lcd.writeTextBuffer(0);
+    lcd.writeTextBuffer(16);
+  }
+}
+
+void CalibratorApp::enterStateWriteSensor()
+{
+  auto & g   = Globals::getGlobals();
+  auto & bsp = CalibratorBsp::getBsp();
+  auto & timer  = g.getVoltageModulatorTimer();
+  auto & vmod   = bsp.getVoltageModulator();
+
+  timer.start(10000);
+  bsp.setSensorVoltage(bsp.SUPPLY_3V);
+  vmod.startTransmission();
+}
+
+void CalibratorApp::pollStateWriteSensor()
+{
+  auto & bsp = CalibratorBsp::getBsp();
+  auto & lcd = bsp.getLCD();
+  auto & buffer = lcd.getBuffer();
+  auto & vmod   = bsp.getVoltageModulator();
+
+  vmod.handleTransmission();
+
+  memset(buffer, ' ', sizeof(buffer));
+
+  if(vmod.getTransferring() == 0)
+  {/* transfer has not started yet */
+    s_LcdStrings.StatusInitTransfer.read(buffer);
+  }
+  else
+  {
+    s_LcdStrings.StatusTransfer.read(buffer);
+    String::formatDecimal(&(buffer[16-5]), 2, vmod.getNumTransferred(), '0');
+  }
+
+  lcd.moveCursor(0x40);
+  lcd.writeTextBuffer(16);
+
+  if(vmod.hasFinished())
+  {
+    changeState(APP_STATE_READSENSOR);
   }
 }
 
