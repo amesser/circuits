@@ -269,19 +269,27 @@ int main(void)
     bsp.setPortState(RefCapacitor.OutLow | HumCapacitor.OutLow | LedCathode.OutHigh | LedAnode.OutHigh);
     bsp.enableADC(bsp.ADC_CHANNEL_VCC);
 
-    auto    timer = bsp.startTimerMs(5000);
-    uint8_t state = VoltageModulatorSupport::SUPPLY_5V;
+    auto    timer            = bsp.startTimerMs(1000);
+    uint8_t LastVoltageState = 4;
 
     while(!bsp.handleTimer(timer))
     {
-      state = VoltageModulatorSupport::getState();
+      uint8_t ActualVoltageState = VoltageModulatorSupport::getState();
 
-      if(state != VoltageModulatorSupport::SUPPLY_3V)
-        break;
+      if (LastVoltageState != ActualVoltageState)
+      {
+        if(LastVoltageState == VoltageModulatorSupport::SUPPLY_3V ||
+           ActualVoltageState == VoltageModulatorSupport::SUPPLY_3V)
+        {
+          bsp.startTimerMs(1000);
+        }
+
+        LastVoltageState = ActualVoltageState;
+      }
     }
 
-    if(state == VoltageModulatorSupport::SUPPLY_3V)
-    { /* supply voltage stayed at 3 volts for about 5 seconds
+    if(LastVoltageState == VoltageModulatorSupport::SUPPLY_3V)
+    { /* supply voltage stayed at 3 volts for about 1 seconds
        * calibration parameterization requested */
 
       typedef VoltageModulator<sizeof(calibrators), 80,20,VoltageModulatorSupport> VoltageModulatorType;
