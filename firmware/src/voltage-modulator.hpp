@@ -47,8 +47,8 @@ public:
   void startTransmission();
   void handleTransmission();
 
-  static void transmitt(const void* ptr);
-  static bool receive(void* ptr);
+  static void    transmitt(const void* ptr);
+  static uint8_t receive(void* ptr);
 };
 
 
@@ -142,11 +142,10 @@ void VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::handleTransmission()
 }
 
 template<int LENGTH, int BITTIME, int GUARD, class BASE>
-bool
+uint8_t
 VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::receive(void* ptr)
 {
   uint8_t *buf = static_cast<uint8_t*>(ptr);
-  uint8_t maxlen = LENGTH;
 
   uint8_t offset;
   uint8_t value, count;
@@ -158,8 +157,9 @@ VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::receive(void* ptr)
 
   offset = 0;
   count  = 0;
+  value  = 0;
 
-  while(maxlen > 0)
+  while(offset < LENGTH)
   {
     StateType NextState = BASE::getState();
 
@@ -182,14 +182,13 @@ VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::receive(void* ptr)
         {
           buf[offset] = value;
           offset++;
-          maxlen--;
         }
       }
     }
 
     if(BASE::checkTimeout(timer))
     {
-      maxlen = 0;
+      break;
     }
   }
 
