@@ -21,16 +21,8 @@ def configure(conf):
 def build(bld):
     bld.ecpp_build(
         id= 'attiny13a',
-        source   = ['main.cpp'],
+        source   = ['main.cpp', 'protocol.cpp'],
         target   = 'attiny13a.elf',
-        features = 'cxx cxxprogram',  
-        includes = ['.'],
-    ) 
-
-    bld.ecpp_build(
-        id= 'attiny13a',
-        source   = ['sensor-attiny13a.S'],
-        target   = 'sensor-attiny13a.elf',
         features = 'cxx cxxprogram',  
         includes = ['.'],
     ) 
@@ -45,7 +37,7 @@ def build(bld):
 
     bld.ecpp_build(
         id= 'calibrator',
-        source   = ['calibrator.cpp', 'calibrator/bsp.cpp', 'calibrator/globals.cpp'],
+        source   = ['calibrator.cpp', 'protocol.cpp', 'calibrator/bsp.cpp', 'calibrator/globals.cpp'],
         target   = 'calibrator.elf',
         features = 'cxx cxxprogram',  
         includes = ['calibrator', '.'],

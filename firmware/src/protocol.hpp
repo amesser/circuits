@@ -33,4 +33,11 @@ struct calibration_data
   calibration_param Temperature;
 };
 
+class Evaluator : public calibration_param
+{
+public:
+  uint16_t scale(uint16_t value) const;
+};
+
+
 #endif /* PROTOCOL_HPP_ */
