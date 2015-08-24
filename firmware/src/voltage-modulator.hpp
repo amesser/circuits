@@ -19,7 +19,7 @@ template<int LENGTH, int BITTIME, int GUARD, class BASE>
 class VoltageModulator : public BASE
 {
 public:
-  typedef uint8_t BuffertType[LENGTH];
+  typedef uint8_t BufferType[LENGTH];
   enum VoltageState
   {
     VOLTAGE_A = 0,
@@ -34,10 +34,19 @@ private:
   uint_least8_t  m_Offset;
   uint_least8_t  m_BitCnt;
   uint_least8_t  m_Value;
-  BuffertType    m_Buffer;
+  BufferType    m_Buffer;
 public:
-  template<typename T = BuffertType>
-  T & getBuffer() {return *reinterpret_cast<T*>(&m_Buffer);}
+  template<typename T = BufferType>
+  T & getBuffer()
+  {
+    union {
+      BufferType *pBuffer;
+      T          *pType;
+    } u;
+
+    u.pBuffer = &m_Buffer;
+    return *(u.pType);
+  }
 
   uint_least8_t getNumTransferred() const {return (m_BitCnt > 0) ? (m_Offset - 1) : (m_Offset);}
   uint_least8_t getTransferring()    const {return m_Offset;}
