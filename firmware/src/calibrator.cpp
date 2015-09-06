@@ -52,7 +52,6 @@ static constexpr struct LcdStrings s_LcdStrings PROGMEM =
   .DisplayDataCalibrated   = "Sensor     XXXXX",
 };
 
-
 struct StateHandler
 {
   const FlashVariable<CalibratorApp::Handler> leaveState;
@@ -67,14 +66,34 @@ APP_STATE_READSENSOR,
 APP_STATE_WRITESENSOR,
 APP_STATE_MAX,
 */
-static constexpr struct StateHandler s_CalibratorAppStateHandlers[CalibratorApp::APP_STATE_MAX] PROGMEM =
+
+
+static constexpr FlashVariable<CalibratorApp::Handler>
+s_CalibratorAppLeaveStateHandler[CalibratorApp::APP_STATE_MAX] PROGMEM =
 {
-  {&CalibratorApp::leaveStatePowerUp},
-  {0,                                    &CalibratorApp::enterStateIdle,        &CalibratorApp::pollStateIdle},
-  {&CalibratorApp::leaveStateReadSensor, &CalibratorApp::enterStateReadSensor,  &CalibratorApp::pollStateReadSensor},
-  {0,                                    &CalibratorApp::enterStateWriteSensor, &CalibratorApp::pollStateWriteSensor},
+  &CalibratorApp::leaveStatePowerUp,
+  0,
+  &CalibratorApp::leaveStateReadSensor,
+  0,
 };
 
+static constexpr FlashVariable<CalibratorApp::Handler>
+s_CalibratorAppEnterStateHandler[CalibratorApp::APP_STATE_MAX] PROGMEM =
+{
+  0,
+  &CalibratorApp::enterStateIdle,
+  &CalibratorApp::enterStateReadSensor,
+  &CalibratorApp::enterStateWriteSensor,
+};
+
+static constexpr FlashVariable<CalibratorApp::Handler>
+s_CalibratorAppPollStateHandler[CalibratorApp::APP_STATE_MAX] PROGMEM =
+{
+  0,
+  &CalibratorApp::pollStateIdle,
+  &CalibratorApp::pollStateReadSensor,
+  &CalibratorApp::pollStateWriteSensor,
+};
 
 static EEVariable<calibration_statistics> s_CalStatistics EEMEM;
 
@@ -83,27 +102,30 @@ void CalibratorApp::changeState(enum AppState NextState)
 {
   m_MenuState = MENU_STATE_IDLE;
 
-  invoke(s_CalibratorAppStateHandlers[m_State].leaveState);
-  invoke(s_CalibratorAppStateHandlers[NextState].enterState);
+  invokeFromList(s_CalibratorAppLeaveStateHandler, m_State, 0);
+  invokeFromList(s_CalibratorAppEnterStateHandler,NextState, 0);
 
   m_State = NextState;
 }
 
 
-struct MenuStateHandler
+static constexpr FlashVariable<uint8_t> s_MenuLcdStringOffset[CalibratorApp::MENU_STATE_IDLE] PROGMEM =
 {
-  const FlashVariable<uint8_t>                LcdStringOffset;
-  const FlashVariable<CalibratorApp::Handler> updateMenu;
+  offsetof(struct LcdStrings, MenuitemMeasure),
+  offsetof(struct LcdStrings, MenuitemHumidity),
+  offsetof(struct LcdStrings, MenuitemLight),
+  offsetof(struct LcdStrings, MenuitemTemp),
+  offsetof(struct LcdStrings, MenuitemReset),
 };
 
-static constexpr struct MenuStateHandler
-s_CalibratorMenuStateHandlers[CalibratorApp::MENU_STATE_IDLE] PROGMEM =
+static constexpr FlashVariable<CalibratorApp::Handler>
+s_MenuHandler[CalibratorApp::MENU_STATE_IDLE] PROGMEM =
 {
-  {offsetof(struct LcdStrings, MenuitemMeasure),  0},
-  {offsetof(struct LcdStrings, MenuitemHumidity), &CalibratorApp::displayHumidity},
-  {offsetof(struct LcdStrings, MenuitemLight),    &CalibratorApp::displayLight},
-  {offsetof(struct LcdStrings, MenuitemTemp),     &CalibratorApp::displayTemperature},
-  {offsetof(struct LcdStrings, MenuitemReset),    0},
+  0,
+  &CalibratorApp::displayHumidity,
+  &CalibratorApp::displayLight,
+  &CalibratorApp::displayTemperature,
+  0,
 };
 
 void
@@ -117,7 +139,7 @@ CalibratorApp::changeMenuState(enum MenuState NextState)
 
     const uint8_t * p      = reinterpret_cast<const uint8_t*>(&s_LcdStrings);
     const LcdStringType *pString = reinterpret_cast<const LcdStringType*>(
-        p + s_CalibratorMenuStateHandlers[NextState].LcdStringOffset);
+        p + s_MenuLcdStringOffset[NextState]);
 
     pString->read(buffer);
 
@@ -125,7 +147,7 @@ CalibratorApp::changeMenuState(enum MenuState NextState)
     lcd.writeTextBuffer(16);
 
     memset(&buffer, 0x00, sizeof(buffer));
-    invoke(s_CalibratorMenuStateHandlers[NextState].updateMenu);
+    invokeFromList(s_MenuHandler, NextState, 0);
 
     lcd.moveCursor(0x40);
     lcd.writeTextBuffer(16);
@@ -186,6 +208,48 @@ CalibratorApp::handleKeys()
 
        changeState(APP_STATE_WRITESENSOR);
     }
+    else if (m_MenuState == MENU_STATE_HUMIDITY)
+    {
+      auto & uart    = bsp.getUartHandler();
+      auto & ubuffer = uart.getBuffer();
+
+      measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
+
+      /* statistic data can only be generated from uncalibrated sensor data
+       * output */
+      if(0xC0 == pMeasData->sync && 0x00 == pMeasData->type)
+      {
+        collectMinMaxStatistics(m_CalStatistics.Humidity, pMeasData->humidity_counts, true);
+      }
+    }
+    else if (m_MenuState == MENU_STATE_LIGHT)
+    {
+      auto & uart    = bsp.getUartHandler();
+      auto & ubuffer = uart.getBuffer();
+
+      measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
+
+      /* statistic data can only be generated from uncalibrated sensor data
+       * output */
+      if(0xC0 == pMeasData->sync && 0x00 == pMeasData->type)
+      {
+        collectMinMaxStatistics(m_CalStatistics.Light, pMeasData->led_counts, true);
+      }
+    }
+    else if (m_MenuState == MENU_STATE_TEMP)
+    {
+      auto & uart    = bsp.getUartHandler();
+      auto & ubuffer = uart.getBuffer();
+
+      measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
+
+      /* statistic data can only be generated from uncalibrated sensor data
+       * output */
+      if(0xC0 == pMeasData->sync && 0x00 == pMeasData->type)
+      {
+        collectTempStatistics(m_CalStatistics.Temperature, pMeasData->temp, 263);
+      }
+    }
   }
 
   m_KeyState = newstate;
@@ -203,7 +267,7 @@ CalibratorApp::handleState()
   }
   else
   {
-    invoke(s_CalibratorAppStateHandlers[State].pollState);
+    invokeFromList(s_CalibratorAppPollStateHandler, State, 0);
   }
 }
 
@@ -212,7 +276,7 @@ CalibratorApp::readSensor()
 {
 }
 
-void CalibratorApp::leaveStatePowerUp()
+void CalibratorApp::leaveStatePowerUp(uint_fast16_t Argument)
 {
   auto & bsp = CalibratorBsp::getBsp();
   auto & lcd = bsp.getLCD();
@@ -229,18 +293,18 @@ void CalibratorApp::leaveStatePowerUp()
 
 }
 
-void CalibratorApp::enterStateIdle()
+void CalibratorApp::enterStateIdle(uint_fast16_t Argument)
 {
   auto & bsp = CalibratorBsp::getBsp();
 
   bsp.setSensorVoltage(bsp.SUPPLY_OFF);
 }
 
-void CalibratorApp::pollStateIdle()
+void CalibratorApp::pollStateIdle(uint_fast16_t Argument)
 {
 }
 
-void CalibratorApp::leaveStateReadSensor()
+void CalibratorApp::leaveStateReadSensor(uint_fast16_t Argument)
 {
   auto & bsp = CalibratorBsp::getBsp();
   auto & lcd = bsp.getLCD();
@@ -252,7 +316,7 @@ void CalibratorApp::leaveStateReadSensor()
   lcd.writeTextBuffer(16);
 }
 
-void CalibratorApp::enterStateReadSensor()
+void CalibratorApp::enterStateReadSensor(uint_fast16_t Argument)
 {
   auto & bsp = CalibratorBsp::getBsp();
   auto & lcd = bsp.getLCD();
@@ -270,7 +334,7 @@ void CalibratorApp::enterStateReadSensor()
 }
 
 void
-CalibratorApp::pollStateReadSensor()
+CalibratorApp::pollStateReadSensor(uint_fast16_t Argument)
 {
   auto & bsp = CalibratorBsp::getBsp();
   auto & lcd = bsp.getLCD();
@@ -315,7 +379,7 @@ CalibratorApp::pollStateReadSensor()
   }
 }
 
-void CalibratorApp::enterStateWriteSensor()
+void CalibratorApp::enterStateWriteSensor(uint_fast16_t Argument)
 {
   auto & g   = Globals::getGlobals();
   auto & bsp = CalibratorBsp::getBsp();
@@ -327,7 +391,7 @@ void CalibratorApp::enterStateWriteSensor()
   vmod.startTransmission();
 }
 
-void CalibratorApp::pollStateWriteSensor()
+void CalibratorApp::pollStateWriteSensor(uint_fast16_t Argument)
 {
   auto & bsp = CalibratorBsp::getBsp();
   auto & lcd = bsp.getLCD();
@@ -362,47 +426,98 @@ void CalibratorApp::calculateMinMaxCal(struct calibration_minmax &stat, struct c
   prm.Offset = -stat.Min;
   prm.Max    =  stat.Max - stat.Min;
   prm.Mult   = (0xFFFF * 0x10000ULL) / prm.Max;
-
 }
+
 
 void CalibratorApp::calculateLinRegr(struct calibration_linearregression &stat, struct calibration_param &prm)
 {
   /* y = Mult * (x + Offset) / 65536 */
-  const int16_t AverageX = (stat.SumX + stat.NumPoints / 2) / stat.NumPoints;
-  const int16_t AverageY = (stat.SumY + stat.NumPoints / 2) / stat.NumPoints;
 
-  prm.Mult   = 0; /* TODO */
-  prm.Offset = (AverageY * 65536) / prm.Mult - AverageX;
-  prm.Max    = 0xFFFFFFFF / prm.Mult;
+  uint_fast8_t NumPoints;
+  int_fast32_t Numerator, Denominator, SumX, SumY;
+
+  NumPoints = sum(stat.NumPoints);
+
+  SumX      = sum(stat.SumX);
+  SumY      = sum(stat.SumY);
+
+  Numerator   = sum(stat.SumXY) - ((SumX * SumY) + NumPoints / 2) / NumPoints;
+  Denominator = sum(stat.SumXX) - ((SumX * SumX) + NumPoints / 2) / NumPoints;
+
+  prm.Mult   = (((int_fast64_t)Numerator) * 65536ULL) / Denominator ;
+  prm.Offset =    (SumY + NumPoints / 2) * 65536ULL / NumPoints / prm.Mult
+                - (SumX + NumPoints / 2) / NumPoints;
+  prm.Max    = 0xFFFF0000 / prm.Mult;
 }
 
-void CalibratorApp::evaluateSensordata()
+#define MAX_MINMAX_JUMPWIDTH (25)
+
+void
+CalibratorApp::collectMinMaxStatistics(struct calibration_minmax &stat, uint_fast16_t Counts, bool ForceCollect)
+{
+  const auto MaxJumpwidth = ForceCollect ? TypeProperties<decltype(stat.Max)>::MaxUnsigned : MAX_MINMAX_JUMPWIDTH;
+
+  if(stat.Min > stat.Max)
+  { /* First value */
+    stat.Min = stat.Max = Counts;
+  }
+  else if(Counts > stat.Max && (Counts - stat.Max) <= MaxJumpwidth)
+  {
+    stat.Max = Counts;
+  }
+  else if(Counts < stat.Min && (stat.Min - Counts) <= MaxJumpwidth)
+  {
+    stat.Min = Counts;
+  }
+}
+
+void
+CalibratorApp::collectTempStatistics(struct calibration_linearregression &stat, uint_fast16_t TempCounts, uint_fast16_t Temp)
+{
+  /* Temperature statistics is kept in seperate bins of 2 degrees.
+   * This is used to improve the temperature calibration distribution */
+
+  /* Bins are available from [-10, +30 [ */
+  if(Temp >= (273 - 10) && Temp < (273 + 30))
+  {
+    uint_fast16_t UTemp = Temp - (273 - 10);
+    uint_fast8_t Idx = static_cast<uint_fast8_t>(UTemp / 2);
+
+    if(stat.NumPoints[Idx] < (min(stat.NumPoints) + 2))
+    {
+      stat.NumPoints[Idx] += 1;
+      stat.SumX[Idx]      += TempCounts;
+      stat.SumX[Idx]      += TempCounts * TempCounts;
+      stat.SumY[Idx]      += Temp;
+      stat.SumXY[Idx]     += Temp * TempCounts;
+    }
+  }
+}
+
+
+/** Collect calibration statistics from sensor data.
+ *
+ * This function will update the calibration statistics
+ * with the data read out from a sensor.
+ */
+void CalibratorApp::collectStatistics()
 {
   auto & bsp    = CalibratorBsp::getBsp();
   auto & uart    = bsp.getUartHandler();
   auto & ubuffer = uart.getBuffer();
 
   measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
-  auto & CalStat = m_CalStatistics;
 
-  if(0xC0 == pMeasData->sync)
+  /* statistic data can only be generated from uncalibrated sensor data
+   * output */
+  if(0xC0 == pMeasData->sync && 0x00 == pMeasData->type)
   {
-    if(0x00 == pMeasData->type)
-    { /* uncalibrated sensor data */
-      CalStat.Humidity.Min = min(CalStat.Humidity.Min, pMeasData->humidity_counts);
-      CalStat.Humidity.Max = min(CalStat.Humidity.Max, pMeasData->humidity_counts);
+    auto & CalStat = m_CalStatistics;
 
-      CalStat.Light.Min    = min(CalStat.Light.Min, pMeasData->humidity_counts);
-      CalStat.Light.Max    = min(CalStat.Light.Max, pMeasData->humidity_counts);
-
-      const int16_t Temp = pMeasData->temp;
-
-      CalStat.Temperature.NumPoints += 1;
-      CalStat.Temperature.SumX      += Temp;
-      CalStat.Temperature.SumY      += 0 /* TODO */;
-    }
+    collectMinMaxStatistics(CalStat.Humidity, pMeasData->humidity_counts);
+    collectMinMaxStatistics(CalStat.Light,    pMeasData->led_counts);
+    collectTempStatistics(CalStat.Temperature, pMeasData->temp, 263);
   }
-
 }
 
 void CalibratorApp::calculateCalibration()
@@ -457,17 +572,17 @@ void CalibratorApp::displayValue(uint_fast8_t idx)
   }
 }
 
-void CalibratorApp::displayHumidity()
+void CalibratorApp::displayHumidity(uint_fast16_t Argument)
 {
   displayValue(0);
 }
 
-void CalibratorApp::displayLight()
+void CalibratorApp::displayLight(uint_fast16_t Argument)
 {
   displayValue(1);
 }
 
-void CalibratorApp::displayTemperature()
+void CalibratorApp::displayTemperature(uint_fast16_t Argument)
 {
   displayValue(2);
 }

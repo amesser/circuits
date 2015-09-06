@@ -21,11 +21,21 @@ struct calibration_minmax
   uint16_t Min;
 };
 
+/** Hold the data used for linear regression
+ *
+ * In order to avoid to strong influence of lots
+ * of calibration points in one range, the x/y measurement
+ * pair will be grouped in slots. each slot is 2 degrees
+ * wide. When calculating the calibration factors, each slot
+ * will be weighted with the inverse of its contents
+ */
 struct calibration_linearregression
 {
-  uint8_t NumPoints;
-  int32_t SumX;
-  int32_t SumY;
+  int16_t  SumX[25];
+  int16_t  SumY[25];
+  int32_t  SumXY[25];
+  int32_t  SumXX[25];
+  uint8_t NumPoints[25];
 };
 
 struct calibration_statistics
@@ -56,8 +66,8 @@ public:
     MENU_STATE_IDLE,
   };
 
-  /* define a type for member function pointers without an argument*/
-  typedef void (CalibratorApp::* Handler)();
+  /* define a type for member function pointers with a single argument*/
+  typedef void (CalibratorApp::* Handler)(uint_fast16_t Argument);
 
 private:
   uint_fast8_t   m_State;
@@ -71,54 +81,53 @@ private:
   } m_Scratch;
 
   template<typename T>
-  void invoke(const T& ptr);
+  void invokeFromList(const T & HandlerList, uint_fast16_t Index, uint_fast16_t Argument);
 
-  void invoke(Handler handler);
+  static void collectMinMaxStatistics(struct calibration_minmax &stat, uint_fast16_t Counts, bool ForceCollect = false);
+  static void collectTempStatistics(struct calibration_linearregression &stat, uint_fast16_t TempCounts, uint_fast16_t Temp);
 
-  void        evaluateSensordata();
+  void        collectStatistics();
   void        calculateCalibration();
   static void calculateMinMaxCal(struct calibration_minmax &stat, struct calibration_param &prm);
   static void calculateLinRegr(struct calibration_linearregression &stat, struct calibration_param &prm);
 public:
-  void leaveStatePowerUp();
+  void leaveStatePowerUp(uint_fast16_t Argument);
 
-  void enterStateIdle();
-  void pollStateIdle();
+  void enterStateIdle(uint_fast16_t Argument);
+  void pollStateIdle(uint_fast16_t Argument);
 
-  void leaveStateReadSensor();
-  void enterStateReadSensor();
-  void pollStateReadSensor();
+  void leaveStateReadSensor(uint_fast16_t Argument);
+  void enterStateReadSensor(uint_fast16_t Argument);
+  void pollStateReadSensor(uint_fast16_t Argument);
 
-  void enterStateWriteSensor();
-  void pollStateWriteSensor();
+  void enterStateWriteSensor(uint_fast16_t Argument);
+  void pollStateWriteSensor(uint_fast16_t Argument);
 
   void changeState(    enum AppState  NextState);
   void changeMenuState(enum MenuState NextState);
 
   uint16_t getValue(uint_fast8_t idx, uint_fast16_t input);
   void     displayValue(uint_fast8_t idx);
-  void     displayHumidity();
-  void     displayLight();
-  void     displayTemperature();
+  void     displayHumidity(uint_fast16_t Argument);
+  void     displayLight(uint_fast16_t Argument);
+  void     displayTemperature(uint_fast16_t Argument);
 
   void readSensor();
   void handleKeys();
   void handleState();
 };
 
-template<typename T>
-void CalibratorApp::invoke(const T & ptr)
-{
-  Handler handler = ptr;
-  invoke(handler);
-}
 
-void CalibratorApp::invoke(Handler handler)
+template<typename T>
+void CalibratorApp::invokeFromList(const T & HandlerList, uint_fast16_t Index, uint_fast16_t Argument)
 {
-  if(handler != NULL)
+  Handler h = HandlerList[Index];
+
+  if(0 != h)
   {
-    (this->*handler)();
+    (this->*h)(Argument);
   }
 }
+
 
 #endif /* FIRMWARE_SRC_CALIBRATOR_CALIBRATOR_APP_HPP_ */
