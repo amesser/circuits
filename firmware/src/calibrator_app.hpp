@@ -63,6 +63,7 @@ public:
     MENU_STATE_LIGHT,
     MENU_STATE_TEMP,
     MENU_STATE_RESETSENSOR,
+    MENU_STATE_RESET,
     MENU_STATE_IDLE,
   };
 
@@ -73,6 +74,9 @@ private:
   uint_fast8_t   m_State;
   uint_fast8_t   m_MenuState;
   uint_fast8_t   m_KeyState;
+
+  /** bitmask defining which value of the current readout has not yet been collected */
+  uint_fast8_t   m_CalStatMask;
 
   calibration_statistics m_CalStatistics;
 
@@ -108,9 +112,13 @@ public:
 
   uint16_t getValue(uint_fast8_t idx, uint_fast16_t input);
   void     displayValue(uint_fast8_t idx);
-  void     displayHumidity(uint_fast16_t Argument);
-  void     displayLight(uint_fast16_t Argument);
-  void     displayTemperature(uint_fast16_t Argument);
+
+  void     handleMenuReadSensor(uint_fast16_t Argument);
+  void     handleMenuHumidity(uint_fast16_t Argument);
+  void     handleMenuLight(uint_fast16_t Argument);
+  void     handleMenuTemperature(uint_fast16_t Argument);
+  void     handleMenuEraseSensor(uint_fast16_t Argument);
+  void     handleMenuReset(uint_fast16_t Argument);
 
   void readSensor();
   void handleKeys();
