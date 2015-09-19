@@ -15,153 +15,90 @@ using namespace ecpp;
 
 typedef FlashVariable<char, 16> LcdStringType;
 
-struct LcdStrings
+/*  ö  = " "\xef" " */
+static constexpr LcdStringType s_UiLcdStrings[] PROGMEM =
 {
-  const LcdStringType StatusReady;
-  const LcdStringType MenuitemMeasure;
-  const LcdStringType MenuitemHumidity;
-  const LcdStringType MenuitemLight;
-  const LcdStringType MenuitemTemp;
-  const LcdStringType MenuitemResetSensor;
-  const LcdStringType MenuitemCalibrate;
-  const LcdStringType MenuitemReset;
-  const LcdStringType StatusMeasuring;
-  const LcdStringType StatusRead;
-  const LcdStringType StatusErasing;
-  const LcdStringType StatusCalibrating;
-  const LcdStringType StatusInitTransfer;
-  const LcdStringType StatusTransfer;
-  const LcdStringType DisplayDataUncalibrated;
-  const LcdStringType DisplayDataCalibrated;
+  "Sensor lesen    ", /* UI_STATE_READSENSOR */
+  "Lese Sensor...  ", /* UI_STATE_READINGSENSOR */
+  "Messwerte Sensor", /* UI_STATE_READSENSORRESULTS */
+  "Rohdaten Sensor ", /* UI_STATE_READSENSORRAW */
+  "Rohdaten Feuchte", /* UI_STATE_READSENSORHUMIDITY */
+  "Rohdaten Licht  ", /* UI_STATE_READSENSORLIGHT */
+  "Rohdaten Temp.  ", /* UI_STATE_READSENSORTEMPERATURE */
+  "Fehler          ", /* UI_STATE_SENSORERROR */
+  "Sensor l" "\xef" "schen  ", /* UI_STATE_ERASESENSOR */
+  "L" "\xef" "sche Sensor...", /* UI_STATE_ERASINGSENSOR */
+  "Sensor kalib.   ", /* UI_STATE_CALIBRATESENSOR */
+  "Kalibriere S....", /* UI_STATE_CALIBRATINGSENSOR */
+  "Stat. l" "\xef" "schen   ", /* UI_STATE_RESETSTATISTICS */
+  "Automatikmodus  ", /* UI_STATE_AUTOCALIBRATION */
+  "A Messinterval  ", /* UI_STATE_AUTOSELECTINTERVAL */
+  "A Lese Sensor...", /* UI_STATE_AUTOREADINGSENSOR */
+  "A Warte         ", /* UI_STATE_AUTOWAIT */
+  "Bereit          ", /* UI_STATE_STARTUP */
 };
 
-static constexpr struct LcdStrings s_LcdStrings PROGMEM =
+static constexpr LcdStringType s_UiLcdNextOK PROGMEM =
+  "[Weiter]    [OK]";
+
+static constexpr LcdStringType s_UiLcdBaud   PROGMEM =
+  "Lese        Baud";
+
+static constexpr LcdStringType s_UiLcdWait PROGMEM =
+  "Warte           ";
+
+static constexpr LcdStringType s_UiLcdWriteProgress PROGMEM =
+  "Schreibe   XX/24";
+
+static constexpr LcdStringType s_UiLcdRaw PROGMEM =
+  "[I]          [S]";
+
+static constexpr FlashVariable<uint_least8_t> s_UiStateNext[] PROGMEM =
 {
-  .StatusReady             = "Bereit          ",
-  .MenuitemMeasure         = "Sensor auslesen ",
-  .MenuitemHumidity        = "Bodenfeuchte    ",
-  .MenuitemLight           = "Helligkeit      ",
-  .MenuitemTemp            = "Temperatur      ",
-  .MenuitemResetSensor     = "Sensor zur" "\xf5" "cksetzen",
-  .MenuitemCalibrate       = "Sensor kalibrieren",
-  .MenuitemReset           = "Kalibrierung zur" "\xf5" "cksetzen",
-  .StatusMeasuring         = "Lese Sensor     ",
-  .StatusRead              = "Sensor gelesen  ",
-  .StatusErasing           = "L" "\xef" "sche Sensor   ",
-  .StatusCalibrating       = "Kalibriere Sensor",
-  .StatusInitTransfer      = "Initialisiere...",
-  .StatusTransfer          = "\xf5" "bertrage  XX/24",
-  .DisplayDataUncalibrated = "Preview    XXXXX",
-  .DisplayDataCalibrated   = "Sensor     XXXXX",
+  CalibratorApp::UI_STATE_ERASESENSOR,           /* UI_STATE_READSENSOR */
+  CalibratorApp::UI_STATE_READSENSOR,            /* UI_STATE_READINGSENSOR */
+  CalibratorApp::UI_STATE_READSENSOR,            /* UI_STATE_READSENSORRESULTS */
+  CalibratorApp::UI_STATE_READSENSORHUMIDITY,    /* UI_STATE_READSENSORRAW */
+  CalibratorApp::UI_STATE_READSENSORLIGHT,       /* UI_STATE_READSENSORHUMIDITY */
+  CalibratorApp::UI_STATE_READSENSORTEMPERATURE, /* UI_STATE_READSENSORLIGHT */
+  CalibratorApp::UI_STATE_READSENSOR,            /* UI_STATE_READSENSORTEMPERATURE */
+  CalibratorApp::UI_STATE_READSENSOR,            /* UI_STATE_SENSORERROR */
+  CalibratorApp::UI_STATE_CALIBRATESENSOR,       /* UI_STATE_ERASESENSOR */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_ERASINGSENSOR */
+  CalibratorApp::UI_STATE_RESETSTATISTICS,       /* UI_STATE_CALIBRATESENSOR */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_CALIBRATINGSENSOR */
+  CalibratorApp::UI_STATE_AUTOCALIBRATION,       /* UI_STATE_RESETSTATISTICS */
+  CalibratorApp::UI_STATE_READSENSOR,            /* UI_STATE_AUTOCALIBRATION */
+  CalibratorApp::UI_STATE_AUTOSELECTINTERVAL,    /* UI_STATE_AUTOSELECTINTERVAL */
+  CalibratorApp::UI_STATE_AUTOCALIBRATION,       /* UI_STATE_AUTOREADINGSENSOR */
+  CalibratorApp::UI_STATE_AUTOCALIBRATION,       /* UI_STATE_AUTOWAIT */
+  CalibratorApp::UI_STATE_READSENSOR,            /* UI_STATE_STARTUP */
 };
 
-struct StateHandler
+static constexpr FlashVariable<uint_least8_t> s_UiStateOK[] PROGMEM =
 {
-  const FlashVariable<CalibratorApp::Handler> leaveState;
-  const FlashVariable<CalibratorApp::Handler> enterState;
-  const FlashVariable<CalibratorApp::Handler> pollState;
+  CalibratorApp::UI_STATE_READINGSENSOR,         /* UI_STATE_READSENSOR */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_READINGSENSOR */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_READSENSORRESULTS */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_READSENSORRAW */
+  CalibratorApp::UI_STATE_READSENSORLIGHT,       /* UI_STATE_READSENSORHUMIDITY */
+  CalibratorApp::UI_STATE_READSENSORTEMPERATURE, /* UI_STATE_READSENSORLIGHT */
+  CalibratorApp::UI_STATE_READSENSOR,            /* UI_STATE_READSENSORTEMPERATURE */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_SENSORERROR */
+  CalibratorApp::UI_STATE_ERASINGSENSOR,         /* UI_STATE_ERASESENSOR */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_ERASINGSENSOR */
+  CalibratorApp::UI_STATE_CALIBRATINGSENSOR,     /* UI_STATE_CALIBRATESENSOR */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_CALIBRATINGSENSOR */
+  CalibratorApp::UI_STATE_RESETSTATISTICS,       /* UI_STATE_RESETSTATISTICS */
+  CalibratorApp::UI_STATE_AUTOSELECTINTERVAL,    /* UI_STATE_AUTOCALIBRATION */
+  CalibratorApp::UI_STATE_AUTOREADINGSENSOR,     /* UI_STATE_AUTOSELECTINTERVAL */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_AUTOREADINGSENSOR */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_AUTOWAIT */
+  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_STARTUP */
 };
 
-/*
-APP_STATE_POWERUP = 0,
-APP_STATE_IDLE,
-APP_STATE_READSENSOR,
-APP_STATE_WRITESENSOR,
-APP_STATE_MAX,
-*/
-
-
-static constexpr FlashVariable<CalibratorApp::Handler>
-s_CalibratorAppLeaveStateHandler[CalibratorApp::APP_STATE_MAX] PROGMEM =
-{
-  &CalibratorApp::leaveStatePowerUp,
-  0,
-  &CalibratorApp::leaveStateReadSensor,
-  0,
-};
-
-static constexpr FlashVariable<CalibratorApp::Handler>
-s_CalibratorAppEnterStateHandler[CalibratorApp::APP_STATE_MAX] PROGMEM =
-{
-  0,
-  &CalibratorApp::enterStateIdle,
-  &CalibratorApp::enterStateReadSensor,
-  &CalibratorApp::enterStateWriteSensor,
-};
-
-static constexpr FlashVariable<CalibratorApp::Handler>
-s_CalibratorAppPollStateHandler[CalibratorApp::APP_STATE_MAX] PROGMEM =
-{
-  0,
-  &CalibratorApp::pollStateIdle,
-  &CalibratorApp::pollStateReadSensor,
-  &CalibratorApp::pollStateWriteSensor,
-};
 
 static EEVariable<calibration_statistics> s_CalStatistics EEMEM;
-
-
-void CalibratorApp::changeState(enum AppState NextState)
-{
-  m_MenuState = MENU_STATE_IDLE;
-
-  invokeFromList(s_CalibratorAppLeaveStateHandler, m_State, 0);
-  invokeFromList(s_CalibratorAppEnterStateHandler,NextState, 0);
-
-  m_State = NextState;
-}
-
-
-static constexpr FlashVariable<uint8_t> s_MenuLcdStringOffset[CalibratorApp::MENU_STATE_IDLE] PROGMEM =
-{
-  offsetof(struct LcdStrings, MenuitemMeasure),
-  offsetof(struct LcdStrings, MenuitemHumidity),
-  offsetof(struct LcdStrings, MenuitemLight),
-  offsetof(struct LcdStrings, MenuitemTemp),
-  offsetof(struct LcdStrings, MenuitemResetSensor),
-  offsetof(struct LcdStrings, MenuitemReset),
-};
-
-static constexpr FlashVariable<CalibratorApp::Handler>
-s_MenuHandler[CalibratorApp::MENU_STATE_IDLE] PROGMEM =
-{
-  &CalibratorApp::handleMenuReadSensor,
-  &CalibratorApp::handleMenuHumidity,
-  &CalibratorApp::handleMenuLight,
-  &CalibratorApp::handleMenuTemperature,
-  &CalibratorApp::handleMenuEraseSensor,
-  &CalibratorApp::handleMenuReset,
-};
-
-void
-CalibratorApp::changeMenuState(enum MenuState NextState)
-{
-  if(NextState < MENU_STATE_IDLE)
-  {
-    auto & bsp = CalibratorBsp::getBsp();
-    auto & lcd = bsp.getLCD();
-    auto & buffer = lcd.getBuffer();
-
-    const uint8_t * p      = reinterpret_cast<const uint8_t*>(&s_LcdStrings);
-    const LcdStringType *pString = reinterpret_cast<const LcdStringType*>(
-        p + s_MenuLcdStringOffset[NextState]);
-
-    pString->read(buffer);
-
-    lcd.moveCursor(0);
-    lcd.writeTextBuffer(16);
-
-    memset(&buffer, ' ', sizeof(buffer));
-    invokeFromList(s_MenuHandler, NextState, 0);
-
-    lcd.moveCursor(0x40);
-    lcd.writeTextBuffer(16);
-  }
-
-  m_MenuState = NextState;
-
-}
-
 static const FlashVariable<char, 16> s_FormatHex PROGMEM    = "0123456789ABCDEF";
 static const FlashVariable<struct calibration_param> s_ResetCalibrationParam PROGMEM =
 {
@@ -177,208 +114,395 @@ CalibratorApp::handleKeys()
   const auto newstate  = bsp.getKeyState();
   const auto keydown   = (newstate ^ laststate) & newstate;
 
+  enum UiState NextState    = UI_STATE_STARTUP;
+  enum UiState CurrentState = static_cast<enum UiState>(m_MenuState);
+
   if (keydown & 0x01)
-  { /* next/abort pressed */
-    if(m_State == APP_STATE_IDLE)
+  { /* key next pressed */
+    NextState = static_cast<enum UiState>((uint8_t)s_UiStateNext[CurrentState]);
+
+    switch(CurrentState)
     {
-      auto nextstate = m_MenuState + 1;
-
-      if(nextstate >= MENU_STATE_IDLE)
+    case UI_STATE_READSENSORTEMPERATURE:
       {
-        nextstate = 0;
+        s_CalStatistics = m_CalStatistics;
       }
-
-      changeMenuState(static_cast<enum MenuState>(nextstate));
+      break;
+    default:
+      break;
     }
   }
   else if (keydown & 0x02)
   { /* ok pressed */
-    invokeFromList(s_MenuHandler, m_MenuState, keydown & 0x02);
+    NextState = static_cast<enum UiState>((uint8_t)s_UiStateOK[CurrentState]);
+
+    switch(CurrentState)
+    {
+    case UI_STATE_READSENSORHUMIDITY:
+      {
+        auto & bsp  = CalibratorBsp::getBsp();
+        auto & uart = bsp.getUartHandler();
+        auto & data = uart.getBufferAs<measurement_data>();
+
+        collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts, true);
+      }
+      break;
+    case UI_STATE_READSENSORLIGHT:
+      {
+        auto & bsp  = CalibratorBsp::getBsp();
+        auto & uart = bsp.getUartHandler();
+        auto & data = uart.getBufferAs<measurement_data>();
+
+        collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts, true);
+      }
+      break;
+    case UI_STATE_READSENSORTEMPERATURE:
+      {
+        auto & bsp  = CalibratorBsp::getBsp();
+        auto & uart = bsp.getUartHandler();
+        auto & data = uart.getBufferAs<measurement_data>();
+
+        collectTempStatistics(m_CalStatistics.Temperature, data.temp, 263);
+        s_CalStatistics = m_CalStatistics;
+      }
+      break;
+    case UI_STATE_RESETSTATISTICS:
+      {
+        auto & Statistics = m_CalStatistics;
+        memset(&Statistics, 0x00, sizeof(Statistics));
+
+        Statistics.Humidity.Min = 0xFFFF;
+        Statistics.Light.Min    = 0xFFFF;
+
+        s_CalStatistics = Statistics;
+      }
+      break;
+    case UI_STATE_READSENSOR:
+      changeState(APP_STATE_READSENSOR);
+      break;
+    case UI_STATE_ERASESENSOR:
+      {
+        auto & data = bsp.getVoltageModulator().getBuffer<calibration_data>();
+
+        s_ResetCalibrationParam.read(data.Humidity);
+        s_ResetCalibrationParam.read(data.Light);
+        s_ResetCalibrationParam.read(data.Temperature);
+
+        changeState(APP_STATE_WRITESENSOR);
+      }
+      break;
+    case UI_STATE_CALIBRATESENSOR:
+      {
+        auto & data = bsp.getVoltageModulator().getBuffer<calibration_data>();
+        s_CalStatistics.read(m_CalStatistics);
+        calculateCalibration();
+        memcpy(&data, &m_Scratch.CalPrm, sizeof(data));
+        changeState(APP_STATE_WRITESENSOR);
+        break;
+      }
+    default:
+      break;
+    }
+  }
+
+
+  if(NextState != UI_STATE_STARTUP)
+  {
+    changeUiState(NextState);
   }
 
   m_KeyState = newstate;
 }
 
-
-void
-CalibratorApp::handleState()
+void CalibratorApp::formatMinMax(struct calibration_minmax & cal, uint16_t value)
 {
-  uint_fast8_t State     = m_State;
+  s_UiLcdRaw.read(m_LcdScratch);
 
-  if(State == APP_STATE_POWERUP)
+  if(value > cal.Max)
   {
-    changeState(APP_STATE_IDLE);
+    m_LcdScratch[4] = '>';
+    m_LcdScratch[5] = '>';
+    String::formatUnsigned(m_LcdScratch + 7, 5, value);
+  }
+  else if(value < cal.Min)
+  {
+    m_LcdScratch[4] = '<';
+    m_LcdScratch[5] = '<';
+    String::formatUnsigned(m_LcdScratch + 7, 5, value);
   }
   else
   {
-    invokeFromList(s_CalibratorAppPollStateHandler, State, 0);
+    Evaluator * pe = reinterpret_cast<Evaluator*>(&cal);
+
+    m_LcdScratch[4]  = '[';
+    m_LcdScratch[10] = ']';
+    String::formatUnsigned(m_LcdScratch + 5, 5, pe->scale(value));
   }
 }
 
-void
-CalibratorApp::readSensor()
+void CalibratorApp::formatLinRegr(struct calibration_linearregression & cal, uint16_t value, uint16_t ref)
 {
+  s_UiLcdRaw.read(m_LcdScratch);
+
+  String::formatSigned(m_LcdScratch + 4, 3, static_cast<int16_t>(ref)   - 273);
+  String::formatSigned(m_LcdScratch + 9, 3, static_cast<int16_t>(value) - 273);
 }
 
-void CalibratorApp::leaveStatePowerUp(uint_fast16_t Argument)
+void CalibratorApp::changeUiState(enum UiState NextState)
 {
   auto & bsp = CalibratorBsp::getBsp();
   auto & lcd = bsp.getLCD();
-  auto & buffer = lcd.getBuffer();
 
-
-  s_LcdStrings.StatusReady.read(buffer);
-  lcd.moveCursor(0);
-  lcd.writeTextBuffer(16);
-
-  memset(buffer, ' ', sizeof(buffer));
-  lcd.moveCursor(0x40);
-  lcd.writeTextBuffer(16);
-
-}
-
-void CalibratorApp::enterStateIdle(uint_fast16_t Argument)
-{
-  auto & bsp = CalibratorBsp::getBsp();
-
-  bsp.setSensorVoltage(bsp.SUPPLY_OFF);
-}
-
-void CalibratorApp::pollStateIdle(uint_fast16_t Argument)
-{
-}
-
-void CalibratorApp::leaveStateReadSensor(uint_fast16_t Argument)
-{
-  auto & bsp = CalibratorBsp::getBsp();
-  auto & lcd = bsp.getLCD();
-  auto & buffer = lcd.getBuffer();
-
-  s_LcdStrings.StatusRead.read(buffer);
-  lcd.moveCursor(0);
-  lcd.writeTextBuffer(16);
-}
-
-void CalibratorApp::enterStateReadSensor(uint_fast16_t Argument)
-{
-  auto & bsp = CalibratorBsp::getBsp();
-  auto & lcd = bsp.getLCD();
-  auto & buffer = lcd.getBuffer();
-  auto & uart = bsp.getUartHandler();
-
-  s_CalStatistics.read(m_CalStatistics);
-
-  uart.activate();
-  bsp.setSensorVoltage(bsp.SUPPLY_5V);
-
-  s_LcdStrings.StatusMeasuring.read(buffer);
-  lcd.moveCursor(0);
-  lcd.writeTextBuffer(16);
-}
-
-void
-CalibratorApp::pollStateReadSensor(uint_fast16_t Argument)
-{
-  auto & bsp = CalibratorBsp::getBsp();
-  auto & lcd = bsp.getLCD();
-  auto & buffer = lcd.getBuffer();
-  auto & uart = bsp.getUartHandler();
-
-  uart.handleCyclic();
-
-  memset(buffer, ' ', sizeof(buffer));
-
-  if(1)
-  {
-    auto & ubuffer = uart.getBuffer();
-    uint_fast8_t Idx;
-
-    for(Idx = 0; Idx < sizeof(ubuffer); ++Idx)
-    {
-      buffer[Idx * 2]     = (ubuffer[Idx] >> 4) & 0x0F;
-      buffer[Idx * 2 + 1] = (ubuffer[Idx]) & 0x0F;
-    }
-
-    for(Idx = 0; Idx < sizeof(buffer); ++Idx)
-    {
-      uint8_t c = buffer[Idx];
-
-      if (c < 16)
-        buffer[Idx] = s_FormatHex[buffer[Idx] % 16];
-    }
+  { /* setup first display line */
+    auto & str = s_UiLcdStrings[NextState];
+    lcd.displayString(lcd.Location(0,0), str.begin(), str.end());
   }
-  lcd.moveCursor(0x40);
-  lcd.writeTextBuffer(16);
 
-  if(uart.finished())
+  /* enter state handling */
+  switch(NextState)
   {
-    auto & ubuffer = uart.getBuffer();
-    measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
-
-    pMeasData->humidity_counts = ntoh16(pMeasData->humidity_counts);
-    pMeasData->led_counts      = ntoh16(pMeasData->led_counts);
-    pMeasData->temp            = ntoh16(pMeasData->temp);
-
-    if(0xC0 == pMeasData->sync && 0x00 == pMeasData->type)
+  case UI_STATE_READSENSOR:
+  case UI_STATE_ERASESENSOR:
+  case UI_STATE_CALIBRATESENSOR:
+  case UI_STATE_RESETSTATISTICS:
+  case UI_STATE_AUTOCALIBRATION:
+    lcd.displayString(lcd.Location(0,1), s_UiLcdNextOK.begin(), s_UiLcdNextOK.end());
+    break;
+  case UI_STATE_READSENSORHUMIDITY:
     {
-      m_CalStatMask = 0x77;
+      auto & bsp  = CalibratorBsp::getBsp();
+      auto & uart = bsp.getUartHandler();
+      auto & data = uart.getBufferAs<measurement_data>();
+
+      formatMinMax(m_CalStatistics.Humidity, data.humidity_counts);
+      lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+    }
+    break;
+  case UI_STATE_READSENSORLIGHT:
+    {
+      auto & bsp  = CalibratorBsp::getBsp();
+      auto & uart = bsp.getUartHandler();
+      auto & data = uart.getBufferAs<measurement_data>();
+
+      formatMinMax(m_CalStatistics.Light, data.led_counts);
+      lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+    }
+    break;
+  case UI_STATE_READSENSORTEMPERATURE:
+    {
+      auto & bsp  = CalibratorBsp::getBsp();
+      auto & uart = bsp.getUartHandler();
+      auto & data = uart.getBufferAs<measurement_data>();
+
+      formatLinRegr(m_CalStatistics.Temperature, data.temp, 263);
+      lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+    }
+    break;
+  case UI_STATE_READSENSORRESULTS:
+    {
+      auto & bsp  = CalibratorBsp::getBsp();
+      auto & uart = bsp.getUartHandler();
+      auto & data = uart.getBufferAs<measurement_data>();
+
+      memset(m_LcdScratch, ' ', sizeof(m_LcdScratch));
+
+      String::formatUnsigned(m_LcdScratch + 0,  5, data.humidity_counts);
+      String::formatUnsigned(m_LcdScratch + 6,  5, data.led_counts);
+      String::formatSigned(m_LcdScratch  + 12, 3, static_cast<int16_t>(data.temp)   - 273);
+
+      lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+    }
+    break;
+  default:
+    break;
+  }
+
+  m_MenuState = NextState;
+}
+
+void CalibratorApp::handleUiState()
+{
+  enum UiState CurrentState = static_cast<enum UiState>(m_MenuState);
+  auto & bsp  = CalibratorBsp::getBsp();
+
+  switch(CurrentState)
+  {
+  case UI_STATE_READINGSENSOR:
+    if (m_State == APP_STATE_IDLE)
+    {
+      auto & uart = bsp.getUartHandler();
+      auto & data = uart.getBufferAs<measurement_data>();
+
+      if(0xC0 == data.sync && 0x00 == data.type)
+      { /* raw data received from sensor */
+        s_CalStatistics.read(m_CalStatistics);
+        calculateCalibration();
+
+        changeUiState(UI_STATE_READSENSORRAW);
+      }
+      else if(0xC0 == data.sync && 0x01 == data.type)
+      { /* measurement data received from sensor */
+        changeUiState(UI_STATE_READSENSORRESULTS);
+      }
+      else
+      {
+        changeUiState(UI_STATE_SENSORERROR);
+      }
+    }
+    break;
+  case UI_STATE_ERASINGSENSOR:
+  case UI_STATE_CALIBRATINGSENSOR:
+    if (m_State == APP_STATE_IDLE)
+    {
+      auto & uart = bsp.getUartHandler();
+      auto & data = uart.getBufferAs<measurement_data>();
+
+      if(0xC0 == data.sync && 0x00 == data.type && UI_STATE_ERASINGSENSOR == CurrentState)
+      { /* erase was succesfull*/
+        changeUiState(UI_STATE_READSENSOR);
+      }
+      else if(0xC0 == data.sync && 0x01 == data.type && UI_STATE_CALIBRATINGSENSOR == CurrentState)
+      { /* calibrate was succesfull */
+        changeUiState(UI_STATE_READSENSOR);
+      }
+      else
+      {
+        changeUiState(UI_STATE_SENSORERROR);
+      }
+    }
+    break;
+  default:
+    break;
+  }
+
+  if(m_State == APP_STATE_READSENSOR)
+  {
+    auto & lcd = bsp.getLCD();
+
+    uint_least16_t BaudDivisor = (UBRRH << 8) | UBRRL;
+    uint_least32_t BaudRate    = (F_CPU / 16) / (BaudDivisor + 1);
+
+    s_UiLcdBaud.read(m_LcdScratch);
+    String::formatUnsigned(m_LcdScratch + 16 - 5 - 5, 5, (uint16_t)BaudRate);
+    lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+  }
+  else if (m_State == APP_STATE_WRITESENSOR)
+  {
+    auto & vmod   = bsp.getVoltageModulator();
+    auto & lcd = bsp.getLCD();
+
+    if(vmod.getTransferring() == 0)
+    {/* transfer has not started yet */
+      auto & timer = (Globals::getGlobals()).getVoltageModulatorTimer();
+
+      s_UiLcdWait.read(m_LcdScratch);
+      String::formatUnsigned(m_LcdScratch + 16 - 2, 2, (timer.getRemainingTime() + 999) / 1000, '0');
     }
     else
     {
-      m_CalStatMask = 0x00;
+      s_UiLcdWriteProgress.read(m_LcdScratch);
+      String::formatUnsigned(m_LcdScratch + 16 - 2 - 1 - 2, 2, vmod.getNumTransferred(), '0');
     }
 
-    /* after reading the sensor, read calibration statistics from eeprom */
-    s_CalStatistics.read(m_CalStatistics);
-    calculateCalibration();
-
-    changeState(APP_STATE_IDLE);
-
-    s_LcdStrings.StatusRead.read(buffer);
-    lcd.moveCursor(0);
-    lcd.writeTextBuffer(16);
+    lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
   }
 }
 
-void CalibratorApp::enterStateWriteSensor(uint_fast16_t Argument)
+void CalibratorApp::changeState(enum AppState NextState)
 {
-  auto & g   = Globals::getGlobals();
-  auto & bsp = CalibratorBsp::getBsp();
-  auto & timer  = g.getVoltageModulatorTimer();
-  auto & vmod   = bsp.getVoltageModulator();
+  enum AppState CurrentState = static_cast<enum AppState>(m_State);
 
-  timer.start(10000);
-  bsp.setSensorVoltage(bsp.SUPPLY_3V);
-  vmod.startTransmission();
+  if(CurrentState != NextState)
+  {
+    auto & bsp = CalibratorBsp::getBsp();
+    auto & uart = bsp.getUartHandler();
+
+    if(CurrentState == APP_STATE_POWERUP)
+    {
+      changeUiState(UI_STATE_STARTUP);
+    }
+
+    switch(NextState)
+    {
+    case APP_STATE_IDLE:
+      {
+        bsp.setSensorVoltage(bsp.SUPPLY_OFF);
+      }
+      break;
+    case APP_STATE_READSENSOR:
+      {
+        uart.activate();
+        bsp.setSensorVoltage(bsp.SUPPLY_5V);
+      }
+      break;
+    case APP_STATE_WRITESENSOR:
+      {
+        auto & g      = Globals::getGlobals();
+        auto & timer  = g.getVoltageModulatorTimer();
+        auto & vmod   = bsp.getVoltageModulator();
+
+        timer.start(10000);
+        bsp.setSensorVoltage(bsp.SUPPLY_3V);
+        vmod.startTransmission();
+      }
+      break;
+    case APP_STATE_POWERUP:
+      break;
+    }
+
+    m_State = NextState;
+  }
 }
-
-void CalibratorApp::pollStateWriteSensor(uint_fast16_t Argument)
+void
+CalibratorApp::handleState()
 {
-  auto & bsp = CalibratorBsp::getBsp();
-  auto & lcd = bsp.getLCD();
-  auto & buffer = lcd.getBuffer();
-  auto & vmod   = bsp.getVoltageModulator();
+  enum AppState CurrentState = static_cast<enum AppState>(m_State);
+  enum AppState NextState    = CurrentState;
 
-  vmod.handleTransmission();
+  { /* poll for state changes */
+    auto & bsp = CalibratorBsp::getBsp();
+    auto & uart = bsp.getUartHandler();
 
-  memset(buffer, ' ', sizeof(buffer));
+    switch(CurrentState)
+    {
+    case APP_STATE_READSENSOR:
+      {
+        uart.handleCyclic();
 
-  if(vmod.getTransferring() == 0)
-  {/* transfer has not started yet */
-    s_LcdStrings.StatusInitTransfer.read(buffer);
+        if(uart.finished())
+        {
+          auto & data = uart.getBufferAs<measurement_data>();
+
+          data.humidity_counts = ntoh16(data.humidity_counts);
+          data.led_counts      = ntoh16(data.led_counts);
+          data.temp            = ntoh16(data.temp);
+
+          NextState = APP_STATE_IDLE;
+        }
+      }
+      break;
+    case APP_STATE_WRITESENSOR:
+      {
+        auto & vmod   = bsp.getVoltageModulator();
+        vmod.handleTransmission();
+
+        if(vmod.hasFinished())
+        {
+          NextState = APP_STATE_READSENSOR;
+        }
+      }
+      break;
+    case APP_STATE_IDLE:
+      break;
+    case APP_STATE_POWERUP:
+      NextState = APP_STATE_IDLE;
+      break;
+    }
   }
-  else
-  {
-    s_LcdStrings.StatusTransfer.read(buffer);
-    String::formatDecimal(&(buffer[16-5]), 2, vmod.getNumTransferred(), '0');
-  }
 
-  lcd.moveCursor(0x40);
-  lcd.writeTextBuffer(16);
-
-  if(vmod.hasFinished())
+  if(NextState != CurrentState)
   {
-    changeState(APP_STATE_READSENSOR);
+    changeState(NextState);
   }
 }
 
@@ -520,149 +644,19 @@ void CalibratorApp::displayValue(uint_fast8_t idx)
     { /* uncalibrated sensor data
        * calculate possible result */
       uint16_t value   = getValue(idx, pInput[idx]);
-      s_LcdStrings.DisplayDataUncalibrated.read(buffer);
-      String::formatDecimal(&buffer[11], 5, value);
+      //s_LcdStrings.DisplayDataUncalibrated.read(buffer);
+      String::formatUnsigned(&buffer[11], 5, value);
     }
     else if (0x01 == pMeasData->type)
     {
       /* calibrated sensor data */
       uint16_t value = pInput[idx];
-      s_LcdStrings.DisplayDataCalibrated.read(buffer);
-      String::formatDecimal(&buffer[11], 5, value);
+      //s_LcdStrings.DisplayDataCalibrated.read(buffer);
+      String::formatUnsigned(&buffer[11], 5, value);
     }
   }
 }
 
-void CalibratorApp::handleMenuReadSensor(uint_fast16_t Argument)
-{
-  if(Argument)
-  {
-    changeState(APP_STATE_READSENSOR);
-  }
-}
-
-void CalibratorApp::handleMenuHumidity(uint_fast16_t Argument)
-{
-  if(Argument)
-  {
-    auto & bsp    = CalibratorBsp::getBsp();
-    auto & uart    = bsp.getUartHandler();
-    auto & ubuffer = uart.getBuffer();
-
-    measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
-
-    /* statistic data can only be generated from uncalibrated sensor data
-     * output */
-    if(0x10 & m_CalStatMask)
-    {
-      m_CalStatMask &= ~0x10;
-      collectMinMaxStatistics(m_CalStatistics.Humidity, pMeasData->humidity_counts, true);
-
-      s_CalStatistics = m_CalStatistics;
-    }
-  }
-
-  displayValue(0);
-
-}
-
-void CalibratorApp::handleMenuLight(uint_fast16_t Argument)
-{
-
-  if(Argument)
-  {
-    auto & bsp    = CalibratorBsp::getBsp();
-    auto & uart    = bsp.getUartHandler();
-    auto & ubuffer = uart.getBuffer();
-
-    measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
-
-    /* statistic data can only be generated from uncalibrated sensor data
-     * output */
-    if(0x20 & m_CalStatMask)
-    {
-      m_CalStatMask &= ~0x20;
-
-      collectMinMaxStatistics(m_CalStatistics.Light, pMeasData->led_counts, true);
-      s_CalStatistics = m_CalStatistics;
-    }
-  }
-
-  displayValue(1);
-
-  {
-    auto & bsp    = CalibratorBsp::getBsp();
-    auto & lcd    = bsp.getLCD();
-    auto & buffer = lcd.getBuffer();
-    String::formatDecimal(&buffer[0], 5, m_CalStatistics.Light.Min);
-    String::formatDecimal(&buffer[5], 5, m_CalStatistics.Light.Max);
-  }
-
-
-}
-
-void CalibratorApp::handleMenuTemperature(uint_fast16_t Argument)
-{
-  displayValue(2);
-
-  if(Argument)
-  {
-    auto & bsp    = CalibratorBsp::getBsp();
-    auto & uart    = bsp.getUartHandler();
-    auto & ubuffer = uart.getBuffer();
-
-    measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
-
-    /* statistic data can only be generated from uncalibrated sensor data
-     * output */
-    if(0x40 & m_CalStatMask)
-    {
-      m_CalStatMask &= ~0x40;
-
-      collectTempStatistics(m_CalStatistics.Temperature, pMeasData->temp, 263);
-      s_CalStatistics = m_CalStatistics;
-    }
-  }
-
-}
-
-void CalibratorApp::handleMenuEraseSensor(uint_fast16_t Argument)
-{
-  if(Argument)
-  {
-    auto & bsp    = CalibratorBsp::getBsp();
-
-    auto & data = bsp.getVoltageModulator().getBuffer<calibration_data>();
-    auto & lcd = bsp.getLCD();
-    auto & buffer = lcd.getBuffer();
-
-    s_ResetCalibrationParam.read(data.Humidity);
-    s_ResetCalibrationParam.read(data.Light);
-    s_ResetCalibrationParam.read(data.Temperature);
-
-    s_LcdStrings.StatusErasing.read(buffer);
-    lcd.moveCursor(0);
-    lcd.writeTextBuffer(16);
-
-    changeState(APP_STATE_WRITESENSOR);
-  }
-}
-
-void CalibratorApp::handleMenuReset(uint_fast16_t Argument)
-{
-  if(Argument)
-  {
-    auto & Statistics = m_CalStatistics;
-
-    memset(&Statistics, 0x00, sizeof(Statistics));
-
-    Statistics.Humidity.Min = 0xFFFF;
-    Statistics.Light.Min    = 0xFFFF;
-
-    s_CalStatistics = Statistics;
-    changeState(APP_STATE_IDLE);
-  }
-}
 static CalibratorApp app;
 
 int main(void) __attribute__ ((OS_main));
@@ -676,11 +670,7 @@ int main(void)
     bsp.cycle();
     app.handleKeys();
     app.handleState();
-
-    {
-    }
-    /* lcd.moveCursor(0);
-     * lcd.writeData(abTest, 8); */
+    app.handleUiState();
   }
 }
 

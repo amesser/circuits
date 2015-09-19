@@ -34,6 +34,19 @@ private:
   BufferType m_Buffer;
 public:
   BufferType & getBuffer() {return m_Buffer;}
+
+  template<typename B>
+  B & getBufferAs()
+  {
+    union {
+      BufferType *pBuffer;
+      B          *pType;
+    } u;
+
+    u.pBuffer = &m_Buffer;
+    return *(u.pType);
+  }
+
   IndexType getReceivedLength() {return m_RecvLength;}
 
   void recvIrq()
