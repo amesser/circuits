@@ -53,6 +53,9 @@ static constexpr LcdStringType s_UiLcdWriteProgress PROGMEM =
 static constexpr LcdStringType s_UiLcdRaw PROGMEM =
   "[I]          [S]";
 
+static constexpr LcdStringType s_UiLcdTemp PROGMEM =
+  "   XXX% Rh XXX" "\xdf" "C";
+
 static constexpr FlashVariable<uint_least8_t> s_UiStateNext[] PROGMEM =
 {
   CalibratorApp::UI_STATE_ERASESENSOR,           /* UI_STATE_READSENSOR */
@@ -417,11 +420,6 @@ void CalibratorApp::changeState(enum AppState NextState)
     auto & bsp = CalibratorBsp::getBsp();
     auto & uart = bsp.getUartHandler();
 
-    if(CurrentState == APP_STATE_POWERUP)
-    {
-      changeUiState(UI_STATE_STARTUP);
-    }
-
     switch(NextState)
     {
     case APP_STATE_IDLE:
@@ -465,6 +463,10 @@ CalibratorApp::handleState()
 
     switch(CurrentState)
     {
+    case APP_STATE_POWERUP:
+      NextState = APP_STATE_IDLE;
+      changeUiState(UI_STATE_STARTUP);
+      break;
     case APP_STATE_READSENSOR:
       {
         uart.handleCyclic();
@@ -493,9 +495,6 @@ CalibratorApp::handleState()
       }
       break;
     case APP_STATE_IDLE:
-      break;
-    case APP_STATE_POWERUP:
-      NextState = APP_STATE_IDLE;
       break;
     }
   }
@@ -615,6 +614,7 @@ void CalibratorApp::calculateCalibration()
   calculateLinRegr(Stat.Temperature, Param.Temperature);
 }
 
+
 uint16_t CalibratorApp::getValue(uint_fast8_t idx, uint_fast16_t input)
 {
   auto & bsp    = CalibratorBsp::getBsp();
@@ -657,6 +657,169 @@ void CalibratorApp::displayValue(uint_fast8_t idx)
   }
 }
 
+#define HDC1000_ADDRESS (0x43)
+
+void CalibratorApp::changeTempState(enum TempState NextState)
+{
+  auto & bsp    = CalibratorBsp::getBsp();
+  auto & twi    = bsp.getTWIHandler();
+
+  switch(NextState)
+  {
+  case TEMP_STATE_POWERON:
+    {
+      twi.sendStop();
+    }
+    break;
+  case TEMP_STATE_WSETUP:
+    {
+      auto & buffer = twi.getBuffer();
+      buffer[0] = 0x02; /* register 2: configuration */
+      buffer[1] = 0x10;
+      buffer[2] = 0x00;
+
+      twi.sendStartAndWrite(HDC1000_ADDRESS, 3);
+    }
+    break;
+  case TEMP_STATE_WTRIGGER:
+    {
+      auto & buffer = twi.getBuffer();
+      buffer[0] = 0x00; /* register 0: trigger*/
+      twi.sendStartAndWrite(HDC1000_ADDRESS, 1);
+      Globals::getGlobals().getTemperatureTimer().start(5000);
+    }
+    break;
+  case TEMP_STATE_WMEASUREMENT:
+    {
+      twi.sendStartAndRead(HDC1000_ADDRESS, 0);
+    }
+    break;
+  case TEMP_STATE_READMEASUREMENT:
+    {
+      twi.sendStartAndRead(HDC1000_ADDRESS, 4);
+    }
+    break;
+  case TEMP_STATE_WTIMEOUT:
+    {
+      twi.sendStop();
+
+      if(m_MenuState == UI_STATE_STARTUP)
+      {
+        auto & lcd = bsp.getLCD();
+
+        s_UiLcdTemp.read(m_LcdScratch);
+        String::formatUnsigned(m_LcdScratch + 3,      3, m_Rh);
+        String::formatSigned  (m_LcdScratch + 16 - 5, 3, m_Temp);
+
+        lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+      }
+    }
+    break;
+  }
+
+  m_TempState = NextState;
+}
+
+void CalibratorApp::handleTempState()
+{
+  auto & bsp    = CalibratorBsp::getBsp();
+  auto & twi    = bsp.getTWIHandler();
+
+  enum TempState state = static_cast<enum TempState>(m_TempState);
+
+  switch(state)
+  {
+  case TEMP_STATE_POWERON:
+    changeTempState(TEMP_STATE_WSETUP);
+    break;
+  case TEMP_STATE_WSETUP:
+    {
+      if(twi.hasFinished())
+      {
+        m_LastTwiError = twi.getError();
+
+        if (m_LastTwiError)
+        {
+          changeTempState(TEMP_STATE_POWERON);
+        }
+        else
+        {
+          changeTempState(TEMP_STATE_WTRIGGER);
+        }
+      }
+    }
+    break;
+  case TEMP_STATE_WTRIGGER:
+    {
+      if(twi.hasFinished())
+      {
+        if (twi.getError())
+        {
+          changeTempState(TEMP_STATE_POWERON);
+        }
+        else
+        {
+          changeTempState(TEMP_STATE_WMEASUREMENT);
+        }
+      }
+    }
+    break;
+  case TEMP_STATE_WMEASUREMENT:
+    {
+      if(twi.hasFinished())
+      {
+        if (twi.getError())
+        {
+          changeTempState(TEMP_STATE_WMEASUREMENT);
+        }
+        else
+        {
+          changeTempState(TEMP_STATE_READMEASUREMENT);
+        }
+      }
+    }
+    break;
+  case TEMP_STATE_READMEASUREMENT:
+    {
+      if(twi.hasFinished())
+      {
+        if (twi.getError())
+        {
+          changeTempState(TEMP_STATE_POWERON);
+        }
+        else
+        {
+          changeTempState(TEMP_STATE_WTIMEOUT);
+
+          auto & buffer = twi.getBuffer();
+
+          uint32_t Calc;
+
+          Calc = (uint16_t)buffer[0] << 8 | buffer[1];
+          Calc = Calc * 165 + 0x8000;
+          Calc = (Calc & 0xFFFF0000UL) >> 16;
+
+          m_Temp = (Calc & 0xFF) - 40;
+
+          Calc = (uint16_t)buffer[2] << 8 | buffer[3];
+          Calc = Calc * 100 + 0x8000;
+          Calc = (Calc & 0xFFFF0000UL) >> 16;
+
+          m_Rh = (Calc & 0xFF);
+        }
+      }
+    }
+    break;
+  case TEMP_STATE_WTIMEOUT:
+    {
+      if(Globals::getGlobals().getTemperatureTimer().hasTimedOut())
+      {
+        changeTempState(TEMP_STATE_WTRIGGER);
+      }
+      break;
+    }
+  }
+}
 static CalibratorApp app;
 
 int main(void) __attribute__ ((OS_main));
@@ -671,7 +834,7 @@ int main(void)
     app.handleKeys();
     app.handleState();
     app.handleUiState();
+    app.handleTempState();
   }
 }
-
 

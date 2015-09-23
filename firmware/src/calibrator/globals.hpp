@@ -18,7 +18,7 @@ public:
   typedef SimpleTimer<uint16_t> MillisecondTimer;
 
 private:
-  MillisecondTimer m_Timers[3];
+  MillisecondTimer m_Timers[4];
 
   static Globals s_Instance;
 public:
@@ -32,6 +32,7 @@ public:
   MillisecondTimer & getUartTimer()              {return m_Timers[0];}
   MillisecondTimer & getKeyTimer()               {return m_Timers[1];}
   MillisecondTimer & getVoltageModulatorTimer()  {return m_Timers[2];}
+  MillisecondTimer & getTemperatureTimer()       {return m_Timers[3];}
 };
 
 

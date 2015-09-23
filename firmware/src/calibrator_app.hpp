@@ -78,12 +78,28 @@ public:
     UI_STATE_STARTUP,
   };
 
+  /** State of temperatur handler */
+  enum TempState
+  {
+    TEMP_STATE_POWERON = 0,
+    TEMP_STATE_WSETUP,
+    TEMP_STATE_WTRIGGER,
+    TEMP_STATE_WMEASUREMENT,
+    TEMP_STATE_READMEASUREMENT,
+    TEMP_STATE_WTIMEOUT,
+  };
+
 private:
   uint_fast8_t   m_State;
   uint_fast8_t   m_MenuState;
   uint_fast8_t   m_KeyState;
+  uint_fast8_t   m_TempState;
 
+  uint8_t        m_Rh;
+  int8_t         m_Temp;
   char           m_LcdScratch[16];
+
+  uint8_t        m_LastTwiError;
 
   calibration_statistics m_CalStatistics;
 
@@ -103,8 +119,12 @@ private:
   void formatLinRegr   (struct calibration_linearregression & cal, uint16_t value, uint16_t ref);
 public:
   void changeState(    enum AppState  NextState);
+
   void handleUiState();
   void changeUiState(enum UiState NextState);
+
+  void changeTempState(enum TempState NextState);
+  void handleTempState();
 
   uint16_t getValue(uint_fast8_t idx, uint_fast16_t input);
   void     displayValue(uint_fast8_t idx);

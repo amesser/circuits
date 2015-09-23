@@ -48,6 +48,7 @@ void CalibratorBsp::init()
   /* Setup LCD */
   getBsp().getLCD().init();
   getBsp().getUartHandler().init();
+  getBsp().getTWIHandler().init(20000);
 }
 
 void CalibratorBsp::cycle()
@@ -95,6 +96,10 @@ void CalibratorBsp::cycle()
       }
     }
   }
+
+  { /* handle twi */
+    m_TWIMaster.handleCyclic();
+  }
 }
 
 
@@ -117,6 +122,12 @@ ISR(USART_RXC_vect)
   bsp.getUartHandler().recvIrq();
 }
 
+/** Store received character and status */
+ISR(TWI_vect)
+{
+  auto & bsp = CalibratorBsp::getBsp();
+  bsp.getTWIHandler().handleIrq();
+}
 
 
 void
