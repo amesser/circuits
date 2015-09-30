@@ -234,8 +234,9 @@ public:
 protected:
   static CalibratorBsp s_Instance;
 
-  volatile uint_fast8_t m_IsrTicks1ms;
-  uint_fast8_t          m_HandledTicks1ms;
+  volatile uint16_t m_IsrTicks;
+  uint16_t          m_HandledSecondTicks;
+  uint8_t           m_HandledMillisecondTicks;
   uint_fast8_t          m_KeyState;
 
   UartHandlerType       m_UartHandler;

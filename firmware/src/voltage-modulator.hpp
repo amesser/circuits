@@ -137,7 +137,7 @@ void VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::handleTransmission()
 
         m_Value <<= 1;
 
-        Timer.start(BITTIME + GUARD);
+        Timer.startMilliseconds(BITTIME + GUARD);
       }
       else
       {
@@ -179,7 +179,7 @@ VoltageModulator<LENGTH, BITTIME, GUARD, BASE>::receive(void* ptr)
     }
     else if (NextState != State)
     {
-      if (timer.getElapsedTime(30000) > BITTIME)
+      if (timer.getElapsedMilliseconds(30000) > BITTIME)
       {
         const auto delta = (NextState - State).asInteger();
         State = NextState;

@@ -56,16 +56,35 @@ void CalibratorBsp::cycle()
   Globals & g = Globals::getGlobals();
 
   { /* Update all timers, hopefully we get called every 256 ms */
-    const auto Ticks1Ms = m_IsrTicks1ms - m_HandledTicks1ms;
+    uint16_t Ticks;
+    uint8_t  Milliseconds;
 
-    if(Ticks1Ms)
+    Sys_AVR8::disableInterupts();
+
+    Ticks = m_IsrTicks;
+    Milliseconds = (Ticks & 0xFF) - m_HandledMillisecondTicks;
+
+    if(Milliseconds)
     {
-      m_HandledTicks1ms += Ticks1Ms;
+      uint8_t Seconds;
 
-      Sys_AVR8::disableInterupts();
-      g.handleTimers(Ticks1Ms);
-      Sys_AVR8::enableInterrupts();
+      Ticks        = Ticks - m_HandledSecondTicks;
+
+      if( Ticks >= 1000)
+      {
+        m_HandledSecondTicks += 1000;
+        Seconds = 1;
+      }
+      else
+      {
+        Seconds = 0;
+      }
+
+      m_HandledMillisecondTicks += Milliseconds;
+      g.handleTimers(Milliseconds, Seconds);
     }
+
+    Sys_AVR8::enableInterrupts();
   }
 
   { /* handle key presses */
@@ -85,7 +104,7 @@ void CalibratorBsp::cycle()
 
     if ((m_KeyState & 0xF0) != newstate)
     {
-      timer.start(50);
+      timer.startMilliseconds(50);
       m_KeyState = newstate | (m_KeyState & 0x0F);
     }
     else
@@ -111,8 +130,8 @@ ISR(TIMER1_COMPA_vect)
 {
   auto & bsp = CalibratorBsp::getBsp();
 
-  OCR1A = OCR1A + 1000;
-  bsp.m_IsrTicks1ms += 1;
+  OCR1A  = OCR1A + 1000;
+  bsp.m_IsrTicks += 1;
 }
 
 /** Store received character and status */

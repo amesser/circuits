@@ -15,10 +15,12 @@ using namespace ecpp;
 class Globals
 {
 public:
-  typedef SimpleTimer<uint16_t> MillisecondTimer;
+  typedef SimpleTimer<uint16_t,1>    MillisecondTimer;
+  typedef SimpleTimer<uint16_t,1000> SecondTimer;
 
 private:
-  MillisecondTimer m_Timers[4];
+  MillisecondTimer m_MillisecondTimers[4];
+  SecondTimer      m_SecondTimers[2];
 
   static Globals s_Instance;
 public:
@@ -27,12 +29,13 @@ public:
     return s_Instance;
   }
 
-  void handleTimers(uint8_t TicksPassed);
+  void handleTimers(uint8_t MillisecondsPassed, uint8_t SecondsPassed);
 
-  MillisecondTimer & getUartTimer()              {return m_Timers[0];}
-  MillisecondTimer & getKeyTimer()               {return m_Timers[1];}
-  MillisecondTimer & getVoltageModulatorTimer()  {return m_Timers[2];}
-  MillisecondTimer & getTemperatureTimer()       {return m_Timers[3];}
+  MillisecondTimer & getUartTimer()              {return m_MillisecondTimers[0];}
+  MillisecondTimer & getKeyTimer()               {return m_MillisecondTimers[1];}
+  MillisecondTimer & getVoltageModulatorTimer()  {return m_MillisecondTimers[2];}
+  SecondTimer      & getTemperatureTimer()       {return m_SecondTimers[0];}
+  SecondTimer      & getAutomaticTimer()         {return m_SecondTimers[1];}
 };
 
 

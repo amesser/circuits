@@ -85,7 +85,7 @@ public:
         m_RecvLength = offset + 1;
       }
 
-      Globals::getGlobals().getUartTimer().start(100);
+      Globals::getGlobals().getUartTimer().startMilliseconds(100);
     }
   }
 

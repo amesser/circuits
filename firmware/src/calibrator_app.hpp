@@ -94,9 +94,12 @@ private:
   uint_fast8_t   m_MenuState;
   uint_fast8_t   m_KeyState;
   uint_fast8_t   m_TempState;
+  uint_fast8_t   m_AutoIntervalSelector;
 
+  uint8_t        m_StableCnt;
   uint8_t        m_Rh;
-  int8_t         m_Temp;
+  uint16_t       m_AbsTemp;
+
   char           m_LcdScratch[16];
 
   uint8_t        m_LastTwiError;

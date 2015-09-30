@@ -47,7 +47,7 @@ public:
     TIMER_PRESCALE_8  = _BV(CS01),
     TIMER_PRESCALE_64 = _BV(CS01) | _BV(CS00),
   };
-  typedef SimpleTimer<uint16_t> TimerType;
+  typedef SimpleTimer<uint16_t, 1> TimerType;
 
   static void enableTimer0(uint8_t prescaler, uint8_t max);
 
@@ -101,7 +101,7 @@ BoardSupportPackage::handleTimer(TimerType & timer)
 {
   if (handleTimer())
   {
-    timer.update(1);
+    timer.handleTicksPassed(1);
   }
 
   return timer.hasTimedOut();

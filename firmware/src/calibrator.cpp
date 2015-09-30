@@ -56,6 +56,12 @@ static constexpr LcdStringType s_UiLcdRaw PROGMEM =
 static constexpr LcdStringType s_UiLcdTemp PROGMEM =
   "   XXX% Rh XXX" "\xdf" "C";
 
+static constexpr LcdStringType s_UiLcdAutoWait PROGMEM =
+  "W XXX S XX XXX" "\xdf" "C";
+
+static constexpr LcdStringType s_UiLcdInterval PROGMEM =
+  "[S] XXX Min [OK]";
+
 static constexpr FlashVariable<uint_least8_t> s_UiStateNext[] PROGMEM =
 {
   CalibratorApp::UI_STATE_ERASESENSOR,           /* UI_STATE_READSENSOR */
@@ -95,9 +101,20 @@ static constexpr FlashVariable<uint_least8_t> s_UiStateOK[] PROGMEM =
   CalibratorApp::UI_STATE_RESETSTATISTICS,       /* UI_STATE_RESETSTATISTICS */
   CalibratorApp::UI_STATE_AUTOSELECTINTERVAL,    /* UI_STATE_AUTOCALIBRATION */
   CalibratorApp::UI_STATE_AUTOREADINGSENSOR,     /* UI_STATE_AUTOSELECTINTERVAL */
-  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_AUTOREADINGSENSOR */
-  CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_AUTOWAIT */
+  CalibratorApp::UI_STATE_AUTOCALIBRATION,       /* UI_STATE_AUTOREADINGSENSOR */
+  CalibratorApp::UI_STATE_AUTOCALIBRATION,       /* UI_STATE_AUTOWAIT */
   CalibratorApp::UI_STATE_STARTUP,               /* UI_STATE_STARTUP */
+};
+
+static constexpr FlashVariable<uint_least16_t> s_AutoIntervals[] PROGMEM =
+{
+  5*60,
+  10*60,
+  15*60,
+  30*60,
+  60*60,
+  90*60,
+  120*60,
 };
 
 
@@ -129,6 +146,18 @@ CalibratorApp::handleKeys()
     case UI_STATE_READSENSORTEMPERATURE:
       {
         s_CalStatistics = m_CalStatistics;
+      }
+      break;
+    case UI_STATE_AUTOSELECTINTERVAL:
+      {
+        if (m_AutoIntervalSelector < (ElementCount(s_AutoIntervals) - 1))
+        {
+          m_AutoIntervalSelector += 1;
+        }
+        else
+        {
+          m_AutoIntervalSelector  = 0;
+        }
       }
       break;
     default:
@@ -165,7 +194,7 @@ CalibratorApp::handleKeys()
         auto & uart = bsp.getUartHandler();
         auto & data = uart.getBufferAs<measurement_data>();
 
-        collectTempStatistics(m_CalStatistics.Temperature, data.temp, 263);
+        collectTempStatistics(m_CalStatistics.Temperature, data.temp, m_AbsTemp);
         s_CalStatistics = m_CalStatistics;
       }
       break;
@@ -203,6 +232,11 @@ CalibratorApp::handleKeys()
         changeState(APP_STATE_WRITESENSOR);
         break;
       }
+    case UI_STATE_AUTOCALIBRATION:
+      {
+        m_AutoIntervalSelector = 0;
+      }
+      break;
     default:
       break;
     }
@@ -297,7 +331,7 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       auto & uart = bsp.getUartHandler();
       auto & data = uart.getBufferAs<measurement_data>();
 
-      formatLinRegr(m_CalStatistics.Temperature, data.temp, 263);
+      formatLinRegr(m_CalStatistics.Temperature, data.temp, m_AbsTemp);
       lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
     }
     break;
@@ -316,9 +350,18 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
     }
     break;
+  case UI_STATE_AUTOREADINGSENSOR:
+    {
+      uint16_t Timeout = s_AutoIntervals[m_AutoIntervalSelector];
+
+      changeState(APP_STATE_READSENSOR);
+      Globals::getGlobals().getAutomaticTimer().startSeconds(Timeout);
+    }
+    break;
   default:
     break;
   }
+
 
   m_MenuState = NextState;
 }
@@ -374,6 +417,51 @@ void CalibratorApp::handleUiState()
       }
     }
     break;
+  case UI_STATE_AUTOREADINGSENSOR:
+    {
+      if (m_State == APP_STATE_IDLE)
+      {
+        auto & uart = bsp.getUartHandler();
+        auto & data = uart.getBufferAs<measurement_data>();
+
+        if(0xC0 == data.sync && 0x00 == data.type)
+        { /* raw data received from sensor */
+          s_CalStatistics.read(m_CalStatistics);
+
+          collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts, false);
+          collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts, false);
+
+          if(m_StableCnt > (12 * 5))
+          { /* temperature should be stable for at least 5 minutes */
+            collectTempStatistics(m_CalStatistics.Temperature, data.temp, m_AbsTemp);
+          }
+
+          s_CalStatistics = m_CalStatistics;
+
+          changeUiState(UI_STATE_AUTOWAIT);
+        }
+        else if(0xC0 == data.sync && 0x01 == data.type)
+        { /* measurement data received from sensor */
+          changeUiState(UI_STATE_SENSORERROR);
+        }
+        else
+        { /* failure reading the senosr, ignore */
+          changeUiState(UI_STATE_AUTOWAIT);
+        }
+      }
+    }
+    break;
+  case UI_STATE_AUTOWAIT:
+    {
+      if (m_State == APP_STATE_IDLE)
+      {
+        if(Globals::getGlobals().getAutomaticTimer().hasTimedOut())
+        {
+          changeUiState(UI_STATE_AUTOREADINGSENSOR);
+        }
+      }
+    }
+    break;
   default:
     break;
   }
@@ -399,7 +487,7 @@ void CalibratorApp::handleUiState()
       auto & timer = (Globals::getGlobals()).getVoltageModulatorTimer();
 
       s_UiLcdWait.read(m_LcdScratch);
-      String::formatUnsigned(m_LcdScratch + 16 - 2, 2, (timer.getRemainingTime() + 999) / 1000, '0');
+      String::formatUnsigned(m_LcdScratch + 16 - 2, 2, (timer.getRemainingMilliseconds() + 999) / 1000, '0');
     }
     else
     {
@@ -409,6 +497,17 @@ void CalibratorApp::handleUiState()
 
     lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
   }
+  else if (CurrentState == UI_STATE_AUTOSELECTINTERVAL)
+  {
+    auto & lcd = bsp.getLCD();
+
+    s_UiLcdInterval.read(m_LcdScratch);
+    uint16_t Minutes = s_AutoIntervals[m_AutoIntervalSelector] / 60;
+    String::formatUnsigned(m_LcdScratch + 4, 3, Minutes);
+
+    lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+  }
+
 }
 
 void CalibratorApp::changeState(enum AppState NextState)
@@ -431,6 +530,9 @@ void CalibratorApp::changeState(enum AppState NextState)
       {
         uart.activate();
         bsp.setSensorVoltage(bsp.SUPPLY_5V);
+
+        /* trigger a refresh of the temperatur */
+        Globals::getGlobals().getTemperatureTimer().stop();
       }
       break;
     case APP_STATE_WRITESENSOR:
@@ -439,7 +541,7 @@ void CalibratorApp::changeState(enum AppState NextState)
         auto & timer  = g.getVoltageModulatorTimer();
         auto & vmod   = bsp.getVoltageModulator();
 
-        timer.start(10000);
+        timer.startMilliseconds(10000);
         bsp.setSensorVoltage(bsp.SUPPLY_3V);
         vmod.startTransmission();
       }
@@ -686,7 +788,7 @@ void CalibratorApp::changeTempState(enum TempState NextState)
       auto & buffer = twi.getBuffer();
       buffer[0] = 0x00; /* register 0: trigger*/
       twi.sendStartAndWrite(HDC1000_ADDRESS, 1);
-      Globals::getGlobals().getTemperatureTimer().start(5000);
+      Globals::getGlobals().getTemperatureTimer().startSeconds(5);
     }
     break;
   case TEMP_STATE_WMEASUREMENT:
@@ -703,13 +805,25 @@ void CalibratorApp::changeTempState(enum TempState NextState)
     {
       twi.sendStop();
 
-      if(m_MenuState == UI_STATE_STARTUP)
+      if(m_MenuState == UI_STATE_STARTUP ||
+         m_MenuState == UI_STATE_AUTOWAIT)
       {
         auto & lcd = bsp.getLCD();
 
-        s_UiLcdTemp.read(m_LcdScratch);
-        String::formatUnsigned(m_LcdScratch + 3,      3, m_Rh);
-        String::formatSigned  (m_LcdScratch + 16 - 5, 3, m_Temp);
+
+        if(m_MenuState == UI_STATE_AUTOWAIT)
+        {
+          s_UiLcdAutoWait.read(m_LcdScratch);
+
+          String::formatUnsigned(m_LcdScratch+2, 3, Globals::getGlobals().getAutomaticTimer().getRemainingSeconds<uint16_t>() / 60);
+          String::formatUnsigned(m_LcdScratch+8, 2, m_StableCnt / 12);
+        }
+        else
+        {
+          s_UiLcdTemp.read(m_LcdScratch);
+          String::formatUnsigned(m_LcdScratch + 3, 3, m_Rh);
+        }
+        String::formatSigned  (m_LcdScratch + 16 - 5, 3, m_AbsTemp - 273);
 
         lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
       }
@@ -730,15 +844,16 @@ void CalibratorApp::handleTempState()
   switch(state)
   {
   case TEMP_STATE_POWERON:
-    changeTempState(TEMP_STATE_WSETUP);
+    {
+      m_StableCnt = 0;
+      changeTempState(TEMP_STATE_WSETUP);
+    }
     break;
   case TEMP_STATE_WSETUP:
     {
       if(twi.hasFinished())
       {
-        m_LastTwiError = twi.getError();
-
-        if (m_LastTwiError)
+        if (twi.getError())
         {
           changeTempState(TEMP_STATE_POWERON);
         }
@@ -793,19 +908,35 @@ void CalibratorApp::handleTempState()
 
           auto & buffer = twi.getBuffer();
 
-          uint32_t Calc;
+          {
+            uint32_t Calc32;
+            uint16_t  Temp;
 
-          Calc = (uint16_t)buffer[0] << 8 | buffer[1];
-          Calc = Calc * 165 + 0x8000;
-          Calc = (Calc & 0xFFFF0000UL) >> 16;
+            Calc32 = (uint16_t)buffer[0] << 8 | buffer[1];
+            Calc32 = Calc32 * 165 + 0x8000;
+            Calc32 = (Calc32 & 0xFFFF0000UL) >> 16;
 
-          m_Temp = (Calc & 0xFF) - 40;
+            Temp = (Calc32 & 0xFF) - 40 + 273;
 
-          Calc = (uint16_t)buffer[2] << 8 | buffer[3];
-          Calc = Calc * 100 + 0x8000;
-          Calc = (Calc & 0xFFFF0000UL) >> 16;
+            if(Temp != m_AbsTemp)
+            {
+              m_AbsTemp      = Temp;
+              m_StableCnt = 0;
+            }
+            else
+            {
+              if(m_StableCnt < 255)
+              {
+                m_StableCnt += 1;
+              }
+            }
 
-          m_Rh = (Calc & 0xFF);
+            Calc32 = (uint16_t)buffer[2] << 8 | buffer[3];
+            Calc32 = Calc32 * 100 + 0x8000;
+            Calc32 = (Calc32 & 0xFFFF0000UL) >> 16;
+
+            m_Rh = (Calc32 & 0xFF);
+          }
         }
       }
     }
@@ -830,11 +961,11 @@ int main(void)
   bsp.init();
   while(1)
   {
-    bsp.cycle();
     app.handleKeys();
     app.handleState();
     app.handleUiState();
     app.handleTempState();
+    bsp.cycle();
   }
 }
 
