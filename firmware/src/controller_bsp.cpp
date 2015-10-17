@@ -72,11 +72,11 @@ void BSP::initialize()
   Sys_AVR8::enableInterrupts();
 }
 
-static void updateTimers(SimpleTimer<uint16_t> *pTimer, uint8_t cnt, uint8_t dClock)
+static void updateTimers(SimpleTimer<uint16_t,1> *pTimer, uint8_t cnt, uint8_t dClock)
 {
   while(cnt--)
   {
-    (pTimer++)->update(dClock);
+    (pTimer++)->handleMillisecondsPassed(dClock);
   }
 }
 
@@ -89,7 +89,7 @@ void BSP::cycle()
   {
     s_Time.Clock1Ms.advance(dClock1Ms);
 
-    SimpleTimer<uint16_t> *pTimer1Ms    = reinterpret_cast<SimpleTimer<uint16_t> *>(&s_Timers1Ms);
+    auto *pTimer1Ms    = reinterpret_cast<SimpleTimer<uint16_t,1> *>(&s_Timers1Ms);
     updateTimers(pTimer1Ms, sizeof(s_Timers1Ms) / sizeof(*pTimer1Ms), dClock1Ms);
   }
 
@@ -119,7 +119,7 @@ void BSP::cycle()
       {
         if(s_Accu.Voltage < 12600)
         {
-          s_Timers1Ms.Accu.start(30000);
+          s_Timers1Ms.Accu.startMilliseconds(30000);
         }
         else if (s_Timers1Ms.Accu.hasTimedOut())
         {
@@ -130,7 +130,7 @@ void BSP::cycle()
       {
         if(s_Accu.Voltage > 11800)
         {
-          s_Timers1Ms.Accu.start(30000);
+          s_Timers1Ms.Accu.startMilliseconds(30000);
         }
         else if (s_Timers1Ms.Accu.hasTimedOut())
         {
@@ -154,7 +154,7 @@ void BSP::handleKeyboard()
 
   if((m_Keyboard.mask & 0x0F) == state)
   {
-    if(s_Timers1Ms.Keyboard.getElapsedTime(10000) > 20)
+    if(s_Timers1Ms.Keyboard.getElapsedMilliseconds(10000) > 20)
     {
       state = state | state << 4;
     }
@@ -165,7 +165,7 @@ void BSP::handleKeyboard()
   }
   else
   {
-    s_Timers1Ms.Keyboard.start(10000);
+    s_Timers1Ms.Keyboard.startMilliseconds(10000);
     state = state | (m_Keyboard.mask & 0xF0);
   }
 
@@ -189,7 +189,7 @@ void BSP::handleOutputs()
     if(BoostState == BOOST_OFF)
     {
       BoostState = BOOST_STARTUP;
-      s_Timers1Ms.Boost.start(1000);
+      s_Timers1Ms.Boost.startMilliseconds(1000);
 
       TCCR1A = _BV(COM1A0);
       TCCR1B = _BV(WGM12) | _BV(CS10);

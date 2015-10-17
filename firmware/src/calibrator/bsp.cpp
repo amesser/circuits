@@ -10,12 +10,6 @@
 
 CalibratorBsp CalibratorBsp::s_Instance;
 
-void  CalibratorBsp::LcdBsp::delay(uint_fast16_t us)
-{
-  while(us--) _delay_us(1);
-}
-
-
 /** LCD Display Initialization command sequence */
 const FlashVariable<HD44780_CMD, 5> CalibratorBsp::LcdBsp::InitSequence PROGMEM =
 {
@@ -116,8 +110,9 @@ void CalibratorBsp::cycle()
     }
   }
 
-  { /* handle twi */
+  { /* handle drivers */
     m_TWIMaster.handleCyclic();
+    m_Lcd.poll();
   }
 }
 

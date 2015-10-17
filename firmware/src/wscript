@@ -18,6 +18,9 @@ def configure(conf):
     
     conf.env.append_value('DEFINES', 'F_CPU=8000000UL')
 
+    conf.ecpp_setupbuild(id='test', 
+                         platform='native')
+
 def build(bld):
     bld.ecpp_build(
         id= 'attiny13a',
@@ -37,16 +40,16 @@ def build(bld):
 
     bld.ecpp_build(
         id= 'calibrator',
-        source   = ['calibrator.cpp', 'protocol.cpp', 'calibrator/bsp.cpp', 'calibrator/globals.cpp'],
+        source   = ['calibrator.cpp', 'fit.cpp', 'protocol.cpp', 'calibrator/bsp.cpp', 'calibrator/globals.cpp'],
         target   = 'calibrator.elf',
         features = 'cxx cxxprogram',  
         includes = ['calibrator', '.'],
     ) 
 
     bld.ecpp_build(
-        id= 'calibrator',
-        source   = ['test/main.cpp', 'test/test_switch.cpp', 'test/test_switchhandlers.cpp'],
-        target   = 'test.elf',
+        id= 'test',
+        source   = ['test.cpp'],
+        target   = 'test',
         features = 'cxx cxxprogram',  
-        includes = ['test'],
     ) 
+    

@@ -8,44 +8,22 @@
 #ifndef CALIBRATOR_APP_HPP_
 #define CALIBRATOR_APP_HPP_
 
-using namespace ecpp;
-
 #include "calibrator/bsp.hpp"
 #include "calibrator/globals.hpp"
+#include "fit.hpp"
 
 using namespace ecpp;
-
-struct calibration_minmax
-{
-  uint16_t Max;
-  uint16_t Min;
-};
-
-/** Hold the data used for linear regression
- *
- * In order to avoid to strong influence of lots
- * of calibration points in one range, the x/y measurement
- * pair will be grouped in slots. each slot is 2 degrees
- * wide. When calculating the calibration factors, each slot
- * will be weighted with the inverse of its contents
- */
-struct calibration_linearregression
-{
-  int16_t  SumX[25];
-  int16_t  SumY[25];
-  int32_t  SumXY[25];
-  int32_t  SumXX[25];
-  uint8_t NumPoints[25];
-};
 
 struct calibration_statistics
 {
-  struct calibration_minmax           Humidity;
-  struct calibration_minmax           Light;
-  struct calibration_linearregression Temperature;
+  struct CalibratorFit::calibration_minmax           Humidity;
+  struct CalibratorFit::calibration_minmax           Light;
+  struct CalibratorFit::calibration_linearregression Temperature;
 };
 class CalibratorApp
 {
+private:
+  typedef CalibratorBsp::RowBufferType LcdRowBufferType;
 public:
   enum AppState
   {
@@ -100,8 +78,6 @@ private:
   uint8_t        m_Rh;
   uint16_t       m_AbsTemp;
 
-  char           m_LcdScratch[16];
-
   uint8_t        m_LastTwiError;
 
   calibration_statistics m_CalStatistics;
@@ -110,16 +86,10 @@ private:
     calibration_data      CalPrm;
   } m_Scratch;
 
-  static void collectMinMaxStatistics(struct calibration_minmax &stat, uint_fast16_t Counts, bool ForceCollect = false);
-  static void collectTempStatistics(struct calibration_linearregression &stat, uint_fast16_t TempCounts, uint_fast16_t Temp);
-
-  void        collectStatistics();
   void        calculateCalibration();
-  static void calculateMinMaxCal(struct calibration_minmax &stat, struct calibration_param &prm);
-  static void calculateLinRegr(struct calibration_linearregression &stat, struct calibration_param &prm);
 
-  void formatMinMax (struct calibration_minmax & cal, uint16_t value);
-  void formatLinRegr   (struct calibration_linearregression & cal, uint16_t value, uint16_t ref);
+  static void formatMinMax  (LcdRowBufferType & Buffer, struct CalibratorFit::calibration_minmax & cal, uint16_t value);
+  static void formatLinRegr (LcdRowBufferType & Buffer, struct CalibratorFit::calibration_linearregression & cal, uint16_t value, uint16_t ref);
 public:
   void changeState(    enum AppState  NextState);
 
@@ -130,8 +100,6 @@ public:
   void handleTempState();
 
   uint16_t getValue(uint_fast8_t idx, uint_fast16_t input);
-  void     displayValue(uint_fast8_t idx);
-
 
   void readSensor();
   void handleKeys();

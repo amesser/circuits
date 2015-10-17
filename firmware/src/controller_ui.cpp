@@ -39,18 +39,18 @@ static void FormatTime(char *buf, const WeekTime & Time, uint8_t day = 1)
   }
   else if (day == 2)
   {
-    String::formatDecimal(buf, 2, Time.getWeekDay(), '0');
+    String::formatUnsigned(buf, 2, Time.getWeekDay(), '0');
     buf += 2;
     buf[0] = ':';
     buf += 1;
   }
 
-  String::formatDecimal(buf, 2, Time.getHour(), '0');
+  String::formatUnsigned(buf, 2, Time.getHour(), '0');
   buf += 2;
   buf[0] = ':';
   buf += 1;
 
-  String::formatDecimal(buf, 2, Time.getMinute(), '0');
+  String::formatUnsigned(buf, 2, Time.getMinute(), '0');
 }
 
 static void MenuDebug()
@@ -75,7 +75,8 @@ static void MenuHandler_Idle(uint8_t keydown, uint8_t keylong)
     memcpy_P(&display.Lines[0][7], &s_TextStatus[0], 3);
 
   display.Lines[1][0] = 'U';
-  String::formatDecimal(&(display.Lines[1][4]), 5, bsp.getAccuVoltage(),' ', 2);
+  String::formatUnsigned(&(display.Lines[1][4]), 5, bsp.getAccuVoltage(),' ');
+  String::formatFrac(&(display.Lines[1][4]),6, 2);
 
   auto & Time = Application.getTime();
 
@@ -304,7 +305,7 @@ void UserInterface::cycle(void)
 
   if (keymask)
   {
-    UiTimer.start(30000);
+    UiTimer.startMilliseconds(30000);
   }
   else if(UiTimer.hasTimedOut())
   {
@@ -337,16 +338,16 @@ void UserInterface::cycle(void)
     {
       if(keytime > 5000)
       {
-        UiRefreshTimer.start(20);
+        UiRefreshTimer.startMilliseconds(20);
       }
       else
       {
-        UiRefreshTimer.start(100);
+        UiRefreshTimer.startMilliseconds(100);
       }
     }
     else
     {
-      UiRefreshTimer.start(1000);
+      UiRefreshTimer.startMilliseconds(1000);
     }
   }
 

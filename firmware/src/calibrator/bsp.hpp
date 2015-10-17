@@ -29,160 +29,90 @@ extern "C"
   void TWI_vect (void) __attribute__ ((signal,__INTR_ATTRS));
 };
 
-template<unsigned int N>
-class TWIMaster
+
+template<class DEVICE, int COLUMNS, int ROWS>
+class BufferedLCD : protected DEVICE
 {
-private:
-  uint8_t m_Buffer[N+1];
-  uint8_t m_Idx;
-  uint8_t m_Len;
 public:
-  typedef uint8_t TransferBufferType[N];
+  typedef char RowBufferType[COLUMNS];
 
-  template<typename T = TransferBufferType>
-  T & getBuffer()
+private:
+  uint8_t  m_Index;
+
+  union {
+    char          m_Framebuffer[COLUMNS * ROWS];
+    RowBufferType m_RowBuffers[ROWS];
+  };
+
+public:
+  class LocationType
   {
-    union
-    {
-      T*       pReturn;
-      uint8_t* pBuffer;
-    };
+  private:
+    uint8_t m_Index;
+  public:
+    constexpr LocationType(uint8_t Column, uint8_t Row) : m_Index(Row * COLUMNS + Column) {}
 
-    pBuffer = &(m_Buffer[1]);
-    return *pReturn;
-  }
+    uint8_t   getBufferOffset() const {return m_Index;}
+    uint8_t   getRow()    const {return m_Index / COLUMNS;}
+    uint8_t   getColumn() const {return m_Index % COLUMNS;}
+  };
 
-  void init(uint32_t Frequency)
+  static LocationType Location(uint8_t Column, uint8_t Row) {return LocationType(Column,Row);}
+
+  void init() {DEVICE::init();}
+  void poll();
+
+  template<typename IteratorType>
+  void displayString(LocationType Loc, IteratorType Start, IteratorType End);
+
+  RowBufferType & updateRow(LocationType Loc)
   {
-    /* TWBR * 4^TWPS */
-    uint16_t divider   = (F_CPU / Frequency - 16) / 2;
-    uint8_t  prescaler = 0;
-
-    while(divider > 255 && prescaler < 3)
-    {
-      divider    = divider / 4;
-      prescaler += 1;
-    }
-
-    TWCR = 0;
-    TWBR = divider;
-    TWSR = prescaler;
-    TWCR = _BV(TWINT) | _BV(TWSTO) | _BV(TWEN) /* | _BV(TWIE) */;
+    m_Index = min(m_Index, Loc.getBufferOffset());
+    return m_RowBuffers[Loc.getRow()];
   }
-
-  void handleIrq();
-  void handleCyclic();
-
-  void sendStartAndWrite(uint8_t address, uint8_t len);
-  void sendStartAndRead(uint8_t address, uint8_t len);
-  void sendStop();
-
-  bool    hasFinished() {return m_Idx >= m_Len;}
-  uint8_t getError()    {return (m_Len == 0) ? (TWSR & 0xF8) : 0;}
-  uint8_t getStatus()   {return (TWSR & 0xF8);}
 };
 
-template<unsigned int N>
-void TWIMaster<N>::handleIrq()
-{
-  TWCR = TWCR & ~(_BV(TWIE) | _BV(TWSTA));
-}
 
-template<unsigned int N>
-void TWIMaster<N>::handleCyclic()
-{
-  if(TWCR & _BV(TWINT) && m_Len > m_Idx)
-  {
-    uint8_t status = TWSR & 0xF8;
 
-    switch(status)
+template<class DEVICE, int COLUMNS, int ROWS>
+void BufferedLCD<DEVICE, COLUMNS, ROWS>::poll()
+{
+  if (this->isReady())
+  { /* lcd is ready for the next command */
+    if (this->m_Index < ElementCount(this->m_Framebuffer))
     {
-    case 0x08: /* start condition */
-    case 0x10: /* repeated start cond */
-      if(m_Idx < m_Len)
-      {
-        TWDR  = m_Buffer[m_Idx];
-        TWCR  = /*_BV(TWIE) |*/ _BV(TWEN) | _BV(TWINT);
-      }
-      break;
-    case 0x18: /* sla+w + ack */
-    case 0x28: /* write + ack  */
-      {
-        m_Idx += 1;
+      auto CurrentLoc  = DEVICE::getCursorLocation();
+      auto RequiredLoc = DEVICE::getLocation(m_Index % COLUMNS, m_Index / ROWS);
 
-        if(m_Idx < m_Len)
-        {
-          TWDR   = m_Buffer[m_Idx];
-          TWCR  = /*_BV(TWIE) | */ _BV(TWEN) | _BV(TWINT);
-        }
-      }
-      break;
-    case 0x20: /* sla+w + nack */
-    case 0x30: /* write + nack */
-    case 0x48: /* sla+r + nack, */
-    case 0x58: /* read  + nack return */
-      m_Len = 0; /* this means nack */
-      break;
-#if 0
-    case 0x38: /* arbitration lost */
-      if(m_Idx < m_Len)
+      if(RequiredLoc != CurrentLoc)
       {
-        TWCR = /* _BV(TWIE) | */ _BV(TWEN) | _BV(TWSTA) | _BV(TWINT);
+        this->setCursor(RequiredLoc);
       }
-      break;
-#endif
-    case 0x40: /* sla+r + ack */
+      else
       {
-        m_Idx += 1;
-
-        if(m_Idx < m_Len)
-        {
-          TWCR  = /* _BV(TWIE) | */ _BV(TWEN) | _BV(TWEA) | _BV(TWINT);
-        }
+        this->putChar(this->m_Framebuffer[m_Index]);
+        m_Index += 1;
       }
-      break;
-    case 0x50: /* read + ack return */
-      {
-        m_Buffer[m_Idx] = TWDR;
-        m_Idx += 1;
-
-        if(m_Idx < m_Len)
-        {
-          TWCR  = /* _BV(TWIE) | */ _BV(TWEN) | _BV(TWEA) | _BV(TWINT);
-        }
-      }
-      break;
     }
   }
 }
 
-template<unsigned int N>
-void TWIMaster<N>::sendStartAndWrite(uint8_t address, uint8_t len)
+template<class DEVICE, int COLUMNS, int ROWS>
+template<typename IteratorType>
+void BufferedLCD<DEVICE, COLUMNS, ROWS>::displayString(LocationType Loc, IteratorType Start, IteratorType End)
 {
-  m_Buffer[0] = (address << 1);
-  m_Idx       = 0;
-  m_Len       = len + 1;
+  IteratorType it = Start;
+  uint8_t  Offset = Loc.getBufferOffset();
 
-  //while(TWCR & _BV(TWSTO));
-  TWCR = _BV(TWINT) | _BV(TWSTA) /* | _BV(TWIE) */ | _BV(TWEN);
+  m_Index = min(m_Index,Offset);
+
+  while(Offset < ElementCount(m_Framebuffer) && it < End)
+  {
+    m_Framebuffer[Offset++] = *(it++);
+  }
+
 }
 
-template<unsigned int N>
-void TWIMaster<N>::sendStartAndRead(uint8_t address, uint8_t len)
-{
-  m_Buffer[0] = (address << 1) | 0x01;
-  m_Idx       = 0;
-  m_Len       = len + 1;
-
-  //while(TWCR & _BV(TWSTO));
-  TWCR = _BV(TWINT) | _BV(TWSTA) /* | _BV(TWIE) */ | _BV(TWEN);
-}
-
-template<unsigned int N>
-void TWIMaster<N>::sendStop()
-{
-  TWCR = _BV(TWINT) | _BV(TWSTO) /* | _BV(TWIE) */ | _BV(TWEN);
-}
 
 class CalibratorBsp
 {
@@ -215,7 +145,29 @@ protected:
   protected:
     static const FlashVariable<HD44780_CMD, 5> InitSequence PROGMEM;
 
-    static void delay(uint_fast16_t us);
+    bool isReady()
+    {
+      return (TIFR & _BV(OCF1B)) != 0;
+    }
+
+    void setBusy(uint16_t Delay1us)
+    {
+      OCR1B  = TCNT1 + Delay1us;
+      TIFR  |= _BV(OCF1B);
+    }
+
+    void waitReady()
+    {
+      while(!isReady());
+    }
+
+    void waitReady(uint16_t Delay1us)
+    {
+      setBusy(Delay1us);
+      waitReady();
+    }
+
+
     static void setRW()       {PortNibble.updateDirection(0x0F,0x00); PinRw = 1; }
     static void clearRW()     {PinRw = 0; PortNibble.updateDirection(0x0F,0x0F);}
     static void setRS()       {PinRs = 1;}
@@ -226,11 +178,12 @@ protected:
   };
 
 public:
-  typedef LCD_HD44780<HD44780_MODE_4BIT, LcdBsp>                                 LCDType;
+  typedef BufferedLCD<LCD_HD44780<HD44780_MODE_4BIT, LcdBsp>, 16, 2>             LCDType;
   typedef AdaptingUart<8>                                                        UartHandlerType;
   typedef VoltageModulator<sizeof(calibration_data), 80,20, VoltageModulatorBsp> VoltageModulatorType;
   typedef TWIMaster<4> TWIMasterType;
 
+  typedef LCDType::RowBufferType RowBufferType;
 protected:
   static CalibratorBsp s_Instance;
 
@@ -255,10 +208,12 @@ public:
 
   static CalibratorBsp & getBsp() {return s_Instance;}
 
-  LCDType & getLCD()                           {return m_Lcd;}
+  LCDType         & getLCD()                           {return m_Lcd;}
   UartHandlerType & getUartHandler()           {return m_UartHandler;}
   VoltageModulatorType & getVoltageModulator() {return m_VoltageModulator;}
   TWIMasterType &        getTWIHandler()       {return m_TWIMaster;}
+
+  LCDType::RowBufferType & getDisplayRow(uint8_t Row) {return m_Lcd.updateRow(m_Lcd.Location(0,Row));}
 
   static void init();
 

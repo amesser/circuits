@@ -176,7 +176,7 @@ CalibratorApp::handleKeys()
         auto & uart = bsp.getUartHandler();
         auto & data = uart.getBufferAs<measurement_data>();
 
-        collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts, true);
+        CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts, true);
       }
       break;
     case UI_STATE_READSENSORLIGHT:
@@ -185,7 +185,7 @@ CalibratorApp::handleKeys()
         auto & uart = bsp.getUartHandler();
         auto & data = uart.getBufferAs<measurement_data>();
 
-        collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts, true);
+        CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts, true);
       }
       break;
     case UI_STATE_READSENSORTEMPERATURE:
@@ -194,7 +194,7 @@ CalibratorApp::handleKeys()
         auto & uart = bsp.getUartHandler();
         auto & data = uart.getBufferAs<measurement_data>();
 
-        collectTempStatistics(m_CalStatistics.Temperature, data.temp, m_AbsTemp);
+        CalibratorFit::collectTempStatistics(m_CalStatistics.Temperature, data.temp, m_AbsTemp);
         s_CalStatistics = m_CalStatistics;
       }
       break;
@@ -251,44 +251,45 @@ CalibratorApp::handleKeys()
   m_KeyState = newstate;
 }
 
-void CalibratorApp::formatMinMax(struct calibration_minmax & cal, uint16_t value)
+void CalibratorApp::formatMinMax(LcdRowBufferType & Buffer, struct CalibratorFit::calibration_minmax & cal, uint16_t value)
 {
-  s_UiLcdRaw.read(m_LcdScratch);
+  s_UiLcdRaw.read(Buffer);
 
   if(value > cal.Max)
   {
-    m_LcdScratch[4] = '>';
-    m_LcdScratch[5] = '>';
-    String::formatUnsigned(m_LcdScratch + 7, 5, value);
+    Buffer[4] = '>';
+    Buffer[5] = '>';
+    String::formatUnsigned(Buffer + 7, 5, value);
   }
   else if(value < cal.Min)
   {
-    m_LcdScratch[4] = '<';
-    m_LcdScratch[5] = '<';
-    String::formatUnsigned(m_LcdScratch + 7, 5, value);
+    Buffer[4] = '<';
+    Buffer[5] = '<';
+    String::formatUnsigned(Buffer + 7, 5, value);
   }
   else
   {
     Evaluator * pe = reinterpret_cast<Evaluator*>(&cal);
 
-    m_LcdScratch[4]  = '[';
-    m_LcdScratch[10] = ']';
-    String::formatUnsigned(m_LcdScratch + 5, 5, pe->scale(value));
+    Buffer[4]  = '[';
+    Buffer[10] = ']';
+    String::formatUnsigned(Buffer + 5, 5, pe->scale(value));
   }
 }
 
-void CalibratorApp::formatLinRegr(struct calibration_linearregression & cal, uint16_t value, uint16_t ref)
+void CalibratorApp::formatLinRegr(LcdRowBufferType & Buffer, struct CalibratorFit::calibration_linearregression & cal, uint16_t value, uint16_t ref)
 {
-  s_UiLcdRaw.read(m_LcdScratch);
+  s_UiLcdRaw.read(Buffer);
 
-  String::formatSigned(m_LcdScratch + 4, 3, static_cast<int16_t>(ref)   - 273);
-  String::formatSigned(m_LcdScratch + 9, 3, static_cast<int16_t>(value) - 273);
+  String::formatSigned(Buffer + 4, 3, static_cast<int16_t>(ref)   - 273);
+  String::formatSigned(Buffer + 9, 3, static_cast<int16_t>(value) - 273);
 }
 
 void CalibratorApp::changeUiState(enum UiState NextState)
 {
   auto & bsp = CalibratorBsp::getBsp();
   auto & lcd = bsp.getLCD();
+
 
   { /* setup first display line */
     auto & str = s_UiLcdStrings[NextState];
@@ -311,8 +312,7 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       auto & uart = bsp.getUartHandler();
       auto & data = uart.getBufferAs<measurement_data>();
 
-      formatMinMax(m_CalStatistics.Humidity, data.humidity_counts);
-      lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+      formatMinMax(bsp.getDisplayRow(1), m_CalStatistics.Humidity, data.humidity_counts);
     }
     break;
   case UI_STATE_READSENSORLIGHT:
@@ -321,8 +321,7 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       auto & uart = bsp.getUartHandler();
       auto & data = uart.getBufferAs<measurement_data>();
 
-      formatMinMax(m_CalStatistics.Light, data.led_counts);
-      lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+      formatMinMax(bsp.getDisplayRow(1),m_CalStatistics.Light, data.led_counts);
     }
     break;
   case UI_STATE_READSENSORTEMPERATURE:
@@ -331,8 +330,7 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       auto & uart = bsp.getUartHandler();
       auto & data = uart.getBufferAs<measurement_data>();
 
-      formatLinRegr(m_CalStatistics.Temperature, data.temp, m_AbsTemp);
-      lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+      formatLinRegr(bsp.getDisplayRow(1),m_CalStatistics.Temperature, data.temp, m_AbsTemp);
     }
     break;
   case UI_STATE_READSENSORRESULTS:
@@ -341,13 +339,13 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       auto & uart = bsp.getUartHandler();
       auto & data = uart.getBufferAs<measurement_data>();
 
-      memset(m_LcdScratch, ' ', sizeof(m_LcdScratch));
+      auto & Buffer = bsp.getDisplayRow(1);
 
-      String::formatUnsigned(m_LcdScratch + 0,  5, data.humidity_counts);
-      String::formatUnsigned(m_LcdScratch + 6,  5, data.led_counts);
-      String::formatSigned(m_LcdScratch  + 12, 3, static_cast<int16_t>(data.temp)   - 273);
+      memset(Buffer, ' ', sizeof(Buffer));
 
-      lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+      String::formatUnsigned(Buffer + 0,  5, data.humidity_counts);
+      String::formatUnsigned(Buffer + 6,  5, data.led_counts);
+      String::formatSigned(Buffer  + 12, 3, static_cast<int16_t>(data.temp)   - 273);
     }
     break;
   case UI_STATE_AUTOREADINGSENSOR:
@@ -428,12 +426,12 @@ void CalibratorApp::handleUiState()
         { /* raw data received from sensor */
           s_CalStatistics.read(m_CalStatistics);
 
-          collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts, false);
-          collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts, false);
+          CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts, false);
+          CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts, false);
 
           if(m_StableCnt > (12 * 5))
           { /* temperature should be stable for at least 5 minutes */
-            collectTempStatistics(m_CalStatistics.Temperature, data.temp, m_AbsTemp);
+              CalibratorFit::collectTempStatistics(m_CalStatistics.Temperature, data.temp, m_AbsTemp);
           }
 
           s_CalStatistics = m_CalStatistics;
@@ -468,44 +466,39 @@ void CalibratorApp::handleUiState()
 
   if(m_State == APP_STATE_READSENSOR)
   {
-    auto & lcd = bsp.getLCD();
+    auto & Buffer = bsp.getDisplayRow(1);
 
     uint_least16_t BaudDivisor = (UBRRH << 8) | UBRRL;
     uint_least32_t BaudRate    = (F_CPU / 16) / (BaudDivisor + 1);
 
-    s_UiLcdBaud.read(m_LcdScratch);
-    String::formatUnsigned(m_LcdScratch + 16 - 5 - 5, 5, (uint16_t)BaudRate);
-    lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+    s_UiLcdBaud.read(Buffer);
+    String::formatUnsigned(Buffer + 16 - 5 - 5, 5, (uint16_t)BaudRate);
   }
   else if (m_State == APP_STATE_WRITESENSOR)
   {
     auto & vmod   = bsp.getVoltageModulator();
-    auto & lcd = bsp.getLCD();
+    auto & Buffer = bsp.getDisplayRow(1);
 
     if(vmod.getTransferring() == 0)
     {/* transfer has not started yet */
       auto & timer = (Globals::getGlobals()).getVoltageModulatorTimer();
 
-      s_UiLcdWait.read(m_LcdScratch);
-      String::formatUnsigned(m_LcdScratch + 16 - 2, 2, (timer.getRemainingMilliseconds() + 999) / 1000, '0');
+      s_UiLcdWait.read(Buffer);
+      String::formatUnsigned(Buffer + 16 - 2, 2, (timer.getRemainingMilliseconds() + 999) / 1000, '0');
     }
     else
     {
-      s_UiLcdWriteProgress.read(m_LcdScratch);
-      String::formatUnsigned(m_LcdScratch + 16 - 2 - 1 - 2, 2, vmod.getNumTransferred(), '0');
+      s_UiLcdWriteProgress.read(Buffer);
+      String::formatUnsigned(Buffer + 16 - 2 - 1 - 2, 2, vmod.getNumTransferred(), '0');
     }
-
-    lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
   }
   else if (CurrentState == UI_STATE_AUTOSELECTINTERVAL)
   {
-    auto & lcd = bsp.getLCD();
+    auto & Buffer = bsp.getDisplayRow(1);
 
-    s_UiLcdInterval.read(m_LcdScratch);
+    s_UiLcdInterval.read(Buffer);
     uint16_t Minutes = s_AutoIntervals[m_AutoIntervalSelector] / 60;
-    String::formatUnsigned(m_LcdScratch + 4, 3, Minutes);
-
-    lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+    String::formatUnsigned(Buffer + 4, 3, Minutes);
   }
 
 }
@@ -607,113 +600,14 @@ CalibratorApp::handleState()
   }
 }
 
-void CalibratorApp::calculateMinMaxCal(struct calibration_minmax &stat, struct calibration_param &prm)
-{
-  prm.Offset = -stat.Min;
-  prm.Max    =  stat.Max - stat.Min;
-  prm.Mult   = (0xFFFF * 0x10000ULL) / prm.Max;
-}
-
-
-void CalibratorApp::calculateLinRegr(struct calibration_linearregression &stat, struct calibration_param &prm)
-{
-  /* y = Mult * (x + Offset) / 65536 */
-
-  uint_fast8_t NumPoints;
-  int_fast32_t Numerator, Denominator, SumX, SumY;
-
-  NumPoints = sum(stat.NumPoints);
-
-  SumX      = sum(stat.SumX);
-  SumY      = sum(stat.SumY);
-
-  Numerator   = sum(stat.SumXY) - ((SumX * SumY) + NumPoints / 2) / NumPoints;
-  Denominator = sum(stat.SumXX) - ((SumX * SumX) + NumPoints / 2) / NumPoints;
-
-  prm.Mult   = (((int_fast64_t)Numerator) * 65536ULL) / Denominator ;
-  prm.Offset =    (SumY + NumPoints / 2) * 65536ULL / NumPoints / prm.Mult
-                - (SumX + NumPoints / 2) / NumPoints;
-  prm.Max    = 0xFFFF0000 / prm.Mult;
-}
-
-#define MAX_MINMAX_JUMPWIDTH (25)
-
-void
-CalibratorApp::collectMinMaxStatistics(struct calibration_minmax &stat, uint_fast16_t Counts, bool ForceCollect)
-{
-  const auto MaxJumpwidth = ForceCollect ? TypeProperties<decltype(stat.Max)>::MaxUnsigned : MAX_MINMAX_JUMPWIDTH;
-
-  if(stat.Min > stat.Max)
-  { /* First value */
-    stat.Min = stat.Max = Counts;
-  }
-  else if(Counts > stat.Max && (Counts - stat.Max) <= MaxJumpwidth)
-  {
-    stat.Max = Counts;
-  }
-  else if(Counts < stat.Min && (stat.Min - Counts) <= MaxJumpwidth)
-  {
-    stat.Min = Counts;
-  }
-}
-
-void
-CalibratorApp::collectTempStatistics(struct calibration_linearregression &stat, uint_fast16_t TempCounts, uint_fast16_t Temp)
-{
-  /* Temperature statistics is kept in seperate bins of 2 degrees.
-   * This is used to improve the temperature calibration distribution */
-
-  /* Bins are available from [-10, +30 [ */
-  if(Temp >= (273 - 10) && Temp < (273 + 30))
-  {
-    uint_fast16_t UTemp = Temp - (273 - 10);
-    uint_fast8_t Idx = static_cast<uint_fast8_t>(UTemp / 2);
-
-    if(stat.NumPoints[Idx] < (min(stat.NumPoints) + 2))
-    {
-      stat.NumPoints[Idx] += 1;
-      stat.SumX[Idx]      += TempCounts;
-      stat.SumX[Idx]      += TempCounts * TempCounts;
-      stat.SumY[Idx]      += Temp;
-      stat.SumXY[Idx]     += Temp * TempCounts;
-    }
-  }
-}
-
-
-/** Collect calibration statistics from sensor data.
- *
- * This function will update the calibration statistics
- * with the data read out from a sensor.
- */
-void CalibratorApp::collectStatistics()
-{
-  auto & bsp    = CalibratorBsp::getBsp();
-  auto & uart    = bsp.getUartHandler();
-  auto & ubuffer = uart.getBuffer();
-
-  measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
-
-  /* statistic data can only be generated from uncalibrated sensor data
-   * output */
-  if(0xC0 == pMeasData->sync && 0x00 == pMeasData->type)
-  {
-    auto & CalStat = m_CalStatistics;
-
-    collectMinMaxStatistics(CalStat.Humidity, pMeasData->humidity_counts);
-    collectMinMaxStatistics(CalStat.Light,    pMeasData->led_counts);
-    collectTempStatistics(CalStat.Temperature, pMeasData->temp, 263);
-  }
-}
-
 void CalibratorApp::calculateCalibration()
 {
   auto & Stat  = m_CalStatistics;
   auto & Param = m_Scratch.CalPrm;
 
-  calculateMinMaxCal(Stat.Humidity, Param.Humidity);
-  calculateMinMaxCal(Stat.Light, Param.Light);
-  calculateLinRegr(Stat.Temperature, Param.Temperature);
+  CalibratorFit::calculateMinMaxCal(Stat.Humidity, Param.Humidity);
+  CalibratorFit::calculateMinMaxCal(Stat.Light, Param.Light);
+  CalibratorFit:: calculateLinRegr(Stat.Temperature, Param.Temperature);
 }
 
 
@@ -727,36 +621,6 @@ uint16_t CalibratorApp::getValue(uint_fast8_t idx, uint_fast16_t input)
   uint16_t *pInput = &(pMeasData->humidity_counts);
 
   return pe[idx].scale(pInput[idx]);
-}
-
-void CalibratorApp::displayValue(uint_fast8_t idx)
-{
-  auto & bsp    = CalibratorBsp::getBsp();
-  auto & lcd    = bsp.getLCD();
-  auto & buffer = lcd.getBuffer();
-  auto & uart    = bsp.getUartHandler();
-  auto & ubuffer = uart.getBuffer();
-  measurement_data * pMeasData = reinterpret_cast<measurement_data *>(&ubuffer);
-
-  if(0xC0 == pMeasData->sync)
-  {
-    uint16_t *pInput = &(pMeasData->humidity_counts);
-
-    if(0x00 == pMeasData->type)
-    { /* uncalibrated sensor data
-       * calculate possible result */
-      uint16_t value   = getValue(idx, pInput[idx]);
-      //s_LcdStrings.DisplayDataUncalibrated.read(buffer);
-      String::formatUnsigned(&buffer[11], 5, value);
-    }
-    else if (0x01 == pMeasData->type)
-    {
-      /* calibrated sensor data */
-      uint16_t value = pInput[idx];
-      //s_LcdStrings.DisplayDataCalibrated.read(buffer);
-      String::formatUnsigned(&buffer[11], 5, value);
-    }
-  }
 }
 
 #define HDC1000_ADDRESS (0x43)
@@ -808,24 +672,21 @@ void CalibratorApp::changeTempState(enum TempState NextState)
       if(m_MenuState == UI_STATE_STARTUP ||
          m_MenuState == UI_STATE_AUTOWAIT)
       {
-        auto & lcd = bsp.getLCD();
-
+        auto & Buffer = bsp.getDisplayRow(1);
 
         if(m_MenuState == UI_STATE_AUTOWAIT)
         {
-          s_UiLcdAutoWait.read(m_LcdScratch);
+          s_UiLcdAutoWait.read(Buffer);
 
-          String::formatUnsigned(m_LcdScratch+2, 3, Globals::getGlobals().getAutomaticTimer().getRemainingSeconds<uint16_t>() / 60);
-          String::formatUnsigned(m_LcdScratch+8, 2, m_StableCnt / 12);
+          String::formatUnsigned(Buffer + 2, 3, Globals::getGlobals().getAutomaticTimer().getRemainingSeconds<uint16_t>() / 60);
+          String::formatUnsigned(Buffer + 8, 2, m_StableCnt / 12);
         }
         else
         {
-          s_UiLcdTemp.read(m_LcdScratch);
-          String::formatUnsigned(m_LcdScratch + 3, 3, m_Rh);
+          s_UiLcdTemp.read(Buffer);
+          String::formatUnsigned(Buffer + 3, 3, m_Rh);
         }
-        String::formatSigned  (m_LcdScratch + 16 - 5, 3, m_AbsTemp - 273);
-
-        lcd.displayString(lcd.Location(0,1), m_LcdScratch, m_LcdScratch + 16);
+        String::formatSigned  (Buffer + 16 - 5, 3, m_AbsTemp - 273);
       }
     }
     break;

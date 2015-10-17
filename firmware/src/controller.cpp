@@ -38,7 +38,7 @@ void HumidityController::eventSecondTick()
   m_Time.incSecond(1);
 
   if(bsp.getRealOutputState() & bsp.OUTPUT_CHA)
-    m_ChannelA.TimeEnabled.update(1);
+    m_ChannelA.TimeEnabled.handleSecondsPassed(1);
 }
 
 void HumidityController::changeTime(int8_t dMinutes)
@@ -159,7 +159,7 @@ void HumidityController::cycle()
         if(x > m_Parameters.m_WettingTimeout.getMonotonic())
         {
           state = CHANNEL_WETTING;
-          channel.TimeEnabled.start(0xFFFF);
+          channel.TimeEnabled.startSeconds(0xFFFF);
 
           bsp.enableOutputs(bsp.OUTPUT_CHA);
           bsp.enableOutputs(bsp.OUTPUT_CHB); /* only for first implementation */
@@ -174,7 +174,7 @@ void HumidityController::cycle()
         /* for some reason the wetting was aborted */
         state = CHANNEL_IDLE;
       }
-      else if (channel.TimeEnabled.getElapsedTime(0xFFFF) >= m_Parameters.m_WettingPeriod)
+      else if (channel.TimeEnabled.getElapsedSeconds(0xFFFF) >= m_Parameters.m_WettingPeriod)
       {
         bsp.disableOutputs(bsp.OUTPUT_CHA);
         bsp.disableOutputs(bsp.OUTPUT_CHB); /* only for first implementation */

@@ -33,8 +33,8 @@ private:
   struct Channel
   {
     uint8_t state;
-    SimpleTimer<uint16_t> TimeEnabled;
-    WeekTime              TimeLastWetting;
+    SimpleTimer<uint16_t,1000> TimeEnabled;
+    WeekTime                   TimeLastWetting;
   };
 
   Parameters       m_Parameters;
@@ -57,7 +57,7 @@ public:
 
   const WeekTime &   getLastWettingTimeChA() const {return m_ChannelA.TimeLastWetting;}
   bool               isWettingChA() const {return m_ChannelA.state == CHANNEL_WETTING;}
-  uint16_t           getActualWettingTimeChA() const { return m_ChannelA.TimeEnabled.getElapsedTime(0xFFFF);}
+  uint16_t           getActualWettingTimeChA() const { return m_ChannelA.TimeEnabled.getElapsedSeconds((uint32_t)0xFFFF);}
 
   void init();
   void cycle();

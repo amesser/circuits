@@ -96,11 +96,11 @@ private:
 
   static struct Timers1Ms
   {
-    SimpleTimer<uint16_t> Boost;
-    SimpleTimer<uint16_t> Accu;
-    SimpleTimer<uint16_t> Keyboard;
-    SimpleTimer<uint16_t> Ui;
-    SimpleTimer<uint16_t> UiRefresh;
+    SimpleTimer<uint16_t,1> Boost;
+    SimpleTimer<uint16_t,1> Accu;
+    SimpleTimer<uint16_t,1> Keyboard;
+    SimpleTimer<uint16_t,1> Ui;
+    SimpleTimer<uint16_t,1> UiRefresh;
   } s_Timers1Ms;
 
   enum BoostState
@@ -135,10 +135,10 @@ public:
   static struct LCD &getDisplay() {return s_LCD;}
 
   uint8_t  getKeyState() const {return m_Keyboard.mask >> 4;}
-  uint16_t getKeyTime()  const {return s_Timers1Ms.Keyboard.getElapsedTime(10000);}
+  uint16_t getKeyTime()  const {return s_Timers1Ms.Keyboard.getElapsedMilliseconds(10000);}
 
-  SimpleTimer<uint16_t> & getUiTimer()        const { return s_Timers1Ms.Ui;}
-  SimpleTimer<uint16_t> & getUiRefreshTimer() const { return s_Timers1Ms.UiRefresh;}
+  SimpleTimer<uint16_t,1> & getUiTimer()        const { return s_Timers1Ms.Ui;}
+  SimpleTimer<uint16_t,1> & getUiRefreshTimer() const { return s_Timers1Ms.UiRefresh;}
 
   static uint16_t getAccuVoltage() {return s_Accu.Voltage;}
   static uint8_t  getAccuState()   {return s_Accu.State;}
