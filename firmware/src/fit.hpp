@@ -39,11 +39,14 @@ public:
     uint8_t NumPoints[25];
   };
 
+  static void resetMinMaxStatistics(struct calibration_minmax & stat);
   static void collectMinMaxStatistics(struct calibration_minmax &stat, uint_fast16_t Counts, bool ForceCollect);
   static void calculateMinMaxCal(struct calibration_minmax &stat, struct calibration_param &prm);
 
+  static void resetLinRegrStat(struct calibration_linearregression &stat);
   static void collectTempStatistics(struct calibration_linearregression &stat, uint_fast16_t TempCounts, uint_fast16_t Temp);
   static void calculateLinRegr(struct calibration_linearregression &stat, struct calibration_param &prm);
+
 };
 
 

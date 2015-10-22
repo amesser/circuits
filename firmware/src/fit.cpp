@@ -5,13 +5,21 @@
  *      Author: andi
  */
 #include "fit.hpp"
+#include <string.h>
 
 #define MAX_MINMAX_JUMPWIDTH (25)
 
 void
+CalibratorFit::resetMinMaxStatistics(struct calibration_minmax & stat)
+{
+  stat.Min = ~0;
+  stat.Max =  0;
+}
+
+void
 CalibratorFit::collectMinMaxStatistics(struct calibration_minmax &stat, uint_fast16_t Counts, bool ForceCollect)
 {
-  const auto MaxJumpwidth = ForceCollect ? TypeProperties<decltype(stat.Max)>::MaxUnsigned : MAX_MINMAX_JUMPWIDTH;
+  const auto MaxJumpwidth = static_cast<decltype(stat.Max)>(ForceCollect ? TypeProperties<decltype(stat.Max)>::MaxUnsigned : MAX_MINMAX_JUMPWIDTH);
 
   if(stat.Min > stat.Max)
   { /* First value */
@@ -31,7 +39,12 @@ void CalibratorFit::calculateMinMaxCal(struct calibration_minmax &stat, struct c
 {
   prm.Offset = -stat.Min;
   prm.Max    =  stat.Max - stat.Min;
-  prm.Mult   = (0xFFFF * 0x10000ULL) / prm.Max;
+  prm.Mult   = (0xFFFF * (uint32_t)0x10000ULL + prm.Max - 1) / prm.Max;
+}
+
+void CalibratorFit::resetLinRegrStat(struct calibration_linearregression &stat)
+{
+  memset(&stat, 0x00, sizeof(stat));
 }
 
 void
@@ -69,12 +82,29 @@ void CalibratorFit::calculateLinRegr(struct calibration_linearregression &stat, 
   SumX      = sum(stat.SumX);
   SumY      = sum(stat.SumY);
 
-  Numerator   = sum(stat.SumXY) - ((SumX * SumY) + NumPoints / 2) / NumPoints;
-  Denominator = sum(stat.SumXX) - ((SumX * SumX) + NumPoints / 2) / NumPoints;
+  Numerator   = (sum(stat.SumXY) - (SumX * SumY) + NumPoints / 2) / NumPoints;
+  Denominator = (sum(stat.SumXX) - (SumX * SumX) + NumPoints / 2) / NumPoints;
 
-  prm.Mult   = (((int_fast64_t)Numerator) * 65536ULL) / Denominator ;
-  prm.Offset =    (SumY + NumPoints / 2) * 65536ULL / NumPoints / prm.Mult
+  if(Denominator != 0)
+  {
+    prm.Mult   = (((int_fast64_t)Numerator) * 65536ULL) / Denominator ;
+  }
+  else
+  {
+    prm.Mult   = 0;
+  }
+
+  if(prm.Mult != 0)
+  {
+    prm.Offset =    (SumY + NumPoints / 2) * 65536ULL / NumPoints / prm.Mult
                 - (SumX + NumPoints / 2) / NumPoints;
-  prm.Max    = 0xFFFF0000 / prm.Mult;
+    prm.Max    = 0xFFFF0000 / prm.Mult;
+  }
+  else
+  {
+    prm.Offset = 0;
+    prm.Max    = 0xFFFF;
+  }
+
 }
 

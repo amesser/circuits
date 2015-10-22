@@ -21,6 +21,10 @@ def configure(conf):
     conf.ecpp_setupbuild(id='test', 
                          platform='native')
 
+    conf.check(compiler='cxx',
+              lib='cppunit',
+              mandatory=True, 
+              uselib_store='CPPUNIT')
 def build(bld):
     bld.ecpp_build(
         id= 'attiny13a',
@@ -48,8 +52,9 @@ def build(bld):
 
     bld.ecpp_build(
         id= 'test',
-        source   = ['test.cpp'],
+        source   = ['test.cpp', 'fit.cpp', 'protocol.cpp'],
         target   = 'test',
-        features = 'cxx cxxprogram',  
+        features = 'cxx cxxprogram',
+        use      = ['CPPUNIT']
     ) 
     
