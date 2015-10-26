@@ -340,7 +340,7 @@ int main(void)
     auto    timer = bsp.startTimerMs(1000);
     while(!bsp.handleTimer(timer));
 
-    data.temp = - bsp.getTemp();
+    data.temp = 1023 - bsp.getTemp();
 
     bsp.disableAnalog();
   }
