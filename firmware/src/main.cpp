@@ -191,14 +191,14 @@ VoltageModulatorSupport::getState()
 
 const FlashVariable<struct calibration_param> calibration_default PROGMEM =
 {
-  {0x10000UL, 0x0000, 0xFFFF},
+  {0x10000UL, 0x0000, 0xFFFF, 0x0000},
 };
 
 EEVariable<struct calibration_data> calibration_parameters EEMEM =
 {{
-  {0x10000UL, 0x0000, 0xFFFF},
-  {0x10000UL, 0x0000, 0xFFFF},
-  {0x10000UL, 0x0000, 0xFFFF}
+  {0x10000UL, 0x0000, 0xFFFF, 0x0000},
+  {0x10000UL, 0x0000, 0xFFFF, 0x0000},
+  {0x10000UL, 0x0000, 0xFFFF, 0x0000}
 }} ;
 
 struct calibration_data calibrators __attribute__((section(".noinit")));
