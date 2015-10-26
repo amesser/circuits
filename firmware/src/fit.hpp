@@ -32,11 +32,11 @@ public:
    */
   struct calibration_linearregression
   {
-    int16_t  SumX[25];
-    int16_t  SumY[25];
-    int32_t  SumXY[25];
-    int32_t  SumXX[25];
-    uint8_t NumPoints[25];
+    uint16_t SumX[25];
+    uint16_t SumY[25];
+    uint32_t SumXY[25];
+    uint32_t SumXX[25];
+    uint8_t  NumPoints[25];
   };
 
   static void resetMinMaxStatistics(struct calibration_minmax & stat);

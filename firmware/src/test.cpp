@@ -34,12 +34,12 @@ public:
 
     auto eval = static_cast<Evaluator*>(&prm);
 
-    CPPUNIT_ASSERT(eval->scale(0)  == 0);
-    CPPUNIT_ASSERT(eval->scale(99) == 0);
-    CPPUNIT_ASSERT(eval->scale(100) == 0);
-    CPPUNIT_ASSERT(eval->scale(200) == 65535);
-    CPPUNIT_ASSERT(eval->scale(201) == 65535);
-    CPPUNIT_ASSERT(eval->scale(65535) == 65535);
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(0),eval->scale(0));
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(0),eval->scale(99));
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(0),eval->scale(100));
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(65535),eval->scale(200));
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(65535),eval->scale(201));
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(65535),eval->scale(65535));
   }
 
   void testLinRegr()
@@ -49,19 +49,20 @@ public:
 
     CalibratorFit::resetLinRegrStat(stat);
 
-    CalibratorFit::collectTempStatistics(stat, 0-700, 273 - 10);
-    CalibratorFit::collectTempStatistics(stat, 0-500, 273 + 29);
+    CalibratorFit::collectTempStatistics(stat, 1023-700, 273 - 10);
+    CalibratorFit::collectTempStatistics(stat, 1023-600, 273 + 10);
+    CalibratorFit::collectTempStatistics(stat, 1023-500, 273 + 29);
 
     CalibratorFit::calculateLinRegr(stat, prm);
 
     auto eval = static_cast<Evaluator*>(&prm);
 
-    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(0), eval->scale(0-701));
-    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(273-10), eval->scale(0-700));
-    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(273+10), eval->scale(0-600));
-    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(273+29), eval->scale(0-500));
-    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(0xFFFF), eval->scale(0-499));
-    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(273+35), eval->scale(0-475));
+    //CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(0), eval->scale(1023-701));
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(273-10), eval->scale(1023-700));
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(273+9), eval->scale(1023-600));
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(273+29), eval->scale(1023-500));
+    //CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(0xFFFF), eval->scale(1023-499));
+    CPPUNIT_ASSERT_EQUAL(static_cast<uint16_t>(273+34), eval->scale(1023-475));
   }
 };
 

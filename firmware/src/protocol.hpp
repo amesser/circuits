@@ -24,6 +24,7 @@ struct calibration_param
   uint32_t Mult;
   uint16_t Offset;
   uint16_t Max;
+  uint16_t Min;
 };
 
 struct calibration_data

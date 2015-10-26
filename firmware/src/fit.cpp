@@ -37,9 +37,15 @@ CalibratorFit::collectMinMaxStatistics(struct calibration_minmax &stat, uint_fas
 
 void CalibratorFit::calculateMinMaxCal(struct calibration_minmax &stat, struct calibration_param &prm)
 {
+  uint16_t Delta;
+
+  prm.Max    =  stat.Max;
+  prm.Min    =  stat.Min;
   prm.Offset = -stat.Min;
-  prm.Max    =  stat.Max - stat.Min;
-  prm.Mult   = (0xFFFF * (uint32_t)0x10000ULL + prm.Max - 1) / prm.Max;
+
+  Delta = stat.Max - stat.Min;
+
+  prm.Mult   = (0xFFFF * (uint32_t)0x10000ULL + Delta - 1) / Delta;
 }
 
 void CalibratorFit::resetLinRegrStat(struct calibration_linearregression &stat)
@@ -52,6 +58,8 @@ CalibratorFit::collectTempStatistics(struct calibration_linearregression &stat, 
 {
   /* Temperature statistics is kept in seperate bins of 2 degrees.
    * This is used to improve the temperature calibration distribution */
+  TempCounts &= 0xFFFF;
+  Temp       &= 0xFFFF;
 
   /* Bins are available from [-10, +30 [ */
   if(Temp >= (273 - 10) && Temp < (273 + 30))
@@ -59,11 +67,11 @@ CalibratorFit::collectTempStatistics(struct calibration_linearregression &stat, 
     uint_fast16_t UTemp = Temp - (273 - 10);
     uint_fast8_t Idx = static_cast<uint_fast8_t>(UTemp / 2);
 
-    if(stat.NumPoints[Idx] < (min(stat.NumPoints) + 2))
+    if(stat.NumPoints[Idx] < (max(stat.NumPoints) + 2))
     {
       stat.NumPoints[Idx] += 1;
       stat.SumX[Idx]      += TempCounts;
-      stat.SumX[Idx]      += TempCounts * TempCounts;
+      stat.SumXX[Idx]     += TempCounts * TempCounts;
       stat.SumY[Idx]      += Temp;
       stat.SumXY[Idx]     += Temp * TempCounts;
     }
@@ -82,8 +90,8 @@ void CalibratorFit::calculateLinRegr(struct calibration_linearregression &stat, 
   SumX      = sum(stat.SumX);
   SumY      = sum(stat.SumY);
 
-  Numerator   = (sum(stat.SumXY) - (SumX * SumY) + NumPoints / 2) / NumPoints;
-  Denominator = (sum(stat.SumXX) - (SumX * SumX) + NumPoints / 2) / NumPoints;
+  Numerator   = sum(stat.SumXY) - ((SumX * SumY) + NumPoints / 2) / NumPoints;
+  Denominator = sum(stat.SumXX) - ((SumX * SumX) + NumPoints / 2) / NumPoints;
 
   if(Denominator != 0)
   {
@@ -96,13 +104,17 @@ void CalibratorFit::calculateLinRegr(struct calibration_linearregression &stat, 
 
   if(prm.Mult != 0)
   {
-    prm.Offset =    (SumY + NumPoints / 2) * 65536ULL / NumPoints / prm.Mult
-                - (SumX + NumPoints / 2) / NumPoints;
-    prm.Max    = 0xFFFF0000 / prm.Mult;
+    int32_t Offset = (SumY + NumPoints / 2) * 65536ULL / NumPoints / prm.Mult
+        - (SumX + NumPoints / 2) / NumPoints;
+
+    prm.Offset = Offset;
+    prm.Max    = 0xFFFF0000 / prm.Mult - Offset;
+    prm.Min    = 0;
   }
   else
   {
     prm.Offset = 0;
+    prm.Min    = 0xFFFF;
     prm.Max    = 0xFFFF;
   }
 
