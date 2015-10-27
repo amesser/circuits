@@ -32,19 +32,19 @@ public:
    */
   struct calibration_linearregression
   {
-    uint16_t SumX[25];
-    uint16_t SumY[25];
-    uint32_t SumXY[25];
-    uint32_t SumXX[25];
+    uint32_t SumX;
+    uint32_t SumY;
+    uint32_t SumXY;
+    uint32_t SumXX;
     uint8_t  NumPoints[25];
   };
 
   static void resetMinMaxStatistics(struct calibration_minmax & stat);
-  static void collectMinMaxStatistics(struct calibration_minmax &stat, uint_fast16_t Counts, bool ForceCollect);
+  static void collectMinMaxStatistics(struct calibration_minmax &stat, uint16_t Counts, bool ForceCollect);
   static void calculateMinMaxCal(struct calibration_minmax &stat, struct calibration_param &prm);
 
   static void resetLinRegrStat(struct calibration_linearregression &stat);
-  static void collectTempStatistics(struct calibration_linearregression &stat, uint_fast16_t TempCounts, uint_fast16_t Temp);
+  static void collectTempStatistics(struct calibration_linearregression &stat, uint16_t TempCounts, uint16_t Temp);
   static void calculateLinRegr(struct calibration_linearregression &stat, struct calibration_param &prm);
 
 };

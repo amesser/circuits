@@ -9,6 +9,18 @@
 
 #define MAX_MINMAX_JUMPWIDTH (25)
 
+void accumulate(uint32_t & accu, uint32_t value) __attribute__((noinline));
+void accumulate(uint32_t & accu, uint32_t value)
+{
+  accu += value;
+}
+
+void accumulate(uint32_t & accu, uint16_t value) __attribute__((noinline));
+void accumulate(uint32_t & accu, uint16_t value)
+{
+  accumulate(accu, static_cast<uint32_t>(value));
+}
+
 void
 CalibratorFit::resetMinMaxStatistics(struct calibration_minmax & stat)
 {
@@ -17,21 +29,25 @@ CalibratorFit::resetMinMaxStatistics(struct calibration_minmax & stat)
 }
 
 void
-CalibratorFit::collectMinMaxStatistics(struct calibration_minmax &stat, uint_fast16_t Counts, bool ForceCollect)
+CalibratorFit::collectMinMaxStatistics(struct calibration_minmax &stat, uint16_t Counts, bool ForceCollect)
 {
-  const auto MaxJumpwidth = static_cast<decltype(stat.Max)>(ForceCollect ? TypeProperties<decltype(stat.Max)>::MaxUnsigned : MAX_MINMAX_JUMPWIDTH);
-
   if(stat.Min > stat.Max)
   { /* First value */
     stat.Min = stat.Max = Counts;
   }
-  else if(Counts > stat.Max && (Counts - stat.Max) <= MaxJumpwidth)
+  else if(Counts > stat.Max)
   {
-    stat.Max = Counts;
+    if (ForceCollect || (Counts - stat.Max) <= MAX_MINMAX_JUMPWIDTH)
+    {
+      stat.Max = Counts;
+    }
   }
-  else if(Counts < stat.Min && (stat.Min - Counts) <= MaxJumpwidth)
+  else if(Counts < stat.Min )
   {
-    stat.Min = Counts;
+    if(ForceCollect || (stat.Min - Counts) <= MAX_MINMAX_JUMPWIDTH)
+    {
+      stat.Min = Counts;
+    }
   }
 }
 
@@ -54,26 +70,41 @@ void CalibratorFit::resetLinRegrStat(struct calibration_linearregression &stat)
 }
 
 void
-CalibratorFit::collectTempStatistics(struct calibration_linearregression &stat, uint_fast16_t TempCounts, uint_fast16_t Temp)
+CalibratorFit::collectTempStatistics(struct calibration_linearregression &stat, uint16_t TempCounts, uint16_t Temp)
 {
   /* Temperature statistics is kept in seperate bins of 2 degrees.
    * This is used to improve the temperature calibration distribution */
-  TempCounts &= 0xFFFF;
-  Temp       &= 0xFFFF;
+  const auto     NumBins = ElementCount(stat.NumPoints);
 
-  /* Bins are available from [-10, +30 [ */
-  if(Temp >= (273 - 10) && Temp < (273 + 30))
+  const uint16_t MinTemp = 273 - 10;
+  const uint16_t MaxTemp = MinTemp + 2* NumBins;
+
+  if(TempCounts <= 0x3FF && Temp >= MinTemp && Temp < MaxTemp)
   {
-    uint_fast16_t UTemp = Temp - (273 - 10);
-    uint_fast8_t Idx = static_cast<uint_fast8_t>(UTemp / 2);
+    uint_fast16_t ThisBin, MaxPointsPerBin, Bin;
 
-    if(stat.NumPoints[Idx] < (max(stat.NumPoints) + 2))
+    ThisBin = static_cast<uint_fast8_t>((Temp - MinTemp) / 2);
+
+    /* We have maximum accumulated value from 10Bit * 10Bit = 20Bit value
+     * Thus 12 Bits are left for accumulation. Furthermore we can only count up to 255
+     */
+    MaxPointsPerBin = min(0xFF, 0xFFF / NumBins);
+
+    for(Bin=0; Bin < NumBins; ++Bin)
     {
-      stat.NumPoints[Idx] += 1;
-      stat.SumX[Idx]      += TempCounts;
-      stat.SumXX[Idx]     += TempCounts * TempCounts;
-      stat.SumY[Idx]      += Temp;
-      stat.SumXY[Idx]     += Temp * TempCounts;
+      if(Bin != ThisBin)
+      {
+        MaxPointsPerBin = min(MaxPointsPerBin, static_cast<uint_fast16_t>(stat.NumPoints[Bin] + 2));
+      }
+    }
+
+    if(stat.NumPoints[ThisBin] < MaxPointsPerBin)
+    {
+      stat.NumPoints[ThisBin] += 1;
+      accumulate(stat.SumY, Temp);
+      accumulate(stat.SumXY, static_cast<uint32_t>(TempCounts) * Temp);
+      accumulate(stat.SumX,TempCounts);
+      accumulate(stat.SumXX, static_cast<uint32_t>(TempCounts) * TempCounts);
     }
   }
 }
@@ -87,11 +118,11 @@ void CalibratorFit::calculateLinRegr(struct calibration_linearregression &stat, 
 
   NumPoints = sum(stat.NumPoints);
 
-  SumX      = sum(stat.SumX);
-  SumY      = sum(stat.SumY);
+  SumX      = stat.SumX;
+  SumY      = stat.SumY;
 
-  Numerator   = sum(stat.SumXY) - ((SumX * SumY) + NumPoints / 2) / NumPoints;
-  Denominator = sum(stat.SumXX) - ((SumX * SumX) + NumPoints / 2) / NumPoints;
+  Numerator   = stat.SumXY - ((SumX * SumY) + NumPoints / 2) / NumPoints;
+  Denominator = stat.SumXX - ((SumX * SumX) + NumPoints / 2) / NumPoints;
 
   if(Denominator != 0)
   {
