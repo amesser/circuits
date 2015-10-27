@@ -116,7 +116,6 @@ void CalibratorBsp::cycle()
   }
 }
 
-
 /**
  *
  * OCR1A will be invoked with 1ms clock
@@ -142,7 +141,6 @@ ISR(TWI_vect)
   auto & bsp = CalibratorBsp::getBsp();
   bsp.getTWIHandler().handleIrq();
 }
-
 
 void
 CalibratorBsp::setSensorVoltage(uint8_t state)

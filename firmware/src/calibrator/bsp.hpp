@@ -82,7 +82,7 @@ void BufferedLCD<DEVICE, COLUMNS, ROWS>::poll()
     if (this->m_Index < ElementCount(this->m_Framebuffer))
     {
       auto CurrentLoc  = DEVICE::getCursorLocation();
-      auto RequiredLoc = DEVICE::getLocation(m_Index % COLUMNS, m_Index / ROWS);
+      auto RequiredLoc = DEVICE::getLocation(m_Index % COLUMNS, m_Index / COLUMNS);
 
       if(RequiredLoc != CurrentLoc)
       {
