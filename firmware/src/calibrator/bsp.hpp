@@ -38,6 +38,7 @@ public:
 
 private:
   uint8_t  m_Index;
+  uint8_t m_RefreshIndex;
 
   union {
     char          m_Framebuffer[COLUMNS * ROWS];
@@ -67,7 +68,7 @@ public:
 
   RowBufferType & updateRow(LocationType Loc)
   {
-    m_Index = min(m_Index, Loc.getBufferOffset());
+    m_RefreshIndex = min(m_RefreshIndex, Loc.getBufferOffset());
     return m_RowBuffers[Loc.getRow()];
   }
 };
@@ -77,10 +78,17 @@ public:
 template<class DEVICE, int COLUMNS, int ROWS>
 void BufferedLCD<DEVICE, COLUMNS, ROWS>::poll()
 {
-  if (this->isReady())
-  { /* lcd is ready for the next command */
-    if (this->m_Index < ElementCount(this->m_Framebuffer))
-    {
+  /* check if the frame buffer changed while we were doing our updates */
+  if (this->m_Index == ElementCount(this->m_Framebuffer))
+  {
+    this->m_Index  = m_RefreshIndex;
+    m_RefreshIndex = ElementCount(this->m_Framebuffer);
+  }
+
+  if (this->m_Index < ElementCount(this->m_Framebuffer))
+  {
+    if (this->isReady())
+    { /* lcd is ready for the next command */
       auto CurrentLoc  = DEVICE::getCursorLocation();
       auto RequiredLoc = DEVICE::getLocation(m_Index % COLUMNS, m_Index / COLUMNS);
 
@@ -104,7 +112,7 @@ void BufferedLCD<DEVICE, COLUMNS, ROWS>::displayString(LocationType Loc, Iterato
   IteratorType it = Start;
   uint8_t  Offset = Loc.getBufferOffset();
 
-  m_Index = min(m_Index,Offset);
+  m_RefreshIndex = min(m_RefreshIndex,Offset);
 
   while(Offset < ElementCount(m_Framebuffer) && it < End)
   {

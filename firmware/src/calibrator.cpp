@@ -559,6 +559,11 @@ CalibratorApp::handleState()
     switch(CurrentState)
     {
     case APP_STATE_POWERUP:
+      {
+        auto & Buffer = bsp.getDisplayRow(1);
+        memset(Buffer, '0', sizeof(Buffer));
+      }
+
       NextState = APP_STATE_IDLE;
       changeUiState(UI_STATE_STARTUP);
       break;
@@ -625,6 +630,8 @@ uint16_t CalibratorApp::getValue(uint_fast8_t idx, uint_fast16_t input)
 
 #define HDC1000_ADDRESS (0x43)
 
+const char HexChars[] = "0123456789abcdef";
+
 void CalibratorApp::changeTempState(enum TempState NextState)
 {
   auto & bsp    = CalibratorBsp::getBsp();
@@ -634,6 +641,7 @@ void CalibratorApp::changeTempState(enum TempState NextState)
   {
   case TEMP_STATE_POWERON:
     {
+      twi.close();
       twi.sendStop();
     }
     break;
@@ -645,6 +653,7 @@ void CalibratorApp::changeTempState(enum TempState NextState)
       buffer[2] = 0x00;
 
       twi.sendStartAndWrite(HDC1000_ADDRESS, 3);
+      Globals::getGlobals().getTemperatureTimer().startSeconds(5);
     }
     break;
   case TEMP_STATE_WTRIGGER:
@@ -657,11 +666,6 @@ void CalibratorApp::changeTempState(enum TempState NextState)
     break;
   case TEMP_STATE_WMEASUREMENT:
     {
-      twi.sendStartAndRead(HDC1000_ADDRESS, 0);
-    }
-    break;
-  case TEMP_STATE_READMEASUREMENT:
-    {
       twi.sendStartAndRead(HDC1000_ADDRESS, 4);
     }
     break;
@@ -669,27 +673,49 @@ void CalibratorApp::changeTempState(enum TempState NextState)
     {
       twi.sendStop();
 
-      if(m_MenuState == UI_STATE_STARTUP ||
-         m_MenuState == UI_STATE_AUTOWAIT)
-      {
-        auto & Buffer = bsp.getDisplayRow(1);
-
-        if(m_MenuState == UI_STATE_AUTOWAIT)
-        {
-          s_UiLcdAutoWait.read(Buffer);
-
-          String::formatUnsigned(Buffer + 2, 3, Globals::getGlobals().getAutomaticTimer().getRemainingSeconds<uint16_t>() / 60);
-          String::formatUnsigned(Buffer + 8, 2, m_StableCnt / 12);
-        }
-        else
-        {
-          s_UiLcdTemp.read(Buffer);
-          String::formatUnsigned(Buffer + 3, 3, m_Rh);
-        }
-        String::formatSigned  (Buffer + 16 - 5, 3, m_AbsTemp - 273);
-      }
     }
     break;
+  }
+
+  if(TEMP_STATE_WTIMEOUT == NextState)
+  {
+    if(m_MenuState == UI_STATE_STARTUP ||
+       m_MenuState == UI_STATE_AUTOWAIT)
+    {
+      auto & Buffer = bsp.getDisplayRow(1);
+
+      if(m_MenuState == UI_STATE_AUTOWAIT)
+      {
+        s_UiLcdAutoWait.read(Buffer);
+
+        String::formatUnsigned(Buffer + 2, 3, Globals::getGlobals().getAutomaticTimer().getRemainingSeconds<uint16_t>() / 60);
+        String::formatUnsigned(Buffer + 8, 2, m_StableCnt / 12);
+      }
+      else
+      {
+        s_UiLcdTemp.read(Buffer);
+        String::formatUnsigned(Buffer + 3, 3, m_Rh);
+      }
+      String::formatSigned  (Buffer + 16 - 5, 3, m_AbsTemp - 273);
+    }
+  }
+  else
+  {
+    if(m_MenuState == UI_STATE_STARTUP)
+    {
+      auto & Buffer = bsp.getDisplayRow(1);
+
+      if(Buffer[NextState] < '9')
+      {
+        Buffer[NextState] += 1;
+      }
+
+      Buffer[15] = '0' + NextState;
+
+      uint8_t status = twi.getStatus();
+      Buffer[12] = HexChars[(status >> 4) & 0xF];
+      Buffer[13] = HexChars[(status >> 0) & 0xF];
+    }
   }
 
   m_TempState = NextState;
@@ -723,6 +749,10 @@ void CalibratorApp::handleTempState()
           changeTempState(TEMP_STATE_WTRIGGER);
         }
       }
+      else if(Globals::getGlobals().getTemperatureTimer().hasTimedOut())
+      {
+        changeTempState(TEMP_STATE_POWERON);
+      }
     }
     break;
   case TEMP_STATE_WTRIGGER:
@@ -738,28 +768,22 @@ void CalibratorApp::handleTempState()
           changeTempState(TEMP_STATE_WMEASUREMENT);
         }
       }
+      else if(Globals::getGlobals().getTemperatureTimer().hasTimedOut())
+      {
+        changeTempState(TEMP_STATE_POWERON);
+      }
+
     }
     break;
   case TEMP_STATE_WMEASUREMENT:
     {
       if(twi.hasFinished())
       {
-        if (twi.getError())
+        if (twi.hasNack())
         {
-          changeTempState(TEMP_STATE_WMEASUREMENT);
+          twi.sendStopStartAndRead(HDC1000_ADDRESS, 4);
         }
-        else
-        {
-          changeTempState(TEMP_STATE_READMEASUREMENT);
-        }
-      }
-    }
-    break;
-  case TEMP_STATE_READMEASUREMENT:
-    {
-      if(twi.hasFinished())
-      {
-        if (twi.getError())
+        else if (twi.getError())
         {
           changeTempState(TEMP_STATE_POWERON);
         }
@@ -799,6 +823,10 @@ void CalibratorApp::handleTempState()
             m_Rh = (Calc32 & 0xFF);
           }
         }
+      }
+      else if(Globals::getGlobals().getTemperatureTimer().hasTimedOut())
+      {
+        changeTempState(TEMP_STATE_POWERON);
       }
     }
     break;
