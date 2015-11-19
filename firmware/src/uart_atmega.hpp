@@ -29,11 +29,17 @@ private:
   };
 
   volatile uint8_t m_State;
-  uint8_t    m_RecvStatus;
-  IndexType  m_RecvLength;
-  BufferType m_Buffer;
+  uint8_t          m_RecvStatus;
+  uint8_t          m_Sequence;
+  int8_t           m_LastDelta;
+  IndexType        m_RecvLength;
+  BufferType       m_Buffer;
 public:
   BufferType & getBuffer() {return m_Buffer;}
+
+  int8_t getLastDelta() const {return m_LastDelta;}
+
+  uint8_t getSequence() const {return m_Sequence;}
 
   template<typename B>
   B & getBufferAs()
@@ -150,19 +156,19 @@ void AdaptingUart<LENGTH>::handleCyclic()
       }
       else if(0 == (sync & 0x80))
       { /* bit 9 received as bit 8 -> too slow */
-        delta = -1;
+        delta = -2;
       }
       else if (status & 0x01)
       { /* bit 8 received as bit 9 -> too fast */
-        delta = +1;
+        delta = +2;
       }
       else if (status & mask_parity)
       { /* bit 11 (sb 0) received as bit 10 (Parity) -> too slow */
-        delta = -1;
+        delta = -3;
       }
       else if (status & mask_fe)
       { /* bit 10 (Parity) received as bit 11 (sb0) -> too fast */
-        delta = +1;
+        delta = +3;
       }
 
       if (delta || (status & (mask_parity << 4)))
@@ -170,6 +176,8 @@ void AdaptingUart<LENGTH>::handleCyclic()
          * any received char therefore repeat */
         len = 0;
       }
+
+      m_LastDelta = delta;
     }
 
     /* we should receive at least two characters */
@@ -197,6 +205,8 @@ void AdaptingUart<LENGTH>::handleCyclic()
       m_RecvLength = 0;
       /* reenable uart */
       UCSRB |= _BV(RXEN);
+
+      m_Sequence += 1;
     }
     else
     { /*receiving finished successfully */
