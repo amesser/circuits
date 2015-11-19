@@ -40,7 +40,7 @@ public:
   };
 
   static void resetMinMaxStatistics(struct calibration_minmax & stat);
-  static void collectMinMaxStatistics(struct calibration_minmax &stat, uint16_t Counts, bool ForceCollect);
+  static void collectMinMaxStatistics(struct calibration_minmax &stat, uint16_t Counts);
   static void calculateMinMaxCal(struct calibration_minmax &stat, struct calibration_param &prm);
 
   static void resetLinRegrStat(struct calibration_linearregression &stat);

@@ -27,8 +27,8 @@ public:
 
     CalibratorFit::resetMinMaxStatistics(stat);
 
-    CalibratorFit::collectMinMaxStatistics(stat, 100, true);
-    CalibratorFit::collectMinMaxStatistics(stat, 200, true);
+    CalibratorFit::collectMinMaxStatistics(stat, 100);
+    CalibratorFit::collectMinMaxStatistics(stat, 200);
 
     CalibratorFit::calculateMinMaxCal(stat, prm);
 

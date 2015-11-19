@@ -11,6 +11,9 @@
 
 #include "calibrator_app.hpp"
 
+#define MAX_HUMJUMP   100
+#define MAX_LIGHTJUMP 200
+
 using namespace ecpp;
 
 typedef FlashVariable<char, 16> LcdStringType;
@@ -176,7 +179,7 @@ CalibratorApp::handleKeys()
         auto & uart = bsp.getUartHandler();
         auto & data = uart.getBufferAs<measurement_data>();
 
-        CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts, true);
+        CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts);
       }
       break;
     case UI_STATE_READSENSORLIGHT:
@@ -185,7 +188,7 @@ CalibratorApp::handleKeys()
         auto & uart = bsp.getUartHandler();
         auto & data = uart.getBufferAs<measurement_data>();
 
-        CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts, true);
+        CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts);
       }
       break;
     case UI_STATE_READSENSORTEMPERATURE:
@@ -426,8 +429,27 @@ void CalibratorApp::handleUiState()
         { /* raw data received from sensor */
           s_CalStatistics.read(m_CalStatistics);
 
-          CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts, false);
-          CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts, false);
+          if(data.humidity_counts > m_LastHum && (data.humidity_counts - m_LastHum) < MAX_HUMJUMP)
+          {
+            CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts);
+          }
+          else if(data.humidity_counts < m_LastHum && (m_LastHum - data.humidity_counts) < MAX_HUMJUMP)
+          {
+            CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Humidity, data.humidity_counts);
+          }
+
+          m_LastHum = data.humidity_counts;
+
+          if(data.led_counts > m_LastLight && (data.led_counts - m_LastLight) < MAX_LIGHTJUMP)
+          {
+            CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts);
+          }
+          else if(data.led_counts < m_LastLight && (m_LastLight - data.led_counts) < MAX_LIGHTJUMP)
+          {
+            CalibratorFit::collectMinMaxStatistics(m_CalStatistics.Light, data.led_counts);
+          }
+
+          m_LastLight = data.led_counts;
 
           if(m_StableCnt > (12 * 5))
           { /* temperature should be stable for at least 5 minutes */
@@ -472,7 +494,18 @@ void CalibratorApp::handleUiState()
     uint_least32_t BaudRate    = (F_CPU / 16) / (BaudDivisor + 1);
 
     s_UiLcdBaud.read(Buffer);
-    String::formatUnsigned(Buffer + 16 - 5 - 5, 5, (uint16_t)BaudRate);
+
+    if(1)
+    {
+      auto & uart = bsp.getUartHandler();
+      String::formatSigned(Buffer   + 5,         2, uart.getLastDelta());
+      String::formatUnsigned(Buffer + 5 + 3,     3, uart.getSequence());
+      String::formatUnsigned(Buffer + 5 + 3 + 4, 3, BaudDivisor);
+    }
+    else
+    {
+      String::formatUnsigned(Buffer + 16 - 5 - 5, 5, (uint16_t)BaudRate);
+    }
   }
   else if (m_State == APP_STATE_WRITESENSOR)
   {

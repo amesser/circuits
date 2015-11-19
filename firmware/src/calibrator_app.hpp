@@ -77,6 +77,8 @@ private:
   uint8_t        m_StableCnt;
   uint8_t        m_Rh;
   uint16_t       m_AbsTemp;
+  uint16_t       m_LastHum;
+  uint16_t       m_LastLight;
 
   uint8_t        m_LastTwiError;
 

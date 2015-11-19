@@ -7,8 +7,6 @@
 #include "fit.hpp"
 #include <string.h>
 
-#define MAX_MINMAX_JUMPWIDTH (25)
-
 void accumulate(uint32_t & accu, uint32_t value) __attribute__((noinline));
 void accumulate(uint32_t & accu, uint32_t value)
 {
@@ -29,7 +27,7 @@ CalibratorFit::resetMinMaxStatistics(struct calibration_minmax & stat)
 }
 
 void
-CalibratorFit::collectMinMaxStatistics(struct calibration_minmax &stat, uint16_t Counts, bool ForceCollect)
+CalibratorFit::collectMinMaxStatistics(struct calibration_minmax &stat, uint16_t Counts)
 {
   if(stat.Min > stat.Max)
   { /* First value */
@@ -37,17 +35,11 @@ CalibratorFit::collectMinMaxStatistics(struct calibration_minmax &stat, uint16_t
   }
   else if(Counts > stat.Max)
   {
-    if (ForceCollect || (Counts - stat.Max) <= MAX_MINMAX_JUMPWIDTH)
-    {
-      stat.Max = Counts;
-    }
+    stat.Max = Counts;
   }
   else if(Counts < stat.Min )
   {
-    if(ForceCollect || (stat.Min - Counts) <= MAX_MINMAX_JUMPWIDTH)
-    {
-      stat.Min = Counts;
-    }
+    stat.Min = Counts;
   }
 }
 
@@ -69,6 +61,7 @@ void CalibratorFit::resetLinRegrStat(struct calibration_linearregression &stat)
   memset(&stat, 0x00, sizeof(stat));
 }
 
+#define LINREG_WINDOW (uint_fast16_t)5
 void
 CalibratorFit::collectTempStatistics(struct calibration_linearregression &stat, uint16_t TempCounts, uint16_t Temp)
 {
@@ -90,7 +83,7 @@ CalibratorFit::collectTempStatistics(struct calibration_linearregression &stat, 
      */
     MaxPointsPerBin = min(0xFF, 0xFFF / NumBins);
 
-    for(Bin=0; Bin < NumBins; ++Bin)
+    for(Bin=max(LINREG_WINDOW, ThisBin) - LINREG_WINDOW; Bin < min((uint_fast16_t)NumBins, ThisBin + LINREG_WINDOW); ++Bin)
     {
       if(Bin != ThisBin)
       {
