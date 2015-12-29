@@ -2,59 +2,7 @@
 # encoding: utf-8
 
 def configure(conf):
-    conf.ecpp_setupbuild(id='attiny13a', 
-                         device='attiny13a', arch='avr8')
-    
-    conf.env.append_value('DEFINES', 'F_CPU=1200000UL')
-    conf.env.append_value('LINKFLAGS', ['-nostartfiles'])
-    
-    conf.ecpp_setupbuild(id='controller', 
-                         device='atmega8', arch='avr8')
-    
-    conf.env.append_value('DEFINES', 'F_CPU=8000000UL')
+    conf.recurse(['3in1-sensor', '3in1-calibrator', 'pump-controller', 'test'])
 
-    conf.ecpp_setupbuild(id='calibrator', 
-                         device='atmega8', arch='avr8')
-    
-    conf.env.append_value('DEFINES', 'F_CPU=8000000UL')
-
-    conf.ecpp_setupbuild(id='test', 
-                         platform='native')
-
-    conf.check(compiler='cxx',
-              lib='cppunit',
-              mandatory=True, 
-              uselib_store='CPPUNIT')
 def build(bld):
-    bld.ecpp_build(
-        id= 'attiny13a',
-        source   = ['main.cpp', 'protocol.cpp'],
-        target   = 'attiny13a.elf',
-        features = 'cxx cxxprogram',  
-        includes = ['.'],
-    ) 
-
-    bld.ecpp_build(
-        id= 'controller',
-        source   = ['controller.cpp', 'controller_bsp.cpp', 'controller_ui.cpp', 'font.cpp'],
-        target   = 'controller.elf',
-        features = 'cxx cxxprogram',  
-        includes = ['.'],
-    ) 
-
-    bld.ecpp_build(
-        id= 'calibrator',
-        source   = ['calibrator.cpp', 'fit.cpp', 'protocol.cpp', 'calibrator/bsp.cpp', 'calibrator/globals.cpp'],
-        target   = 'calibrator.elf',
-        features = 'cxx cxxprogram',  
-        includes = ['calibrator', '.'],
-    ) 
-
-    bld.ecpp_build(
-        id= 'test',
-        source   = ['test.cpp', 'fit.cpp', 'protocol.cpp'],
-        target   = 'test',
-        features = 'cxx cxxprogram',
-        use      = ['CPPUNIT']
-    ) 
-    
+    bld.recurse(['3in1-sensor', '3in1-calibrator', 'pump-controller', 'test'])

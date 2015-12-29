@@ -1,0 +1,19 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def configure(conf):
+    conf.ecpp_setupbuild(id='3in1-sensor', 
+                         device='attiny13a', arch='avr8')
+    
+    conf.env.append_value('DEFINES', 'F_CPU=1200000UL')
+    conf.env.append_value('LINKFLAGS', ['-nostartfiles'])
+    
+def build(bld):
+    bld.ecpp_build(
+        id= '3in1-sensor',
+        source   = ['3in1-sensor.cpp', 
+                    '../common/protocol.cpp'],
+        target   = '3in1-sensor.elf',
+        features = 'cxx cxxprogram',
+        includes = ['.', '../common'],
+    )     

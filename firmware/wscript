@@ -1,12 +1,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
-TOP = '.'
-  
-def options(opt):
-    opt.recurse(['../externals/ecpp'])
-
 def configure(conf):
-    conf.recurse(['../externals/ecpp','src'])
+    conf.recurse(['src'])
   
 def build(ctx):
-    ctx.recurse(['../externals/ecpp','src'])
+    ctx.recurse(['src'])

@@ -1,0 +1,29 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def configure(conf):
+    conf.load('waf_unit_test')
+    conf.ecpp_setupbuild(id='test', 
+                         platform='native')
+
+    conf.check(compiler='cxx',
+              lib='cppunit',
+              mandatory=True, 
+              uselib_store='CPPUNIT')
+    
+def build(bld):
+    bld.ecpp_build(
+        id= 'test',
+        source   = ['test.cpp', 
+                    '../3in1-calibrator/fit.cpp', 
+                    '../common/protocol.cpp'],
+        includes = ['.', '../3in1-calibrator', '../common'],
+        target   = 'test',
+        features = 'cxx cxxprogram test',
+        use      = ['CPPUNIT']
+    ) 
+    
+    from waflib.Tools import waf_unit_test
+    bld.add_post_fun(waf_unit_test.summary)
+    bld.add_post_fun(waf_unit_test.set_exit_code)
+    
