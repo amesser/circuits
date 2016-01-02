@@ -2,7 +2,7 @@
 # encoding: utf-8
 top = '.'
 out = 'build'
-  
+
 def options(opt):
     opt.recurse(['externals/ecpp'])
 

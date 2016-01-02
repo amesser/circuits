@@ -21,16 +21,54 @@
 
 CalibratorBsp CalibratorBsp::s_Instance;
 
-/** LCD Display Initialization command sequence */
-const FlashVariable<HD44780_CMD, 5> CalibratorBsp::LcdBsp::InitSequence PROGMEM =
+void CalibratorBsp::LcdBsp::writeByte(uint8_t Value, bool Nibble)
 {
-   HD44780_CMD_FUNCTIONSET_4BIT | HD44780_CMD_FUNCTIONSET_2LINE | HD44780_CMD_FUNCTIONSET_5x7FONT,
-   HD44780_CMD_DISPLAYCONTROL_DISPLAYON,
-   HD44780_CMD_ENTRYMODE_INCREMENT | HD44780_CMD_ENTRYMODE_NOSHIFT,
-   HD44780_CMD_HOME,
-   HD44780_CMD_CLEAR,
-};
+  uint8_t Work;
 
+  PinRw = 0;
+  PortNibble.updateDirection(0xF0,0xF0);
+
+  Work  = PortNibble.getOutputs() & 0x0F;
+
+  PinE  = 1;
+  PortNibble = Work | (Value & 0xF0);
+  PortNibble = Work | (Value & 0xF0);
+  PinE  = 0;
+
+  if (!Nibble)
+  {
+    PinE  = 1;
+    PortNibble = Work | ((Value << 4) & 0xF0);
+    PortNibble = Work | ((Value << 4) & 0xF0);
+    PinE  = 0;
+  }
+}
+
+uint8_t CalibratorBsp::LcdBsp::readByte()
+{
+  uint8_t Value;
+
+  PinRw = 1;
+  PortNibble.updateDirection(0x00,0xF0);
+
+  PinE  = 1;
+  PinE  = 1;
+  Value = PortNibble & 0xF0;
+  PinE  = 0;
+  PinE  = 0;
+  PinE  = 1;
+  PinE  = 1;
+  Value |= (PortNibble & 0xF0) >> 4;
+  PinE  = 0;
+
+  return Value;
+}
+
+bool CalibratorBsp::LcdBsp::isBusy()
+{
+  PinRs = 0;
+  return (0x80 & readByte());
+}
 void CalibratorBsp::init()
 {
   /* initialize IO Ports */
@@ -57,7 +95,7 @@ void CalibratorBsp::init()
   Sys_AVR8::enableInterrupts();
 
   /* Setup LCD */
-  getBsp().getLCD().init();
+  getBsp().m_LcdDevice.init();
   getBsp().getUartHandler().init();
   getBsp().getTWIHandler().init(20000);
 }
@@ -149,7 +187,7 @@ void CalibratorBsp::cycle()
 
   { /* handle drivers */
     m_TWIMaster.handleCyclic();
-    m_Lcd.poll();
+    m_Framebuffer.update(m_LcdDevice);
   }
 }
 

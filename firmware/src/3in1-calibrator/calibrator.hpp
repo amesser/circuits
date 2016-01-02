@@ -33,8 +33,6 @@ struct calibration_statistics
 };
 class CalibratorApp
 {
-private:
-  typedef CalibratorBsp::RowBufferType LcdRowBufferType;
 public:
   enum AppState
   {
@@ -102,8 +100,8 @@ private:
 
   void        calculateCalibration();
 
-  static void formatMinMax  (LcdRowBufferType & Buffer, struct CalibratorFit::calibration_minmax & cal, uint16_t value);
-  static void formatLinRegr (LcdRowBufferType & Buffer, struct CalibratorFit::calibration_linearregression & cal, uint16_t value, uint16_t ref);
+  static void formatMinMax  (char * Buffer, struct CalibratorFit::calibration_minmax & cal, uint16_t value);
+  static void formatLinRegr (char * Buffer, struct CalibratorFit::calibration_linearregression & cal, uint16_t value, uint16_t ref);
 public:
   void changeState(    enum AppState  NextState);
 

@@ -266,7 +266,7 @@ CalibratorApp::handleKeys()
   m_KeyState = newstate;
 }
 
-void CalibratorApp::formatMinMax(LcdRowBufferType & Buffer, struct CalibratorFit::calibration_minmax & cal, uint16_t value)
+void CalibratorApp::formatMinMax(char *Buffer, struct CalibratorFit::calibration_minmax & cal, uint16_t value)
 {
   s_UiLcdRaw.read(Buffer);
 
@@ -292,7 +292,7 @@ void CalibratorApp::formatMinMax(LcdRowBufferType & Buffer, struct CalibratorFit
   }
 }
 
-void CalibratorApp::formatLinRegr(LcdRowBufferType & Buffer, struct CalibratorFit::calibration_linearregression & cal, uint16_t value, uint16_t ref)
+void CalibratorApp::formatLinRegr(char *Buffer, struct CalibratorFit::calibration_linearregression & cal, uint16_t value, uint16_t ref)
 {
   s_UiLcdRaw.read(Buffer);
 
@@ -308,7 +308,7 @@ void CalibratorApp::changeUiState(enum UiState NextState)
 
   { /* setup first display line */
     auto & str = s_UiLcdStrings[NextState];
-    lcd.displayString(lcd.Location(0,0), str.begin(), str.end());
+    lcd.displayString({0,0}, str.begin(), str.end());
   }
 
   /* enter state handling */
@@ -319,7 +319,7 @@ void CalibratorApp::changeUiState(enum UiState NextState)
   case UI_STATE_CALIBRATESENSOR:
   case UI_STATE_RESETSTATISTICS:
   case UI_STATE_AUTOCALIBRATION:
-    lcd.displayString(lcd.Location(0,1), s_UiLcdNextOK.begin(), s_UiLcdNextOK.end());
+    lcd.displayString({0,1}, s_UiLcdNextOK.begin(), s_UiLcdNextOK.end());
     break;
   case UI_STATE_READSENSORHUMIDITY:
     {
@@ -327,7 +327,7 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       auto & uart = bsp.getUartHandler();
       auto & data = uart.getBufferAs<measurement_data>();
 
-      formatMinMax(bsp.getDisplayRow(1), m_CalStatistics.Humidity, data.humidity_counts);
+      formatMinMax(lcd.getRow({0,1}), m_CalStatistics.Humidity, data.humidity_counts);
     }
     break;
   case UI_STATE_READSENSORLIGHT:
@@ -336,7 +336,7 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       auto & uart = bsp.getUartHandler();
       auto & data = uart.getBufferAs<measurement_data>();
 
-      formatMinMax(bsp.getDisplayRow(1),m_CalStatistics.Light, data.led_counts);
+      formatMinMax(lcd.getRow({0,1}),m_CalStatistics.Light, data.led_counts);
     }
     break;
   case UI_STATE_READSENSORTEMPERATURE:
@@ -345,7 +345,7 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       auto & uart = bsp.getUartHandler();
       auto & data = uart.getBufferAs<measurement_data>();
 
-      formatLinRegr(bsp.getDisplayRow(1),m_CalStatistics.Temperature, data.temp, m_AbsTemp);
+      formatLinRegr(lcd.getRow({0,1}),m_CalStatistics.Temperature, data.temp, m_AbsTemp);
     }
     break;
   case UI_STATE_READSENSORRESULTS:
@@ -354,9 +354,9 @@ void CalibratorApp::changeUiState(enum UiState NextState)
       auto & uart = bsp.getUartHandler();
       auto & data = uart.getBufferAs<measurement_data>();
 
-      auto & Buffer = bsp.getDisplayRow(1);
+      auto & Buffer = lcd.getRow({0,1});
 
-      memset(Buffer, ' ', sizeof(Buffer));
+      memset(Buffer, ' ', 16);
 
       String::formatUnsigned(Buffer + 0,  5, data.humidity_counts);
       String::formatUnsigned(Buffer + 6,  5, data.led_counts);
@@ -500,7 +500,8 @@ void CalibratorApp::handleUiState()
 
   if(m_State == APP_STATE_READSENSOR)
   {
-    auto & Buffer = bsp.getDisplayRow(1);
+    auto & lcd    = bsp.getLCD();
+    auto & Buffer = lcd.getRow({0,1});
 
     uint_least16_t BaudDivisor = (UBRRH << 8) | UBRRL;
     uint_least32_t BaudRate    = (F_CPU / 16) / (BaudDivisor + 1);
@@ -522,7 +523,8 @@ void CalibratorApp::handleUiState()
   else if (m_State == APP_STATE_WRITESENSOR)
   {
     auto & vmod   = bsp.getVoltageModulator();
-    auto & Buffer = bsp.getDisplayRow(1);
+    auto & lcd    = bsp.getLCD();
+    auto & Buffer = lcd.getRow({0,1});
 
     if(vmod.getTransferring() == 0)
     {/* transfer has not started yet */
@@ -539,7 +541,8 @@ void CalibratorApp::handleUiState()
   }
   else if (CurrentState == UI_STATE_AUTOSELECTINTERVAL)
   {
-    auto & Buffer = bsp.getDisplayRow(1);
+    auto & lcd    = bsp.getLCD();
+    auto & Buffer = lcd.getRow({0,1});
 
     s_UiLcdInterval.read(Buffer);
     uint16_t Minutes = s_AutoIntervals[m_AutoIntervalSelector] / 60;
@@ -605,7 +608,8 @@ CalibratorApp::handleState()
     {
     case APP_STATE_POWERUP:
       {
-        auto & Buffer = bsp.getDisplayRow(1);
+        auto & lcd    = bsp.getLCD();
+        auto & Buffer = lcd.getRow({0,1});
         memset(Buffer, '0', sizeof(Buffer));
       }
 
@@ -724,7 +728,8 @@ void CalibratorApp::changeTempState(enum TempState NextState)
     if(m_MenuState == UI_STATE_STARTUP ||
        m_MenuState == UI_STATE_AUTOWAIT)
     {
-      auto & Buffer = bsp.getDisplayRow(1);
+      auto & lcd    = bsp.getLCD();
+      auto & Buffer = lcd.getRow({0,1});
 
       if(m_MenuState == UI_STATE_AUTOWAIT)
       {

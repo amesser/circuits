@@ -22,7 +22,8 @@
 #include "ecpp/Target.hpp"
 #include "ecpp/Time.hpp"
 
-#include "ecpp/Peripherals/LCD_HD44780.hpp"
+#include "ecpp/Peripherals/TextLCD_HD44780_KS6600U.hpp"
+#include "ecpp/Graphics/TextFramebuffer.hpp"
 #include "uart_atmega.hpp"
 
 #include "voltage-modulator.hpp"
@@ -160,47 +161,52 @@ protected:
 
   class LcdBsp
   {
+  public:
+    static bool isBusy();
+
+  private:
+    static void    writeByte(uint8_t Value, bool Nibble = false);
+    static uint8_t readByte();
+
   protected:
-    static const FlashVariable<HD44780_CMD, 5> InitSequence PROGMEM;
-
-    bool isReady()
+    static void writeRam(uint8_t Value)
     {
-      return (TIFR & _BV(OCF1B)) != 0;
+      while(isBusy());
+
+      PinRs = 1;
+      writeByte(Value);
     }
 
-    void setBusy(uint16_t Delay1us)
+    static void writeCommand(uint8_t Value)
     {
-      OCR1B  = TCNT1 + Delay1us;
-      TIFR  |= _BV(OCF1B);
+      while(isBusy());
+
+      PinRs = 0;
+      writeByte(Value);
     }
 
-    void waitReady()
+    static void writeCommandNibble(uint8_t Value)
     {
-      while(!isReady());
+      PinRs = 0;
+      writeByte(Value, true);
     }
 
-    void waitReady(uint16_t Delay1us)
+    void delayMicroseconds(uint16_t Microseconds)
     {
-      setBusy(Delay1us);
-      waitReady();
+      /* 8 mhz */
+      _delay_loop_2(Microseconds * 2);
     }
 
-
-    static void setRW()       {PortNibble.updateDirection(0xF0,0x00); PinRw = 1; }
-    static void clearRW()     {PinRw = 0; PortNibble.updateDirection(0xF0,0xF0);}
-    static void setRS()       {PinRs = 1;}
-    static void clearRS()     {PinRs = 0;}
-    static void clearEnable() {PinE  = 0;}
-    static void setEnable()   {PinE  = 1;}
-    static void setNibble(uint8_t data) {PortNibble.updateOutputs(data << 4, 0xF0);}
   };
 
+
+
+
 public:
-  typedef BufferedLCD<LCD_HD44780<HD44780_MODE_4BIT, LcdBsp>, 16, 2>             LCDType;
+  typedef TextLCD_HD44780_KS0066U<KS0066U_MODE_4BIT<LcdBsp,16,2> > LCDDeviceType;
+  typedef TextFramebuffer<16,2>                  FrameBufferType;
   typedef AdaptingUart<8>                                                        UartHandlerType;
   typedef VoltageModulator<sizeof(calibration_data), 80,20, VoltageModulatorBsp> VoltageModulatorType;
-
-  typedef LCDType::RowBufferType RowBufferType;
 protected:
   static CalibratorBsp s_Instance;
 
@@ -211,7 +217,10 @@ protected:
 
   UartHandlerType       m_UartHandler;
 
-  LCDType               m_Lcd;
+
+  FrameBufferType       m_Framebuffer;
+  LCDDeviceType         m_LcdDevice;
+
   VoltageModulatorType  m_VoltageModulator;
   TWIMaster             m_TWIMaster;
 public:
@@ -225,12 +234,10 @@ public:
 
   static CalibratorBsp & getBsp() {return s_Instance;}
 
-  LCDType         & getLCD()                           {return m_Lcd;}
+  FrameBufferType & getLCD()                   {return m_Framebuffer;}
   UartHandlerType & getUartHandler()           {return m_UartHandler;}
   VoltageModulatorType & getVoltageModulator() {return m_VoltageModulator;}
   TWIMaster &       getTWIHandler() {return m_TWIMaster;}
-
-  LCDType::RowBufferType & getDisplayRow(uint8_t Row) {return m_Lcd.updateRow(m_Lcd.Location(0,Row));}
 
   static void init();
 
