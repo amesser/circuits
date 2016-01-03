@@ -2,13 +2,18 @@
 # encoding: utf-8
 
 def configure(conf):
+    conf.recurse("eval-recorder")
+
     conf.ecpp_setupbuild(id='radar-atmega8', 
                          device='atmega8', arch='avr8')
     conf.env.append_value('DEFINES', 'F_CPU=16000000UL')
     conf.env.append_value('CFLAGS', '-fwhole-program')
     conf.env.append_value('CXXFLAGS', ['-fno-threadsafe-statics', '-fwhole-program', '-finline-limit=10'])
+    
 
 def build(bld):
+    bld.recurse("eval-recorder")
+
     bld.ecpp_build(
         id= 'radar-atmega8',
         source   = 'main.cc',

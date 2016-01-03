@@ -2,18 +2,21 @@
 #include <iostream>
 #include <cstdint>
 
+#include "ecpp/Math/Complex.hpp"
+#include "ecpp/Math/Fixedpoint.hpp"
+
 #include "util/datatypes.hpp"
 #include "algorithm/dft.hpp"
 #include "algorithm/cordic.hpp"
 #include "algorithm/math.hpp"
 
-using namespace Platform::Util::Datatypes;
-using namespace Platform::Algorithm::DFT;
+using namespace ecpp;
+using namespace std;
+
 using Platform::Algorithm::Cordic;
 using Platform::Algorithm::CordicHypIndex;
 using Platform::Algorithm::CMath;
 
-using namespace std;
 
 int main()
 {

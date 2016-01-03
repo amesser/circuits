@@ -1,0 +1,48 @@
+#! /usr/bin/env python
+# encoding: utf-8
+def configure(conf):
+    conf.ecpp_setupbuild(id='recorder', device='stm32f405', platform='stm32')
+    
+    conf.env["LINKERSCRIPT"] = ""
+    conf.env["LINKERSCRIPT_flash"] = conf.path.find_node("stm32f405_flash.ld").abspath()
+    conf.env["LINKERSCRIPT_sram"]  = conf.path.find_node("stm32f405_sram.ld").abspath()
+
+    conf.env.append_value("DEFINES_sram", ["VECT_TAB_SRAM"])
+
+def build(bld):
+    bld.ecpp_3rdpartybuild_arm_cmsis(
+        id           = 'recorder',
+        target       = 'recorder-cmsis',
+        features     = 'sram',
+        path         = '../../../3rdparty/arm_cmsis',
+        includes     = ['.'],
+    )
+
+    bld.ecpp_3rdpartybuild_st_spl(
+        id           = 'recorder',
+        target       = 'recorder-spl',
+        features     = 'sram',
+        path         = '../../../3rdparty/st_stm32f4_spl',
+        includes     = ['.'],
+        use          = ['recorder-cmsis'],
+    )
+    
+    bld.ecpp_build(
+        id           = 'recorder',
+        target       = 'recorder.elf',
+        source       = [
+            "main.cpp",
+            "system_stm32f4xx.c",
+        ],
+
+        includes     = ["."],
+        features     = 'c cxx cxxprogram sram',
+        use          = [
+            'recorder-spl',
+            'recorder-cmsis',
+            'ecpp_stm32f405',
+        ],
+        defines = [
+        ],
+        uselib       = ['c', 'gcc'],
+    )

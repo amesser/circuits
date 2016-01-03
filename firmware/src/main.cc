@@ -1,6 +1,8 @@
-#include "target/atmega8.hpp"
+#include "ecpp/Target.hpp"
+#include "ecpp/Datatypes.hpp"
+#include "ecpp/Array.hpp"
+#include "ecpp/Math/Fixedpoint.hpp"
 #include "util/guard.hpp"
-#include "util/datatypes.hpp"
 #include "algorithm/dft.hpp"
 #include "algorithm/cordic.hpp"
 #include "util/delay.h"
@@ -68,13 +70,10 @@ public:
   __attribute__((always_inline)) static void    deassertData_Command() {DDRD |= _BV(PIN2);_delay_us(10);}
 };
 
+using namespace ecpp;
 using Platform::Guards::ChipSelectGuard;
 using namespace Platform::Util::Datatypes;
-using namespace Platform::Algorithm::DFT;
-using namespace Platform::Architecture::AVR8;
-using ::Platform::Buffer::RamBuffer;
 using ::Platform::Algorithm::Cordic;
-using ::std::size_t;
 
 template<class Device>
 class PCD8544 : public Device
@@ -131,11 +130,11 @@ static DFT_Type::t_Type dft_buffer[128];
 static uint8_t          display_oscilloscope[84];
 static uint8_t          display_dft[ElementCount(dft_buffer) / 2];
 
-static const FlashBuffer<DFT_Type::m_bins / 2, DFT_Type::t_Type> dft_factors PROGMEM    = DFT_Type::w<Cordic<> >().asArray();
-static const FlashBuffer<DFT_Type::m_bins / 2, uint8_t>          dft_descramble PROGMEM = DFT_Type::descramble().asArray();
+static constexpr FlashVariable<DFT_Type::t_Type, DFT_Type::m_bins / 2> dft_factors PROGMEM    {DFT_Type::w<Cordic<> >().asArray()};
+static constexpr FlashVariable<uint8_t, DFT_Type::m_bins / 2>          dft_descramble PROGMEM {DFT_Type::descramble().asArrayHalf()};
 
-static const FlashBuffer<8, uint8_t>                             display_oscilloscopemask PROGMEM  {{0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01}};
-static const FlashBuffer<8, uint8_t>                             display_dftmask          PROGMEM  {{0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF}};
+static constexpr FlashVariable<uint8_t,8>                             display_oscilloscopemask PROGMEM  {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
+static constexpr FlashVariable<uint8_t,8>                             display_dftmask          PROGMEM  {0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF};
 
 template<typename TYPE, size_t ELEMENTS>
 class AmplitudeTable
@@ -169,10 +168,8 @@ public:
   }
 };
 
-using ::Platform::Util::indices;
-using ::Platform::Util::build_indices;
 
-template<typename GENERATOR, size_t... Is>
+template<typename GENERATOR, indices_type... Is>
 constexpr auto
 fromFunction_real(const GENERATOR &gen, indices<Is...>)
 -> RamBuffer<indices<Is...>::count(), decltype(gen[0])>
@@ -180,7 +177,7 @@ fromFunction_real(const GENERATOR &gen, indices<Is...>)
   return {{gen[Is]...,}};
 }
 
-template<typename GENERATOR, size_t ELEMENTS>
+template<typename GENERATOR, indices_type ELEMENTS>
 constexpr RamBuffer<ELEMENTS, uint8_t>
 fromFunction(const GENERATOR &gen)
 {
@@ -189,8 +186,8 @@ fromFunction(const GENERATOR &gen)
 
 
 
-static const FlashBuffer<256, uint8_t>          amplitude_table PROGMEM  = fromFunction_real(AmplitudeTable<uint8_t,256>(), build_indices<256>());
-static const FlashBuffer<128, CalculationType>  hamming_window  PROGMEM  = fromFunction_real(HammingWindow<CalculationType, 128>(), build_indices<128>());
+static constexpr FlashVariable<uint8_t, 256> amplitude_table PROGMEM  {fromFunction_real(AmplitudeTable<uint8_t,256>(), build_indices<256>())};
+static constexpr FlashVariable<uint8_t, 128> hamming_window  PROGMEM  {fromFunction_real(HammingWindow<CalculationType, 128>(), build_indices<128>())};
 
 int main()
 {
