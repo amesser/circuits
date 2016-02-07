@@ -1,0 +1,53 @@
+Multiple feedback topology low noise amplifier 
+
+* This file describes a two-stage low nois amplifier
+* built using multiple feedback topology
+* Each stage has a gain of 40dB. The bandwith of the amplifier 
+* is ~200 Hz to 11 kHz. The multiple feedback topology 
+* implements a 4th-order bessel filter
+
+.INCLUDE TLC074.mod
+
+* we have 5 v supply voltage
+vcc 99 0 DC 5V
+
+* input signal
+vin 1 0 DC 0 AC 100u SIN(0 100u 2000)
+
+* operating point
+vop 4 0 DC 2.5V
+
+* first stage
+c1  1 3 10u
+r3 3  10 100
+r5 10 12 10k
+r7 10 11 470
+c3  0 10 68n
+c6 11 12 330p
+r9  4 5 1k
+
+xu1a 5 11 99 0 12 TLC07X_5V
+
+* second stage
+c9  12 23 10u
+r14 23 20 100
+r17 20 22 10k
+r20 20 21 390
+c12  0 20 100n
+c17 21 22 220p
+r23 4 25 1k
+
+xu2 25 21 99 0 22 TLC07X_5V
+
+.control
+op
+ac dec 1001 10 30k
+hardcopy 2-channel-amplifier.ps db(v(12)/v(1)) db(v(22)/v(1)) 
+noise v(8) vin dec 1000 100 100k
+print all
+print sqrt(onoise_total)
+.endc
+.end
+
+.quit
+

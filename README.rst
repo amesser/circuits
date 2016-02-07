@@ -13,22 +13,24 @@ of objects moving parallel to the sensor is not possible with simple
 doppler radars. Also the signal strength depends on the angle between the object
 and the radar normal.
 
-This project will create a simple radar motion detector usable for 
-speed measurement and detection of humans and animals.
+This project aims at creating building blocks for radar based devices.
 
 Status
 ------
 
-Electric circuit and board layout under development.
+A 2-channel radar amplifier and signal shaper board is ready to use.
 
 Hardware
 --------
 
-The project uses a 3-pin IPM-165 Dopplerradar sensor. Its output signal
-is amplified by a low noise amplifier by 60, 80 and 100db amplification.
-These three signals will be fed into an AVR ATMega8 MCU which will
-perform the signal processing. An Nokia 5110 Display is attached
-to the MCU to visualize results.
+2-Channel amplifier & frontend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The 2-channel amplifier is designed for a 5-pin IPM-265 Dopplerradar sensor 
+from InnoSent. But it can also be used with a single channel IPM-165. The 
+amplification of the design is 80 to 84 dB. The amplified signal is provided 
+as output. Additionally the amplified signal is passed to a schmitt trigger
+and available as digital output.
 
 Licenses
 --------
@@ -37,18 +39,20 @@ For the Schematic and Board within subfolder ``board`` and the spice
 circuit description within ``spice`` subfolder the following 
 licensing conditions hold:
 
-Copyright (c) 2014 by Andreas Messer. This work is licensed under the 
+Copyright (c) 2014-2016 by Andreas Messer. This work is licensed under the 
 Creative Commons Attribution-ShareAlike 3.0 Unported License. To view 
 a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/.
 
 The model files within the ``spice`` subfolder ship with their own 
 licenses. See the files for more details.
 
+The script files within the ``scripts`` subfolder are licensed under the
+GNU General Public License. Please see file LICENSE.GPL for details.
+
 Besides that the external modules located in ``externals``
 subdirectory ship with their own licensing conditions.
 
 Author
 ------
-
 Andreas Messer <andi@bastelmap.de>
 
