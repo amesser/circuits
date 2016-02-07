@@ -26,7 +26,7 @@ Hardware
 2-Channel amplifier & frontend
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The 2-channel amplifier is designed for a 5-pin IPM-265 Dopplerradar sensor 
+The 2-channel amplifier is designed for a 5-pin IPS-265 Dopplerradar sensor 
 from InnoSent. But it can also be used with a single channel IPM-165. The 
 amplification of the design is 80 to 84 dB. The amplified signal is provided 
 as output. Additionally the amplified signal is passed to a schmitt trigger
