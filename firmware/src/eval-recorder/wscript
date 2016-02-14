@@ -13,30 +13,56 @@ def build(bld):
     bld.ecpp_3rdpartybuild_arm_cmsis(
         id           = 'recorder',
         target       = 'recorder-cmsis',
-        features     = 'sram',
         path         = '../../../3rdparty/arm_cmsis',
         includes     = ['.'],
+        features     = 'release',
     )
 
     bld.ecpp_3rdpartybuild_st_spl(
         id           = 'recorder',
         target       = 'recorder-spl',
-        features     = 'sram',
         path         = '../../../3rdparty/st_stm32f4_spl',
         includes     = ['.'],
         use          = ['recorder-cmsis'],
+        features     = 'release',
     )
     
     bld.ecpp_build(
         id           = 'recorder',
-        target       = 'recorder.elf',
+        target       = 'recorder-sram.elf',
         source       = [
             "main.cpp",
+            "stm32h405_sd.c",
+            "stm32f4xx_it.c",
+            "stm32f4xx_hal_msp.c",
             "system_stm32f4xx.c",
         ],
 
         includes     = ["."],
         features     = 'c cxx cxxprogram sram',
+        use          = [
+            'recorder-spl',
+            'recorder-cmsis',
+            'ecpp_stm32f405',
+        ],
+        defines = [
+        ],
+        uselib       = ['c', 'gcc'],
+    )
+
+    bld.ecpp_build(
+        id           = 'recorder',
+        target       = 'recorder-flash.elf',
+        source       = [
+            "main.cpp",
+            "stm32h405_sd.c",
+            "stm32f4xx_it.c",
+            "stm32f4xx_hal_msp.c",
+            "system_stm32f4xx.c",
+        ],
+
+        includes     = ["."],
+        features     = 'c cxx cxxprogram flash release',
         use          = [
             'recorder-spl',
             'recorder-cmsis',

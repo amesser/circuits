@@ -1,0 +1,25 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def configure(conf):
+    conf.ecpp_setupbuild(id='tc-atmega328', 
+                         device='atmega328', arch='avr8')
+    
+    conf.env.append_value('DEFINES', 'F_CPU=8000000UL')
+    conf.env.append_value('CFLAGS', ['-ffunction-sections','-fdata-sections'])
+
+def build(bld):
+    bld.ecpp_build(
+        id= 'tc-atmega328',
+        source   = [
+            'main.cc',
+            '../../../3rdparty/elm-chan-fatfs-tc/mmc_avr.c',
+            '../../../3rdparty/elm-chan-fatfs-tc/ff.c',
+        ],
+        target   = 'tc-atmega328.elf',
+        features = 'cxx cxxprogram',
+        includes = [
+            '.',
+            '../../../3rdparty/elm-chan-fatfs-tc', 
+        ],
+    ) 
