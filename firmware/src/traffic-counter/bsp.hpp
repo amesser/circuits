@@ -29,106 +29,65 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef TRAFFIC_COUNTER_FREQCNT_HPP_
-#define TRAFFIC_COUNTER_FREQCNT_HPP_
+#ifndef TRAFFIC_COUNTER_BSP_HPP_
+#define TRAFFIC_COUNTER_BSP_HPP_
 
 #include <stdint.h>
+#include <ecpp/Time.hpp>
+#include <ecpp/Peripherals/Keyboard.hpp>
 
-class ReciprocalCounter
+#include "app.hpp"
+#include "ui.hpp"
+
+using namespace ecpp;
+
+class Bsp
 {
 public:
-  typedef uint16_t RefCntType;
-  typedef uint8_t  SigCntType;
-  typedef  int8_t  PhaseCntType;
+  typedef ecpp::Clock<ecpp::DateTime>    ClockType;
+  typedef uint8_t                        KeyStateType;
+  typedef SimpleTimer<uint8_t,1>         KeyTimerType;
 
 private:
-  static constexpr PhaseCntType s_MaxPhaseCnt = 127;
+  ClockType                  m_Clock;
+  uint16_t                   m_ClockTicks1ms;
+  KeyDebouncer<KeyStateType> m_KeyDebouncer;
+  KeyTimerType               m_KeyTimer;
+  uint8_t                    m_BatteryVoltage;
 
-  volatile uint8_t      m_state;
-  volatile PhaseCntType m_phasecnt;
-
-  volatile RefCntType   m_refcntstart;
-  volatile RefCntType   m_refcntend;
-
-  volatile SigCntType   m_sigcnt;
-
+  static Bsp s_Instance;
 public:
-  enum State
+  static Bsp &
+  getInstance()
   {
-    STATE_WSTART    = 0,
-    STATE_MEASURING = 1,
-    STATE_FINISH    = 2,
-    STATE_TIMEOUT   = 3,
+    return s_Instance;
+  }
+
+  enum Key
+  {
+    KEY_NEXT = 0x01,
+    KEY_OK   = 0x02,
   };
 
-  enum State getState() const {return (enum State)(m_state);}
-
-  void nextMeasurement()
+  KeyStateType getKeyState()
   {
-    m_state       = STATE_WSTART;
+    return m_KeyDebouncer.getKeyState();
   }
 
-  void init()
+  ClockType & getClock()
   {
-    m_phasecnt = 0;
+    return m_Clock;
   }
 
-  void startCounting(RefCntType refcntstart)
-  {
-    m_refcntstart = refcntstart;
-    m_state       = STATE_MEASURING;
-  }
+  void init(void);
 
-  void stopCounting(RefCntType refcntend, SigCntType sigcnt)
-  {
-    m_refcntend   = refcntend;
-    m_sigcnt      = sigcnt;
+  uint16_t poll();
 
-    m_state       = STATE_FINISH;
-  }
+  void enableRadar(void);
+  void disableRadar(void);
 
-  void countPhase(bool phase)
-  {
-    auto phasecnt = m_phasecnt;
-
-    if(phase)
-    {
-      if (phasecnt < s_MaxPhaseCnt)
-      {
-        m_phasecnt = phasecnt + 1;
-      }
-    }
-    else
-    {
-      if (phasecnt > (-s_MaxPhaseCnt))
-      {
-        m_phasecnt = phasecnt - 1;
-      }
-    }
-  }
-
-  void timeout()
-  {
-    m_state       = STATE_TIMEOUT;
-  }
-
-  SigCntType getSignalCnt() const
-  {
-    return m_sigcnt;
-  }
-
-  PhaseCntType getPhaseCnt() const
-  {
-    return m_phasecnt;
-  }
-
-  RefCntType getReferenceCnt() const
-  {
-    return m_refcntend - m_refcntstart;
-  }
+  void updateFrameBuffer(Ui::FramebufferType& FrameBuffer);
 };
 
 
-
-
-#endif /* TRAFFIC_COUNTER_FREQCNT_HPP_ */
+#endif /* TRAFFIC_COUNTER_BSP_HPP_ */

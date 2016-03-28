@@ -12,7 +12,10 @@ def build(bld):
     bld.ecpp_build(
         id= 'tc-atmega328',
         source   = [
-            'main.cc',
+            'bsp.cpp',
+            'main.cpp',
+            'model.cpp',
+            'ui.cpp',
             '../../../3rdparty/elm-chan-fatfs-tc/mmc_avr.c',
             '../../../3rdparty/elm-chan-fatfs-tc/ff.c',
         ],

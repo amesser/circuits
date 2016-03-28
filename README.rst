@@ -18,7 +18,9 @@ This project aims at creating building blocks for radar based devices.
 Status
 ------
 
-A 2-channel radar amplifier and signal shaper board is ready to use.
+- A 2-channel radar amplifier and signal shaper board is ready to use.
+- A traffic counter application build on top of the 2-channel frontend board
+  is work in process. An initial firmware is available but no fixed board layout.
 
 Hardware
 --------
@@ -31,6 +33,13 @@ from InnoSent. But it can also be used with a single channel IPM-165. The
 amplification of the design is 80 to 84 dB. The amplified signal is provided 
 as output. Additionally the amplified signal is passed to a schmitt trigger
 and available as digital output.
+
+Traffic counting device
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The purpose of the traffic counting device is to record the time, speed, 
+direction and length of a car or a lorry on a street. The device generates a
+log record entry for each car or lorry onto an SD card.
 
 Licenses
 --------
