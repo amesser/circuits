@@ -5,7 +5,7 @@ def configure(conf):
     conf.ecpp_setupbuild(id='tc-atmega328', 
                          device='atmega328', arch='avr8')
     
-    conf.env.append_value('DEFINES', 'F_CPU=8000000UL')
+    conf.env.append_value('DEFINES', 'F_CPU=80000000UL')
     conf.env.append_value('CFLAGS', ['-ffunction-sections','-fdata-sections'])
 
 def build(bld):

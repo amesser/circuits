@@ -1,0 +1,402 @@
+Cmp-Mod V01 Created by CvPcb (22-Jun-2014 BZR 4027)-stable date = So 24 Apr 2016 11:04:21 CEST
+
+BeginCmp
+TimeStamp = /5717CE56;
+Reference = BT1;
+ValeurCmp = 3V LiOn;
+IdModule  = keystone_electronics_106;
+EndCmp
+
+BeginCmp
+TimeStamp = /571BA8EF;
+Reference = C1;
+ValeurCmp = 1µF/16V;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /571B2CD2;
+Reference = C2;
+ValeurCmp = 100nF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /5717BE83;
+Reference = C3;
+ValeurCmp = 22 pF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /571BA932;
+Reference = C4;
+ValeurCmp = 10µF/10V;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /571BA910;
+Reference = C5;
+ValeurCmp = 10µF/10V;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5717BE89;
+Reference = C6;
+ValeurCmp = 22 pF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D2834;
+Reference = C7;
+ValeurCmp = 10nF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /57168B04;
+Reference = C8;
+ValeurCmp = 100nF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D2BC6;
+Reference = C9;
+ValeurCmp = 100nF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D3EB9;
+Reference = C10;
+ValeurCmp = 100nF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D2B73;
+Reference = C11;
+ValeurCmp = 100nF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D27B1;
+Reference = C12;
+ValeurCmp = 100nF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /571B692A;
+Reference = C13;
+ValeurCmp = 10 nF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D333F;
+Reference = C14;
+ValeurCmp = 100nF;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /571BA587;
+Reference = D1;
+ValeurCmp = BZV 55 5.1V;
+IdModule  = SM1206POL;
+EndCmp
+
+BeginCmp
+TimeStamp = /571826C7;
+Reference = D2;
+ValeurCmp = P6KE15CA;
+IdModule  = D5;
+EndCmp
+
+BeginCmp
+TimeStamp = /57180674;
+Reference = D3;
+ValeurCmp = DIODE;
+IdModule  = SM1206POL;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D2A78;
+Reference = D4;
+ValeurCmp = DIODE;
+IdModule  = SM1206POL;
+EndCmp
+
+BeginCmp
+TimeStamp = /571B3544;
+Reference = D5;
+ValeurCmp = BZV 55 5.1V;
+IdModule  = SM1206POL;
+EndCmp
+
+BeginCmp
+TimeStamp = /571B35F2;
+Reference = D6;
+ValeurCmp = BAT54C;
+IdModule  = sot23;
+EndCmp
+
+BeginCmp
+TimeStamp = /571B54C1;
+Reference = D7;
+ValeurCmp = DIODE;
+IdModule  = SM1206POL;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D27ED;
+Reference = D8;
+ValeurCmp = DIODE;
+IdModule  = SM1206POL;
+EndCmp
+
+BeginCmp
+TimeStamp = /5717F9ED;
+Reference = D9;
+ValeurCmp = LED;
+IdModule  = LED-3MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /5717FA04;
+Reference = D10;
+ValeurCmp = LED;
+IdModule  = LED-3MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D2725;
+Reference = DS1;
+ValeurCmp = LCD16X2;
+IdModule  = lumex_LCM-S01602DTR_4bit;
+EndCmp
+
+BeginCmp
+TimeStamp = /57181298;
+Reference = F1;
+ValeurCmp = FUSE;
+IdModule  = FUSE5-20;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D49F2;
+Reference = L1;
+ValeurCmp = 470 nH;
+IdModule  = SM1008;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D2C30;
+Reference = L2;
+ValeurCmp = 10 µH;
+IdModule  = SM1008;
+EndCmp
+
+BeginCmp
+TimeStamp = /571812A7;
+Reference = P1;
+ValeurCmp = CONN_2;
+IdModule  = RIACON_007-2;
+EndCmp
+
+BeginCmp
+TimeStamp = /571684D1;
+Reference = P2;
+ValeurCmp = CONN_6;
+IdModule  = pin_array_3x2;
+EndCmp
+
+BeginCmp
+TimeStamp = /571698C4;
+Reference = P3;
+ValeurCmp = CONN_3X2;
+IdModule  = pin_array_3x2;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D3828;
+Reference = P4;
+ValeurCmp = SD/MMC;
+IdModule  = yamaichi_fps_009_2409;
+EndCmp
+
+BeginCmp
+TimeStamp = /5716BA96;
+Reference = Q1;
+ValeurCmp = IRLML2030;
+IdModule  = SOT23GDS;
+EndCmp
+
+BeginCmp
+TimeStamp = /57182325;
+Reference = R1;
+ValeurCmp = 10 kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /5716BAA3;
+Reference = R2;
+ValeurCmp = 100kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /57182CF8;
+Reference = R3;
+ValeurCmp = 100 kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D2888;
+Reference = R4;
+ValeurCmp = 100kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D2825;
+Reference = R5;
+ValeurCmp = 47kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /57168833;
+Reference = R6;
+ValeurCmp = 10 kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D426F;
+Reference = R7;
+ValeurCmp = 40 Ohm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D4269;
+Reference = R8;
+ValeurCmp = 40 Ohm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D4263;
+Reference = R9;
+ValeurCmp = 40 Ohm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /57182CA3;
+Reference = R10;
+ValeurCmp = 100 kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /57182CEC;
+Reference = R11;
+ValeurCmp = 100 kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D4156;
+Reference = R12;
+ValeurCmp = 40 Ohm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /5717F8E0;
+Reference = R13;
+ValeurCmp = 3.3 kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /5717F8F1;
+Reference = R14;
+ValeurCmp = 3.3 kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /571BCA53;
+Reference = R15;
+ValeurCmp = 10 kOhm;
+IdModule  = SM0603;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D2E74;
+Reference = RV1;
+ValeurCmp = 10 kOhm;
+IdModule  = RV2;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D27D8;
+Reference = SW1;
+ValeurCmp = SW_PUSH_SMALL;
+IdModule  = SW_PUSH-12mm;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D27E5;
+Reference = SW2;
+ValeurCmp = SW_PUSH_SMALL;
+IdModule  = SW_PUSH-12mm;
+EndCmp
+
+BeginCmp
+TimeStamp = /571B2CAC;
+Reference = U1;
+ValeurCmp = TS 5205 CX33;
+IdModule  = SOT23-5;
+EndCmp
+
+BeginCmp
+TimeStamp = /571B7D77;
+Reference = U2;
+ValeurCmp = TS2951CS-50;
+IdModule  = SO8E;
+EndCmp
+
+BeginCmp
+TimeStamp = /570D3841;
+Reference = U3;
+ValeurCmp = HCF4053;
+IdModule  = SO16E;
+EndCmp
+
+BeginCmp
+TimeStamp = /571BB02A;
+Reference = U4;
+ValeurCmp = ATMEGA328P-A;
+IdModule  = TQFP32;
+EndCmp
+
+BeginCmp
+TimeStamp = /5717B9E7;
+Reference = X1;
+ValeurCmp = CRYSTAL;
+IdModule  = TC-38;
+EndCmp
+
+EndListe

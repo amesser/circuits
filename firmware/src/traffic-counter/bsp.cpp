@@ -50,31 +50,30 @@ static IOPin<AVR_IO_PD0> s_PinLcdE;
 static IOPin<AVR_IO_PD1> s_PinLcdRW;
 static IOPin<AVR_IO_PD2> s_PinLcdRS;
 
-static IOPin<AVR_IO_PD6> s_PinSDCardPower;
+static IOPin<AVR_IO_PD3> s_PinSDCardPower;
 static IOPin<AVR_IO_PD7> s_PinRadarShutdown;
 
 /* input pin for one of the radar signal
  * this pin is used to compute the direction */
-static IOPin<AVR_IO_PD3> s_PinRadarI;
+static IOPin<AVR_IO_PB1> s_PinRadarI;
 
 /* input pin for the other one of the rdar signal
  * this pin is used to calculate speed */
 static IOPin<AVR_IO_PD3> s_PinRadarQ;
 
 
-static IOPin<AVR_IO_PB1> s_PinLed;
+static IOPin<AVR_IO_PD5> s_PinLed1;
+static IOPin<AVR_IO_PD6> s_PinLed2;
+
 static IOPin<AVR_IO_PB2> s_PinSDCardCS;
 static IOPin<AVR_IO_PB3> s_PinSDCardSI;
 static IOPin<AVR_IO_PB4> s_PinSDCardSO;
 static IOPin<AVR_IO_PB5> s_PinSDCardCLK;
 
 static ReciprocalCounter s_FreqCounter;
-static volatile uint16_t s_StartTick1ms;
-static volatile uint16_t s_StopTick1ms;
+static volatile uint16_t s_StartTick256Hz;
+static volatile uint16_t s_StopTick256Hz;
 static uint8_t  s_DetectCnt;
-static volatile uint16_t s_Tick1ms    = 0;
-static uint16_t          s_TickTime1ms   = 0;
-static uint8_t           s_TickFat1ms = 0;
 
 class LcdBsp
 {
@@ -193,38 +192,31 @@ void LcdBsp::writeRam(uint8_t data)
   writeByte(data);
 }
 
-uint16_t
+uint8_t
 Bsp::poll(void)
 {
-  uint16_t Milliseconds;
+  uint8_t TicksPassed256Hz;
 
   { /* compute the number of milliseconds passed since last call */
-    uint16_t Tick1ms;
+    uint8_t Ticks256Hz = TCNT2;
+    uint8_t Calc;
 
-    do { /* Safely read tick variable generated
-          * in irq */
-      Tick1ms = s_Tick1ms;
-    } while(Tick1ms != s_Tick1ms);
+    Calc = Ticks256Hz - m_TicksFat256Hz;
 
-    Milliseconds = Tick1ms - s_TickTime1ms;
-    s_TickTime1ms = Tick1ms;
-
-
-    { /* run the filesystem timer */
-      uint8_t Delta = (uint8_t)(Tick1ms) - s_TickFat1ms;
-
-      if(Delta >= 10)
-      {
-        s_TickFat1ms += 10;
-        disk_timerproc();
-      }
+    if(Calc >= 3)
+    {
+      m_TicksFat256Hz = Ticks256Hz;
+      disk_timerproc();
     }
+
+    TicksPassed256Hz = Ticks256Hz - m_TicksHandled256Hz;
+    m_TicksHandled256Hz = Ticks256Hz;
   }
 
   {
     uint8_t keymask;
 
-    m_KeyTimer.handleMillisecondsPassed(Milliseconds);
+    m_KeyTimer.handleTicksPassed(TicksPassed256Hz);
 
     if(ADCSRA & _BV(ADIF))
     {
@@ -252,30 +244,18 @@ Bsp::poll(void)
     }
   }
 
+
   { /* handle clock ticks */
-    uint16_t ClockTicks1ms;
+    uint8_t Tick1s = m_Ticks1s;
 
-    /* lets hope there is no overflow, but in that case
-     * we have a real problem */
-    ClockTicks1ms = Milliseconds + m_ClockTicks1ms;
-
-    if(ClockTicks1ms < m_ClockTicks1ms)
-    { /* overflow */
-      /* TODO */;
-    }
-
-    if(ClockTicks1ms >= 1000)
+    if(Tick1s != m_TicksHandled1s)
     {
-      m_ClockTicks1ms = ClockTicks1ms - 1000;
+      m_TicksHandled1s = Tick1s;
       m_Clock.tick();
-    }
-    else
-    {
-      m_ClockTicks1ms = ClockTicks1ms;
     }
   }
 
-  return Milliseconds;
+  return TicksPassed256Hz;
 }
 
 static TextLCD_HD44780_KS0066U<KS0066U_MODE_4BIT<LcdBsp, 16,2> > s_Lcd __attribute__((section(".bss")));
@@ -283,11 +263,20 @@ static TextLCD_HD44780_KS0066U<KS0066U_MODE_4BIT<LcdBsp, 16,2> > s_Lcd __attribu
 void
 Bsp::init()
 {
-  s_PortB = s_PinSDCardCLK.OutHigh | s_PinSDCardSO.InPullUp | s_PinSDCardSI.OutHigh | s_PinSDCardCS.OutHigh | s_PinLed.OutHigh;
-  s_PortD = s_PinRadarShutdown.In  | s_PinSDCardPower.In    | s_PinLcdE.OutLow | s_PinLcdRS.OutLow | s_PinLcdRW.OutLow;
+  s_PortB = s_PinSDCardCLK.OutHigh | s_PinSDCardSO.InPullUp | s_PinSDCardSI.OutHigh | s_PinSDCardCS.OutHigh;
+  s_PortD = s_PinRadarShutdown.In  | s_PinSDCardPower.OutLow    | s_PinLcdE.OutLow | s_PinLcdRS.OutLow | s_PinLcdRW.OutLow | s_PinLed1.OutLow | s_PinLed2.OutHigh;
 
+  /* switch to 8mhz system clock */
   CLKPR = _BV(CLKPCE);
   CLKPR = 0;
+
+  ASSR   = _BV(AS2);
+
+  /* Timer/Counter 2 runs on clock Crystal It overflows once per Second
+   * It runs in asnyc mode, therefore setup it first */
+  TCNT2  = 0;
+  TCCR2A = 0;
+  TCCR2B = _BV(CS22) | _BV(CS20);
 
   /* Timer 0 counts the signal periods. We count rising edges of the signal
    * It shall generate an compare event if at least 10 periods have been count
@@ -298,24 +287,25 @@ Bsp::init()
    * Input capture is set to falling edge */
   TCCR1B = _BV(CS11);
 
-  /* Timer/Count 2 generates a 2ms tick for timing purposes */
-  OCR2A  = 125 - 1;
-  TCCR2A = _BV(WGM21);
-  TCCR2B = _BV(CS22) | _BV(CS20);
-
-  TIMSK2 = _BV(OCIE2A);
-
   /* ADC continuously samples ADC5 to monitor
    * battery and keys */
-  ADMUX  = _BV(REFS0) | 5;
+  ADMUX  = _BV(REFS0) | 6;
   ADCSRA = _BV(ADEN)  | _BV(ADSC) | _BV(ADATE) | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0);
+
+  /* setup interrupts */
+  TIMSK1 = _BV(TOIE1);
+
+  /* wait for TCCR2 to become ready */
+  while(ASSR & (_BV(TCN2UB) | _BV(OCR2AUB) | _BV(OCR2BUB) | _BV(TCR2AUB) | _BV(TCR2BUB)));
+
+  TIFR2  = _BV(TOV2)  | _BV(OCF2A);
+  TIMSK2 = _BV(TOIE2) | _BV(OCIE2A);
+
+  OCR2A  = TCNT2 + 2;
+
 
   s_Lcd.init();
 }
-
-
-
-
 
 void StartMeas()
 {
@@ -333,8 +323,8 @@ void StartMeas()
   OCR1B  = TCNT1 - 1;
 
   /* clear pending interrupts and enable interupt mask */
-  TIFR1  = 0xFF;
-  TIMSK1 = _BV(OCF1B) | _BV(ICIE1);
+  TIFR1  = _BV(OCF1A) | _BV(OCF1B) | _BV(ICIE1);
+  TIMSK1 = _BV(TOIE1) | _BV(OCF1B) | _BV(ICIE1);
 }
 
 static void processMeasurement()
@@ -344,8 +334,7 @@ static void processMeasurement()
 
   if(s_FreqCounter.getState() == s_FreqCounter.STATE_FINISH)
   {
-    const uint32_t f_div       = 8;
-    const uint32_t f_ref       = (F_CPU + f_div/2) / f_div;
+    const uint32_t f_ref       = 1000000;
     const uint8_t  speed_per_f = 22;
     uint32_t speed;
     uint32_t n_ref;
@@ -371,7 +360,7 @@ static void processMeasurement()
     int8_t phasecnt;
 
     phasecnt = s_FreqCounter.getPhaseCnt();
-    Duration = s_StopTick1ms - s_StartTick1ms;
+    Duration = s_StopTick256Hz - s_StartTick256Hz;
 
     Detector.timeout(phasecnt);
 
@@ -410,8 +399,15 @@ static void processMeasurement()
   }
 }
 
+ISR(TIMER1_OVF_vect)
+{
+  s_PinLed1.toggleOutput();
+}
+
 ISR(TIMER1_CAPT_vect)
 {
+  Bsp &bsp = Bsp::getInstance();
+
   decltype(s_FreqCounter.getState()) state;
   uint16_t Ticks;
   uint16_t cnt;
@@ -425,8 +421,8 @@ ISR(TIMER1_CAPT_vect)
 
   state = s_FreqCounter.getState();
 
-  Ticks         = s_Tick1ms;
-  s_StopTick1ms = Ticks;
+  Ticks         = bsp.m_Ticks256Hz;
+  s_StopTick256Hz = Ticks;
 
   /* initial time measurement */
   if(state == s_FreqCounter.STATE_WSTART)
@@ -452,7 +448,7 @@ ISR(TIMER1_CAPT_vect)
 
     if(Detector.STATE_W_ENTER == Detector.getState())
     {
-      s_StartTick1ms = Ticks;
+      s_StartTick256Hz = Ticks;
     }
   }
   else if(state == s_FreqCounter.STATE_MEASURING)
@@ -464,7 +460,7 @@ ISR(TIMER1_CAPT_vect)
       TCCR0B = 0;
 
       /* Disable timer 1 interrupts */
-      TIMSK1 = 0;
+      TIMSK1 = _BV(TOIE1);
 
       if(TIFR1 & _BV(OCF1B))
       {
@@ -484,17 +480,77 @@ ISR(TIMER1_COMPB_vect)
   TCCR0B = 0;
 
   /* Disable timer 1 interrupts */
-  TIMSK1 = 0;
+  TIMSK1 = _BV(TOIE1);
 
   s_FreqCounter.timeout();
 }
 
 
+ISR(TIMER2_OVF_vect)
+{
+  Bsp::getInstance().m_Ticks1s += 1;
+
+  s_PinLed2.toggleOutput();
+
+}
+
 ISR(TIMER2_COMPA_vect)
 {
-  s_Tick1ms += 2;
+  Bsp &bsp = Bsp::getInstance();
 
-  /* every 2 ms check if a new timing was measured and process it */
+  uint16_t ticks;
+  uint8_t  cnt;
+
+  cnt   = TCNT2;
+  OCR2A = cnt + 1;
+
+  ticks = bsp.m_Ticks256Hz;
+
+  if(cnt < (uint8_t)(ticks & 0xFF))
+  {
+    ticks = (ticks & 0xFF00) + 0x0100;
+  }
+  else
+  {
+    ticks = (ticks & 0xFF00);
+  }
+
+  ticks |= cnt;
+
+  bsp.m_Ticks256Hz = ticks;
+
+  if (cnt % 8 == 0)
+  {
+    uint16_t cnt1,diff;
+
+    cnt1 = TCNT1;
+    diff = cnt1 - bsp.m_Timer1Calibrate;
+
+    bsp.m_Timer1Calibrate = cnt1;
+
+    if(diff < 31250)
+    {
+      uint8_t reg;
+
+      reg = OSCCAL & 0x7F;
+
+      if (reg < 0x7F)
+      {
+        OSCCAL = reg + 1;
+      }
+    }
+    else if (diff > 31250)
+    {
+      uint8_t reg;
+
+      reg = OSCCAL & 0x7F;
+
+      if (reg > 0)
+      {
+        OSCCAL = reg - 1;
+      }
+    }
+  }
   processMeasurement();
 }
 

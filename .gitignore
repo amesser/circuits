@@ -1,8 +1,9 @@
 .lock-waf_*
 .settings
 3rdparty/*/*
-board/*.bak
-board/*.kicad_pcb-bak
-board/*-cache.lib
+board/*/*.bak
+board/*/*.kicad_pcb-bak
+board/*/*-cache.lib
+board/*/_autosave-*
 build
 spice/*.ps

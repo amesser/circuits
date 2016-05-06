@@ -177,8 +177,13 @@ TrafficRecorderBase::formatRecord(const RecordType & Record)
 
     Buffer[29] = s_Direction[Traffic.getDirection()];
 
+    uint32_t duration = Traffic.getDuration();
+
+    duration = (duration * 25 + 32) / 64;
+
     String::formatUnsigned(&(Buffer[31]), 3,  Traffic.getSpeed());
-    String::formatUnsigned(&(Buffer[35]), 4, (Traffic.getDuration() + 5) / 10);
+    String::formatUnsigned(&(Buffer[35]), 4, (uint16_t)duration);
+
   }
   else if (Record.m_Type == Record.TYPE_PARAMETERS)
   {

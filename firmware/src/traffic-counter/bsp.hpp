@@ -41,16 +41,30 @@
 
 using namespace ecpp;
 
+ISR(TIMER1_CAPT_vect);
+ISR(TIMER2_OVF_vect);
+ISR(TIMER2_COMPA_vect);
+
 class Bsp
 {
 public:
   typedef ecpp::Clock<ecpp::DateTime>    ClockType;
   typedef uint8_t                        KeyStateType;
-  typedef SimpleTimer<uint8_t,1>         KeyTimerType;
+  /* TODO: 256Hz != 4ms */
+  typedef SimpleTimer<uint8_t,4>         KeyTimerType;
 
 private:
   ClockType                  m_Clock;
-  uint16_t                   m_ClockTicks1ms;
+
+  volatile uint8_t           m_Ticks1s;
+  uint8_t                    m_TicksHandled1s;
+
+  volatile uint16_t          m_Ticks256Hz;
+  uint8_t                    m_TicksHandled256Hz;
+  uint8_t                    m_TicksFat256Hz;
+
+  uint16_t                   m_Timer1Calibrate;
+
   KeyDebouncer<KeyStateType> m_KeyDebouncer;
   KeyTimerType               m_KeyTimer;
   uint8_t                    m_BatteryVoltage;
@@ -81,12 +95,16 @@ public:
 
   void init(void);
 
-  uint16_t poll();
+  uint8_t poll();
 
   void enableRadar(void);
   void disableRadar(void);
 
   void updateFrameBuffer(Ui::FramebufferType& FrameBuffer);
+
+  friend void TIMER1_CAPT_vect(void);
+  friend void TIMER2_COMPA_vect(void);
+  friend void TIMER2_OVF_vect(void);
 };
 
 

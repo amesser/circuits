@@ -55,11 +55,11 @@ int main()
 
   while(1)
   {
-    uint16_t Time1ms;
+    uint8_t TicksPassed256Hz;
 
-    Time1ms = Bsp.poll();
+    TicksPassed256Hz = Bsp.poll();
 
-    s_Ui.poll(Time1ms);
+    s_Ui.poll(TicksPassed256Hz);
     g_Globals.Recorder.poll();
 
     s_Ui.updateDisplay();

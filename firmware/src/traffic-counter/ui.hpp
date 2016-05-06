@@ -43,7 +43,8 @@ class Ui
 public:
   typedef uint8_t                       KeyMaskType;
   typedef TextFramebuffer<16,2>         FramebufferType;
-  typedef SimpleTimer<uint16_t,1>       UiTimerType;
+  /* TODO: 256Hz != 4ms */
+  typedef SimpleTimer<uint16_t,4>       UiTimerType;
 
   enum State
   {
@@ -114,7 +115,7 @@ public:
     return m_Framebuffer;
   }
 
-  void poll(uint16_t MsPassed);
+  void poll(uint8_t TicksPassed);
 
   void updateDisplay();
 };

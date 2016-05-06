@@ -49,6 +49,7 @@ Ui::calculateLength()
   //Length1m = ((uint32_t)Duration1ms * Speed) / 3600;
 
   Calculate = Duration1ms;
+  Calculate = (Calculate * 125 + 16) / 32;
   Calculate = Calculate * Speed;
   Calculate = Calculate / 3600;
 
@@ -85,7 +86,7 @@ Ui::calculateLength()
   return Length1m;
 }
 
-void Ui::poll(uint16_t MsPassed)
+void Ui::poll(uint8_t Ticks)
 {
   auto & Bsp = Bsp::getInstance();
   enum State State = getState();
@@ -99,7 +100,7 @@ void Ui::poll(uint16_t MsPassed)
   uint8_t KeyDown, KeyLong;
   uint8_t KeyAdd;
 
-  Timer.handleMillisecondsPassed(MsPassed);
+  Timer.handleTicksPassed(Ticks);
 
   /* check which keys have been pressed since last check */
   KeyDown = KeyState & (~m_KeyState);
