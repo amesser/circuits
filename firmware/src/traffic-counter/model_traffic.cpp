@@ -32,8 +32,8 @@
 #include "ecpp/Target.hpp"
 #include "ecpp/String.hpp"
 
+#include "model_traffic.hpp"
 #include "app.hpp"
-#include "model.hpp"
 #include "bsp.hpp"
 
 using namespace ecpp;

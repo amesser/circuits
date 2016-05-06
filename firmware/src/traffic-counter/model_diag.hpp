@@ -29,39 +29,81 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef TRAFFIC_COUNTER_APP_HPP_
-#define TRAFFIC_COUNTER_APP_HPP_
+#ifndef TRAFFIC_COUNTER_MODEL_DIAG_HPP_
+#define TRAFFIC_COUNTER_MODEL_DIAG_HPP_
 
-#include <stdint.h>
+#include <ecpp/Datatypes.hpp>
 #include <ecpp/Time.hpp>
 
-#include "model_diag.hpp"
-#include "model_traffic.hpp"
+#include "recorder.hpp"
 
-#include "trafficdetector.hpp"
+class   DiagRecorderBase;
+typedef EventRecorder<DiagRecorderBase> DiagRecorder;
 
-
-
-class Globals
+class DiagEvent
 {
 public:
-  TrafficDetector Detector;
-#if defined(DIAGFIRMWARE)
-  DiagRecorder    Recorder;
-#else
-  TrafficRecorder Recorder;
-#endif
-};
+  typedef ecpp::DateTime TimestampType;
 
-class Parameters
-{
 public:
-  int8_t          LengthCorrectionL;
-  int8_t          LengthCorrectionR;
+  TimestampType  Timestamp;
+
+  uint16_t       m_Idx;
+
+  uint8_t        m_Cnt0;
+  uint8_t        m_Cnt2;
+  uint16_t       m_Cnt1;
+  uint8_t        m_Speed;
 };
 
-extern Parameters g_Parameters;
-extern Globals    g_Globals;
+class DiagRecorderBase
+{
+protected:
+  typedef DiagEvent RecordType;
+  typedef char      RecordStringType[41];
+
+  typedef char      FilenameType[8 + 1 + 3 + 1];
+
+private:
+  union {
+    RecordStringType m_RecordString;
+
+    struct {
+      FilenameType   m_FilenameBuffer;
+      uint8_t        m_LastDay;
+    };
+  };
+
+  DiagEvent          m_LastEvent;
+
+  uint16_t           m_Count;
+
+protected:
+  const RecordStringType & formatRecord(const RecordType& record);
+
+  void                     initFilename();
+  const FilenameType     & nextFilename();
+
+public:
+  void startRecording();
+
+  DiagEvent & createDiagRecord()
+  {
+    auto & Record = m_LastEvent;
+
+    if (m_Count < 999)
+    {
+      m_Count += 1;
+    }
+    else
+    {
+      m_Count = 0;
+    }
+
+    Record.m_Idx = m_Count;
+    return Record;
+  }
+};
 
 
-#endif /* TRAFFIC_COUNTER_APP_HPP_ */
+#endif /* TRAFFIC_COUNTER_MODEL_DIAG_HPP_ */

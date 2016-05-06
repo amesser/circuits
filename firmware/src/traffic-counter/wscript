@@ -5,8 +5,8 @@ def configure(conf):
     conf.ecpp_setupbuild(id='tc-atmega328', 
                          device='atmega328', arch='avr8')
     
-    conf.env.append_value('DEFINES', 'F_CPU=80000000UL')
-    conf.env.append_value('CFLAGS', ['-ffunction-sections','-fdata-sections'])
+    conf.env.append_value('DEFINES', ['F_CPU=80000000UL', 'DIAGFIRMWARE'])
+    conf.env.append_value('CFLAGS',  ['-ffunction-sections','-fdata-sections'])
 
 def build(bld):
     bld.ecpp_build(
@@ -14,7 +14,8 @@ def build(bld):
         source   = [
             'bsp.cpp',
             'main.cpp',
-            'model.cpp',
+            'model_diag.cpp',
+            'model_traffic.cpp',
             'ui.cpp',
             '../../../3rdparty/elm-chan-fatfs-tc/mmc_avr.c',
             '../../../3rdparty/elm-chan-fatfs-tc/ff.c',

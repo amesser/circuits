@@ -35,7 +35,6 @@
 #include "app.hpp"
 #include "bsp.hpp"
 #include "ui.hpp"
-#include "recorder.hpp"
 
 uint8_t
 Ui::calculateLength()
@@ -147,14 +146,35 @@ void Ui::poll(uint8_t Ticks)
 
   if (State == STATE_RECORDING || State == STATE_CNFSTOP)
   {
+#if defined(DIAGFIRMWARE)
+    const auto & Event = g_Globals.Recorder.getFirstRingEvent();
+
+    if(m_LastDuration != Event.m_Idx)
+    {
+      if (m_LastDirection == TrafficRecord::LEFT)
+      {
+        m_LastDirection = TrafficRecord::RIGHT;
+      }
+      else
+      {
+        m_LastDirection = TrafficRecord::LEFT;
+      }
+
+      m_LastDuration = Event.m_Idx;
+    }
+
+    m_LastSpeed = Event.m_Speed;
+#else
     const auto & Event = g_Globals.Recorder.getLastTrafficRecord();
 
     m_LastSpeed     = Event.getSpeed();
     m_LastDirection = Event.getDirection();
     m_LastDuration  = Event.getDuration();
+#endif
   }
   else if(Timer.hasTimedOut())
   {
+#if !defined(DIAGFIRMWARE)
     const auto & Event = g_Globals.Recorder.getLastTrafficRecord();
 
     if ((State == STATE_ADJLENGTHL && Event.getDirection() == Event.LEFT)  ||
@@ -164,6 +184,7 @@ void Ui::poll(uint8_t Ticks)
       m_LastDirection = Event.getDirection();
       m_LastDuration  = Event.getDuration();
     }
+#endif
   }
 
   switch(State)

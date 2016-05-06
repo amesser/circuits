@@ -310,7 +310,7 @@ Bsp::init()
 void StartMeas()
 {
   /* disable timer interrupts */
-  TIMSK1 = 0;
+  TIMSK1 = _BV(TOIE1);
 
   s_FreqCounter.nextMeasurement();
 
@@ -323,8 +323,8 @@ void StartMeas()
   OCR1B  = TCNT1 - 1;
 
   /* clear pending interrupts and enable interupt mask */
-  TIFR1  = _BV(OCF1A) | _BV(OCF1B) | _BV(ICIE1);
-  TIMSK1 = _BV(TOIE1) | _BV(OCF1B) | _BV(ICIE1);
+  TIFR1  =              _BV(ICIE1);
+  TIMSK1 = _BV(TOIE1) | _BV(ICIE1);
 }
 
 static void processMeasurement()
@@ -351,6 +351,20 @@ static void processMeasurement()
 
     Detector.sampleMeasurement(speed);
 
+
+#if defined(DIAGFIRMWARE)
+    auto & Event = Recorder.createDiagRecord();
+
+    Event.Timestamp = Bsp::getInstance().getClock();
+
+    Event.m_Cnt0  = s_FreqCounter.getSignalCnt();
+    Event.m_Cnt1  = s_FreqCounter.getReferenceCnt();
+    Event.m_Cnt2  = TCNT2;
+    Event.m_Speed = speed;
+
+    Recorder.recordEvent(Event);
+#endif
+
     /* start another measurement */
     StartMeas();
   }
@@ -369,6 +383,8 @@ static void processMeasurement()
       auto DetectCnt = s_DetectCnt + 1;
 
       s_DetectCnt    = DetectCnt;
+
+#if !defined(DIAGFIRMWARE)
 
       auto & Event = Recorder.createTrafficRecord();
       enum TrafficRecord::Direction Direction;
@@ -390,6 +406,7 @@ static void processMeasurement()
       Event.setSpeed(Detector.getSpeed(), Direction, Duration);
 
       Recorder.recordEvent(Event);
+#endif
     }
 
     s_FreqCounter.init();
@@ -442,7 +459,7 @@ ISR(TIMER1_CAPT_vect)
 
     /* clear pending interrupts and enable interupt mask */
     TIFR1      = _BV(OCF1A) | _BV(OCF1B);
-    TIMSK1    |= _BV(OCF1B);
+    TIMSK1    |=              _BV(OCIE1B);
 
     s_FreqCounter.startCounting(cnt);
 
