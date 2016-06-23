@@ -37,13 +37,12 @@
 
 #include "recorder.hpp"
 
-class   TrafficRecorderBase;
-typedef EventRecorder<TrafficRecorderBase> TrafficRecorder;
+class TrafficRecorder;
 
 class TcEvent
 {
 public:
-  typedef ecpp::DateTime TimestampType;
+  typedef ecpp::DateTime<FixedCenturyDate<20>, Time> TimestampType;
 
   enum Type
   {
@@ -76,7 +75,7 @@ protected:
     m_Type = Type;
   }
 public:
-  friend class TrafficRecorderBase;
+  friend class TrafficRecorder;
 };
 
 
@@ -136,63 +135,77 @@ public:
 class ParametersRecord : public TcEvent
 {
 public:
-  friend class TrafficRecorderBase;
+  friend class TrafficRecorder;
 };
 
-class TrafficRecorderBase
+class TrafficRecorder : public FileRecorder
 {
 protected:
   typedef TcEvent RecordType;
   typedef char    RecordStringType[41];
 
-  typedef char    FilenameType[8 + 1 + 3 + 1];
-
+  Ringbuffer<RecordType, 8> RecordBuffer;
 private:
   union {
-    RecordStringType m_RecordString;
+    RecordStringType RecordString;
 
     struct {
-      FilenameType   m_FilenameBuffer;
-      uint8_t        m_LastDay;
+      FilenameType   FilenameBuffer;
+      uint8_t        LastDay;
     };
   };
 
-  TrafficRecord      m_LastTrafficEvent;
-
-  uint16_t           m_Count;
+  uint16_t           Count;
 
 protected:
-  const RecordStringType & formatRecord(const RecordType& record);
+  void formatRecord(const RecordType& record);
 
-  void                     initFilename();
-  const FilenameType     & nextFilename();
+  void initFilename();
+  bool nextFilename();
 
 public:
-  const TrafficRecord & getLastTrafficRecord() const
+  void activate();
+  void poll();
+  void start();
+
+  const TrafficRecord & getLastRecord() const
   {
-    return m_LastTrafficEvent;
+    return *reinterpret_cast<const TrafficRecord*>(&(RecordBuffer.back()));
   }
 
-  void startRecording();
-
-  TrafficRecord & createTrafficRecord()
+  TrafficRecord* createTrafficRecord()
   {
-    auto & Record = m_LastTrafficEvent;
+    TrafficRecord* p = 0;
 
-    Record.m_Type = Record.TYPE_TRAFFIC;
-
-    if (m_Count < 999)
+    if(STATE_RUN == getStateHint() &&
+       STATE_RUN == getState())
     {
-      m_Count += 1;
+      p = reinterpret_cast<TrafficRecord*>(RecordBuffer.getInsertElem());
+
+      if(0 != p)
+      {
+        p->m_Data.Traffic.Index = Count;
+      }
+
+      if (Count < 999)
+      {
+        Count += 1;
+      }
+      else
+      {
+        Count = 0;
+      }
     }
-    else
+
+    return p;
+  }
+
+  void storeRecord(void* p)
+  {
+    if(p == reinterpret_cast<TrafficRecord*>(RecordBuffer.getInsertElem()))
     {
-      m_Count = 0;
+      RecordBuffer.pushForced();
     }
-
-    Record.m_Data.Traffic.Index = m_Count;
-
-    return Record;
   }
 };
 

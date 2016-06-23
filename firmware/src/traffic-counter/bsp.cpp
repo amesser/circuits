@@ -70,7 +70,7 @@ static IOPin<AVR_IO_PB3> s_PinSDCardSI;
 static IOPin<AVR_IO_PB4> s_PinSDCardSO;
 static IOPin<AVR_IO_PB5> s_PinSDCardCLK;
 
-static ReciprocalCounter s_FreqCounter;
+//static ReciprocalCounter s_FreqCounter;
 static volatile uint16_t s_StartTick256Hz;
 static volatile uint16_t s_StopTick256Hz;
 static uint8_t  s_DetectCnt;
@@ -245,14 +245,10 @@ Bsp::poll(void)
   }
 
 
-  { /* handle clock ticks */
-    uint8_t Tick1s = m_Ticks1s;
-
-    if(Tick1s != m_TicksHandled1s)
-    {
-      m_TicksHandled1s = Tick1s;
-      m_Clock.tick();
-    }
+  if(Ticks1s != Ticks1sHandled)
+  { /* Handle clock if necessary */
+    Ticks1sHandled += 1;
+    m_Clock.tick();
   }
 
   return TicksPassed256Hz;
@@ -278,10 +274,8 @@ Bsp::init()
   TCCR2A = 0;
   TCCR2B = _BV(CS22) | _BV(CS20);
 
-  /* Timer 0 counts the signal periods. We count rising edges of the signal
-   * It shall generate an compare event if at least 10 periods have been count
-   * */
-  OCR0A  =  9;
+  /* Timer 0 counts the signal periods. We count rising edges of the signal */
+  TCCR0B = _BV(CS02) | _BV(CS01) | _BV(CS00);
 
   /* Timer/Counter 1 is to count the 1 Mhz reference count
    * Input capture is set to falling edge */
@@ -292,41 +286,20 @@ Bsp::init()
   ADMUX  = _BV(REFS0) | 6;
   ADCSRA = _BV(ADEN)  | _BV(ADSC) | _BV(ADATE) | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0);
 
-  /* setup interrupts */
-  TIMSK1 = _BV(TOIE1);
-
   /* wait for TCCR2 to become ready */
   while(ASSR & (_BV(TCN2UB) | _BV(OCR2AUB) | _BV(OCR2BUB) | _BV(TCR2AUB) | _BV(TCR2BUB)));
 
+  OCR2A  = 0;
   TIFR2  = _BV(TOV2)  | _BV(OCF2A);
-  TIMSK2 = _BV(TOIE2) | _BV(OCIE2A);
 
-  OCR2A  = TCNT2 + 2;
-
+  /* setup interrupts */
+  TIMSK1 = _BV(OCIE1B) | _BV(ICIE1);
+  TIMSK2 = _BV(OCIE2A);
 
   s_Lcd.init();
 }
 
-void StartMeas()
-{
-  /* disable timer interrupts */
-  TIMSK1 = _BV(TOIE1);
-
-  s_FreqCounter.nextMeasurement();
-
-  /* Set Timer 0 to count rising edges of clock
-   * signal */
-  TCCR0B = _BV(CS02) | _BV(CS01) | _BV(CS00);
-
-  /* Clear Timer 1 interrupts
-   * and enable Timer 1 capture interrupt */
-  OCR1B  = TCNT1 - 1;
-
-  /* clear pending interrupts and enable interupt mask */
-  TIFR1  =              _BV(ICIE1);
-  TIMSK1 = _BV(TOIE1) | _BV(ICIE1);
-}
-
+#if 0
 static void processMeasurement()
 {
   auto & Detector = g_Globals.Detector;
@@ -334,6 +307,7 @@ static void processMeasurement()
 
   if(s_FreqCounter.getState() == s_FreqCounter.STATE_FINISH)
   {
+#if !defined(DIAGFIRMWARE)
     const uint32_t f_ref       = 1000000;
     const uint8_t  speed_per_f = 22;
     uint32_t speed;
@@ -351,18 +325,22 @@ static void processMeasurement()
 
     Detector.sampleMeasurement(speed);
 
+#else
+    auto * record = Recorder.createRecord();
 
-#if defined(DIAGFIRMWARE)
-    auto & Event = Recorder.createDiagRecord();
+    if(record)
+    {
+      record->Ticks1s  = Bsp::getInstance().getSecond();
+      record->Ticks256Hz = TCNT2;
+      record->NSig    = s_FreqCounter.getSignalCnt();
+      record->NPhase  = s_FreqCounter.getPhaseCnt();
+      record->NRef      = s_FreqCounter.getReferenceCnt();
 
-    Event.Timestamp = Bsp::getInstance().getClock();
+      Recorder.storeRecord(record);
+    }
 
-    Event.m_Cnt0  = s_FreqCounter.getSignalCnt();
-    Event.m_Cnt1  = s_FreqCounter.getReferenceCnt();
-    Event.m_Cnt2  = TCNT2;
-    Event.m_Speed = speed;
+    s_FreqCounter.init();
 
-    Recorder.recordEvent(Event);
 #endif
 
     /* start another measurement */
@@ -370,6 +348,7 @@ static void processMeasurement()
   }
   else if(s_FreqCounter.getState() == s_FreqCounter.STATE_TIMEOUT)
   {
+#if !defined(DIAGFIRMWARE)
     uint16_t Duration;
     int8_t phasecnt;
 
@@ -384,9 +363,8 @@ static void processMeasurement()
 
       s_DetectCnt    = DetectCnt;
 
-#if !defined(DIAGFIRMWARE)
 
-      auto & Event = Recorder.createTrafficRecord();
+      auto record = Recorder.createTrafficRecord();
       enum TrafficRecord::Direction Direction;
 
       if(Detector.getDirection() < 0)
@@ -406,8 +384,8 @@ static void processMeasurement()
       Event.setSpeed(Detector.getSpeed(), Direction, Duration);
 
       Recorder.recordEvent(Event);
-#endif
     }
+#endif
 
     s_FreqCounter.init();
     Detector.init();
@@ -420,165 +398,219 @@ ISR(TIMER1_OVF_vect)
 {
   s_PinLed1.toggleOutput();
 }
+#endif
 
 ISR(TIMER1_CAPT_vect)
 {
   Bsp &bsp = Bsp::getInstance();
 
-  decltype(s_FreqCounter.getState()) state;
-  uint16_t Ticks;
-  uint16_t cnt;
+  uint16_t refcnt;
+  uint8_t  sigcnt;
+
+  uint8_t  tcnt0;
+  uint16_t icr1;
   bool     phase;
 
-  /* Get current input capture value */
-  cnt   = ICR1;
+  uint8_t action;
+
+
+  tcnt0 = TCNT0;
+  icr1  = ICR1;
+
   phase = s_PinRadarI;
 
-  s_FreqCounter.countPhase(phase);
-
-  state = s_FreqCounter.getState();
-
-  Ticks         = bsp.m_Ticks256Hz;
-  s_StopTick256Hz = Ticks;
-
-  /* initial time measurement */
-  if(state == s_FreqCounter.STATE_WSTART)
+  if(s_PinRadarI)
   {
-    auto & Detector = g_Globals.Detector;
-
-    /* Reset Timer 0 and clear compare interrupt flag
-     */
-    TCNT0      =  0;
-    TIFR0     |= _BV(OCF0A);
-
-    /* Compare 1 A flag is set when 1000 reference ticks have been counted */
-    OCR1A      = cnt + 1000;
-
-    /* Compare 1 B flag shall be set if Timer 1 overflows */
-    OCR1B      = cnt - 1;
-
-    /* clear pending interrupts and enable interupt mask */
-    TIFR1      = _BV(OCF1A) | _BV(OCF1B);
-    TIMSK1    |=              _BV(OCIE1B);
-
-    s_FreqCounter.startCounting(cnt);
-
-    if(Detector.STATE_W_ENTER == Detector.getState())
+    if(bsp.m_FreqPhaseCnt < 20)
     {
-      s_StartTick256Hz = Ticks;
+      bsp.m_FreqPhaseCnt += 1;
     }
   }
-  else if(state == s_FreqCounter.STATE_MEASURING)
+  else
   {
-    if ((TIFR0 & _BV(OCF0A)) &&
-        (TIFR1 & _BV(OCF1A)))
+    if(bsp.m_FreqPhaseCnt > -20)
     {
-      /* Stop Timer 0 */
-      TCCR0B = 0;
-
-      /* Disable timer 1 interrupts */
-      TIMSK1 = _BV(TOIE1);
-
-      if(TIFR1 & _BV(OCF1B))
-      {
-        s_FreqCounter.timeout();
-      }
-      else
-      {
-        s_FreqCounter.stopCounting(cnt, TCNT0);
-      }
+      bsp.m_FreqPhaseCnt -= 1;
     }
   }
+
+  if(bsp.m_FreqCntState == bsp.FREQCNT_IDLE)
+  {
+    bsp.m_FreqCntState = bsp.FREQCNT_RUN;
+    action = 1;
+  }
+  else
+  {
+    /* check for signal counter overflow, that means > 256 khz
+     * we can not evaluate the signal then  */
+    if(TIFR0 & _BV(OCF0A))
+    {
+      action = 1;
+    }
+    else if (1)
+    { /* enough counts have been done */
+      refcnt = icr1  - bsp.m_FreqICR1Start;
+      sigcnt = tcnt0 - bsp.m_FreqTCNT0Start;
+
+      action = 2;
+    }
+    else
+    {
+      action = 0;
+    }
+  }
+
+  if(action)
+  {
+    bsp.m_FreqTCNT0Start = tcnt0;
+    bsp.m_FreqICR1Start  = icr1;
+
+    /* at least 4000 counts shall be done.  */
+    OCR1A      = icr1 + 4000;
+    /* timeout after 65536 counts */
+    OCR1B      = icr1 - 1;
+
+    /* disable input capture interrupt now. No need to call this vector
+     * until at least OCR1A has been hit.
+     *
+     * Interrupt will be reenabled by TIMER1_COMPA_vect */
+    TIFR1  = _BV(OCF1A)  | _BV(OCF1B);
+    TIMSK1 = _BV(OCIE1A) | _BV(OCIE1B);
+
+    /* check for overflows in signal count */
+    OCR0A = tcnt0 - 1;
+    TIFR0 = _BV(OCF0A);
+  }
+
+  if(action == 2)
+  { /* a successfull measurement was done */
+    uint8_t  ticks1s;
+    uint8_t  ticks256Hz;
+    bool ov;
+
+    /* we need to read TCNT2 and TIFR2 consistently for timing information
+     * */
+    do
+    {
+      ticks256Hz = TCNT2;
+      ov = TIFR2 & _BV(TOV2);
+    } while( ticks256Hz != TCNT2);
+
+    if (ov)
+    {
+      ticks1s = bsp.Ticks1s + 1;
+    }
+    else
+    {
+      ticks1s = bsp.Ticks1s;
+    }
+
+#if defined(DIAGFIRMWARE)
+    { /* Put all values into ring buffer */
+      auto & Recorder = g_Globals.Recorder;
+      auto * record = Recorder.createRecord();
+
+      if(record)
+      {
+        record->Ticks1s     = ticks1s;
+        record->Ticks256Hz = ticks256Hz;
+        record->NSig       = sigcnt;
+        record->NRef       = refcnt;
+        record->NPhase     = bsp.m_FreqPhaseCnt;
+
+        Recorder.storeRecord(record);
+      }
+    }
+#endif
+  }
+
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+  /* reenable input capture interrupt */
+  TIFR1  = _BV(ICF1);
+  TIMSK1 = _BV(OCIE1B) | _BV(ICIE1);
 }
 
 ISR(TIMER1_COMPB_vect)
 {
-  /* Stop Timer 0 */
-  TCCR0B = 0;
+  auto & bsp = Bsp::getInstance();
 
-  /* Disable timer 1 interrupts */
-  TIMSK1 = _BV(TOIE1);
+  /* reset state on time out */
+  bsp.m_FreqCntState = bsp.FREQCNT_IDLE;
+  bsp.m_FreqPhaseCnt = 0;
 
-  s_FreqCounter.timeout();
-}
-
-
-ISR(TIMER2_OVF_vect)
-{
-  Bsp::getInstance().m_Ticks1s += 1;
-
-  s_PinLed2.toggleOutput();
-
+  TIFR1  = _BV(ICF1);
+  TIMSK1 = _BV(OCIE1B) | _BV(ICIE1);
 }
 
 ISR(TIMER2_COMPA_vect)
 {
   Bsp &bsp = Bsp::getInstance();
 
-  uint16_t ticks;
-  uint8_t  cnt;
-
-  cnt   = TCNT2;
-  OCR2A = cnt + 1;
-
-  ticks = bsp.m_Ticks256Hz;
-
-  if(cnt < (uint8_t)(ticks & 0xFF))
   {
-    ticks = (ticks & 0xFF00) + 0x0100;
+    const uint8_t  tcnt2 = TCNT2;
+
+    /* rearm timer for next event */
+    OCR2A = tcnt2 + 7;
+
+    bsp.FreqRefCnt2  = tcnt2 - bsp.FreqRefTCNT2;
+    bsp.FreqRefTCNT2 = tcnt2;
+  }
+
+  {
+    const uint16_t tcnt1 = TCNT1;
+    bsp.FreqRefCnt1  = tcnt1 - bsp.FreqRefTCNT1;
+    bsp.FreqRefTCNT1 = tcnt1;
+  }
+
+  if (TIFR2 & _BV(TOV2))
+  {
+    bsp.Ticks1s += 1;
+    TIFR2      |= _BV(TOV2);
+  }
+}
+
+uint16_t
+Bsp::calcFrequency(uint8_t sigcnt, uint16_t refcnt)
+{
+  uint16_t freq;
+
+  uint8_t  cnt2;
+  uint16_t cnt1;
+
+  /* consistent read of ref frequency state */
+  do
+  {
+    cnt2 = FreqRefCnt2;
+    cnt1 = FreqRefCnt1;
+  } while(cnt2 != FreqRefCnt2);
+
+  /* cnt1 is counting with 256 Hz */
+
+  if(0)
+  {
+    uint32_t f_ref;
+
+    f_ref = 256UL * cnt1 / cnt2;
+    freq = (sigcnt * f_ref + refcnt / 2) / refcnt;
   }
   else
   {
-    ticks = (ticks & 0xFF00);
+    uint32_t divisor = cnt2 * refcnt;
+
+    freq = (sigcnt * 256UL * cnt1 + cnt2 * refcnt / 2) / divisor;
   }
 
-  ticks |= cnt;
-
-  bsp.m_Ticks256Hz = ticks;
-
-  if (cnt % 8 == 0)
-  {
-    uint16_t cnt1,diff;
-
-    cnt1 = TCNT1;
-    diff = cnt1 - bsp.m_Timer1Calibrate;
-
-    bsp.m_Timer1Calibrate = cnt1;
-
-    if(diff < 31250)
-    {
-      uint8_t reg;
-
-      reg = OSCCAL & 0x7F;
-
-      if (reg < 0x7F)
-      {
-        OSCCAL = reg + 1;
-      }
-    }
-    else if (diff > 31250)
-    {
-      uint8_t reg;
-
-      reg = OSCCAL & 0x7F;
-
-      if (reg > 0)
-      {
-        OSCCAL = reg - 1;
-      }
-    }
-  }
-  processMeasurement();
+  return freq;
 }
 
 void
 Bsp::enableRadar()
 {
   s_PinRadarShutdown.enableOutput();
-
   g_Globals.Detector.init();
-  StartMeas();
-
 }
 
 void
@@ -592,4 +624,24 @@ void Bsp::updateFrameBuffer(Ui::FramebufferType& FrameBuffer)
   FrameBuffer.update(s_Lcd);
 }
 
+void Bsp::setDate(const DateTimeType::DateType & Date)
+{
+  m_Clock.set(Date);
+
+  /* prevent time tick while setting the date */
+  m_Clock.setSecond(0);
+}
+
+void Bsp::setTime(const DateTimeType::TimeType & Time)
+{
+  m_Clock.set(Time);
+
+  /* prevent time tick while setting the date */
+  m_Clock.setSecond(0);
+}
+
+uint8_t Bsp::getCal() const
+{
+  return OSCCAL;
+}
 Bsp Bsp::s_Instance;

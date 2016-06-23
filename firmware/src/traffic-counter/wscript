@@ -16,6 +16,7 @@ def build(bld):
             'main.cpp',
             'model_diag.cpp',
             'model_traffic.cpp',
+            'recorder.cpp',
             'ui.cpp',
             '../../../3rdparty/elm-chan-fatfs-tc/mmc_avr.c',
             '../../../3rdparty/elm-chan-fatfs-tc/ff.c',

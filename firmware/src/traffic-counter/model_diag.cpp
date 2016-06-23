@@ -39,30 +39,90 @@
 using namespace ecpp;
 
 static constexpr FlashVariable<char,12> s_Filename  PROGMEM = "YYMMDDXX.csv";
-static constexpr FlashVariable<char,40> s_DiagRecordFormat    PROGMEM =  "DI0;XXX;YYYY-MM-DDTHH:MM:SSZ;XXX;XXX;  \n";
+static constexpr FlashVariable<char,sizeof(DiagRecord0Fmt)> s_DiagRecordFormat    PROGMEM =  "DI0;XXX;HH:MM:SS;XXX;XX;XXXXX;XX;XXXXX;X\n";
+
+void DiagRecorder::activate(void)
+{
+  if(STATE_DISABLED == getState())
+  {
+    RecordBuffer.reset();
+    Count   = 0;
+    LastDay = 0xFF;
+    FileRecorder::activate();
+  }
+}
+
+void DiagRecorder::poll(void)
+{
+  FileRecorder::poll();
+
+  switch(getState())
+  {
+  case STATE_OPENING:
+    {
+      if (nextFilename())
+      {
+        open(FilenameBuffer);
+      }
+      else
+      {
+        error(FR_DENIED);
+      }
+
+      Count = 0;
+    }
+    break;
+  case STATE_RUN:
+    {
+      if(STATE_ERROR <= getStateHint())
+      {
+        close();
+      }
+      else if(RecordBuffer.getCount() > 0)
+      {
+        formatRecord(RecordBuffer.front());
+        RecordBuffer.popForced();
+
+        write(&LogString0, sizeof(LogString0));
+
+        if(RecordBuffer.getCount() == 0)
+        {
+          sync();
+        }
+      }
+      else if(STATE_RUN != getStateHint())
+      {
+        close();
+      }
+    }
+    break;
+  default:
+    break;
+  }
+}
 
 void
-DiagRecorderBase::initFilename()
+DiagRecorder::initFilename(void)
 {
   auto & Clock = Bsp::getInstance().getClock();
-  FilenameType & Buffer = m_FilenameBuffer;
+  FilenameType & Buffer = FilenameBuffer;
 
   s_Filename.read(Buffer);
 
-  m_LastDay = Clock.getDay();
+  LastDay = Clock.getDay();
 
   String::convertToDecimal(&(Buffer[0]), 2, Clock.getYear());
-  String::convertToDecimal(&(Buffer[2]), 2, Clock.getMonth());
-  String::convertToDecimal(&(Buffer[4]), 2, m_LastDay);
+  String::convertToDecimal(&(Buffer[2]), 2, Clock.getMonth() + 1);
+  String::convertToDecimal(&(Buffer[4]), 2, LastDay + 1);
 }
 
-const DiagRecorderBase::FilenameType &
-DiagRecorderBase::nextFilename()
+bool
+DiagRecorder::nextFilename(void)
 {
   auto & Clock = Bsp::getInstance().getClock();
-  FilenameType & Buffer = m_FilenameBuffer;
+  FilenameType & Buffer = FilenameBuffer;
 
-  if(Clock.getDay() != m_LastDay)
+  if(Clock.getDay() != LastDay)
   {
     initFilename();
   }
@@ -89,38 +149,69 @@ DiagRecorderBase::nextFilename()
     Buffer[7] += 1;
   }
 
-  return Buffer;
+  return Buffer[0] != 0;
 }
+
 
 void
-DiagRecorderBase::startRecording()
+DiagRecorder::formatRecord(const RecordType & Record)
 {
-  m_Count = 0;
-}
+  auto & Buffer = LogString0;
+  auto & bsp = Bsp::getInstance();
+  auto time = bsp.getClock().getTime();
 
-const DiagRecorderBase::RecordStringType &
-DiagRecorderBase::formatRecord(const RecordType & Record)
-{
-  RecordStringType & Buffer = m_RecordString;
+  uint8_t tmp;
+
+  tmp = Record.Ticks1s - bsp.getClockTicksHandles1s();
+
+  /* we need to adjust the time according the record time
+   * and the ticks handled in the clock */
+  if (tmp < 0x80)
+  {
+    time.sub({0,0, (uint8_t)(- tmp)});
+  }
+  else
+  {
+    time.add({0,0,tmp});
+  }
 
   /* The following format will be used for an event
-   * DI0;XXX; XXX;XXXXX;HH:MM:SSZ;XXX;XXX;
-   * TC0;XXX;YYYY-MM-DDTHH:MM:SSZ;X;XXX;XXXX */
+   * DI0;XXX;HH:MM:SS;XXX;XX;XXX;XXXXX */
   s_DiagRecordFormat.read(Buffer);
 
-  String::formatUnsigned(&(Buffer[4]), 3, Record.m_Idx);
+  Buffer.Newline = '\n';
 
-  Record.Timestamp.formatUTCTime(&(Buffer[8]));
+  String::formatUnsigned(Buffer.Id, 3, Record.Id);
 
-  Buffer[8] = ' ';
-  String::formatUnsigned(&(Buffer[9]),  3, Record.m_Cnt0);
-  Buffer[12] = ';';
-  String::formatUnsigned(&(Buffer[13]), 5, Record.m_Cnt1);
-  Buffer[18] = ';';
+  formatTime(time, Buffer.Time);
 
-  String::formatUnsigned(&(Buffer[29]), 3, Record.m_Cnt2);
-  String::formatUnsigned(&(Buffer[33]), 3, Record.m_Speed);
+  String::formatUnsigned(Buffer.Ticks256Hz, 3, Record.Ticks256Hz);
+  String::formatUnsigned(Buffer.NSig, 2, Record.NSig);
+  String::formatUnsigned(Buffer.NRef, 5, Record.NRef);
 
-  return Buffer;
+  /* consistent read of ref frequency state */
+  uint16_t cnt1;
+  uint8_t  cnt2;
+  do
+  {
+    cnt2 = bsp.getFreqRefCnt2();
+    cnt1 = bsp.getFreqRefCnt1();
+  } while(cnt2 != bsp.getFreqRefCnt2());
+
+  String::formatUnsigned(Buffer.NFCnt2, 2, cnt2);
+  String::formatUnsigned(Buffer.NFCnt1, 5, cnt1);
+
+  if (Record.NPhase > 0)
+  {
+    Buffer.Phase = '+';
+  }
+  else if (Record.NPhase < 0)
+  {
+    Buffer.Phase = '-';
+  }
+
+  LastPhase = Buffer.Phase;
+  LastFreq  = bsp.calcFrequency(Record.NSig, Record.NRef);
 }
+
 

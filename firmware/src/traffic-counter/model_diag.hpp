@@ -37,71 +37,110 @@
 
 #include "recorder.hpp"
 
-class   DiagRecorderBase;
-typedef EventRecorder<DiagRecorderBase> DiagRecorder;
 
 class DiagEvent
 {
 public:
-  typedef ecpp::DateTime TimestampType;
-
-public:
-  TimestampType  Timestamp;
-
-  uint16_t       m_Idx;
-
-  uint8_t        m_Cnt0;
-  uint8_t        m_Cnt2;
-  uint16_t       m_Cnt1;
-  uint8_t        m_Speed;
+  uint16_t       Id;
+  uint8_t        Ticks1s;
+  uint8_t        Ticks256Hz;
+  uint8_t        NSig;
+  uint16_t       NRef;
+  int8_t         NPhase;
 };
 
-class DiagRecorderBase
+struct __attribute__((packed)) DiagRecord0Fmt
+{
+  char Tag[3];
+  char Sep0;
+  char Id[3];
+  char Sep1;
+  char Time[8];
+  char Sep2;
+  char Ticks256Hz[3];
+  char Sep3;
+  char NSig[2];
+  char Sep4;
+  char NRef[5];
+  char Sep5;
+  char NFCnt2[2];
+  char Sep6;
+  char NFCnt1[5];
+  char Sep7;
+  char Phase;
+  char Newline;
+};
+
+class DiagRecorder : public FileRecorder
 {
 protected:
   typedef DiagEvent RecordType;
-  typedef char      RecordStringType[41];
-
-  typedef char      FilenameType[8 + 1 + 3 + 1];
+  typedef char      RecordStringType[sizeof(DiagRecord0Fmt)];
 
 private:
+  Ringbuffer<RecordType, 16> RecordBuffer;
+
   union {
-    RecordStringType m_RecordString;
+    DiagRecord0Fmt   LogString0;
 
     struct {
-      FilenameType   m_FilenameBuffer;
-      uint8_t        m_LastDay;
+      FilenameType   FilenameBuffer;
+      uint8_t        LastDay;
     };
   };
 
-  DiagEvent          m_LastEvent;
+  uint16_t     Count;
 
-  uint16_t           m_Count;
-
+  void initFilename(void);
+  bool nextFilename(void);
 protected:
-  const RecordStringType & formatRecord(const RecordType& record);
-
-  void                     initFilename();
-  const FilenameType     & nextFilename();
+  void formatRecord(const RecordType& record);
 
 public:
-  void startRecording();
+  char     LastPhase;
+  uint16_t LastFreq;
 
-  DiagEvent & createDiagRecord()
+  void activate(void);
+  void poll(void);
+
+  const RecordType & getLastRecord() const
   {
-    auto & Record = m_LastEvent;
+    return RecordBuffer.back();
+  }
 
-    if (m_Count < 999)
+  RecordType* createRecord()
+  {
+    RecordType* p = 0;
+
+    if(STATE_RUN == getStateHint() &&
+       STATE_RUN == getState())
     {
-      m_Count += 1;
-    }
-    else
-    {
-      m_Count = 0;
+      p = RecordBuffer.getInsertElem();
+
+      if(0 != p)
+      {
+        p->Id = Count;
+      }
+
+      if (Count < 999)
+      {
+        Count += 1;
+      }
+      else
+      {
+        Count = 0;
+      }
     }
 
-    Record.m_Idx = m_Count;
-    return Record;
+    return p;
+  }
+
+  void storeRecord(RecordType* p)
+  {
+    if(p == RecordBuffer.getInsertElem())
+    {
+      RecordBuffer.pushForced();
+    }
   }
 };
 

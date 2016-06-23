@@ -90,28 +90,82 @@ TrafficRecord::getLength() const
   return Length1m;
 }
 
+void TrafficRecorder::activate()
+{
+  if(STATE_DISABLED == getState())
+  {
+    RecordBuffer.reset();
+    Count   = 0;
+    LastDay = 0xFF;
+    FileRecorder::activate();
+  }
+}
+
+void TrafficRecorder::poll(void)
+{
+  FileRecorder::poll();
+
+  switch(getState())
+  {
+  case STATE_OPENING:
+    {
+      if (nextFilename())
+      {
+        open(FilenameBuffer);
+      }
+      else
+      {
+        error(FR_DENIED);
+      }
+    }
+    break;
+  case STATE_RUN:
+    {
+      if(RecordBuffer.getCount() > 0)
+      {
+        formatRecord(RecordBuffer.front());
+        RecordBuffer.popForced();
+
+        write(&RecordString, sizeof(RecordString));
+
+        if(RecordBuffer.getCount() == 0)
+        {
+          sync();
+        }
+      }
+      else if(STATE_RUN != getStateHint())
+      {
+        close();
+      }
+    }
+    break;
+  default:
+    break;
+  }
+}
+
 void
-TrafficRecorderBase::initFilename()
+TrafficRecorder::initFilename()
 {
   auto & Clock = Bsp::getInstance().getClock();
-  FilenameType & Buffer = m_FilenameBuffer;
+  FilenameType & Buffer = FilenameBuffer;
 
   s_Filename.read(Buffer);
 
-  m_LastDay = Clock.getDay();
+  LastDay = Clock.getDay();
 
   String::convertToDecimal(&(Buffer[0]), 2, Clock.getYear());
-  String::convertToDecimal(&(Buffer[2]), 2, Clock.getMonth());
-  String::convertToDecimal(&(Buffer[4]), 2, m_LastDay);
+  String::convertToDecimal(&(Buffer[2]), 2, Clock.getMonth() + 1);
+  String::convertToDecimal(&(Buffer[4]), 2, LastDay + 1);
 }
 
-const TrafficRecorderBase::FilenameType &
-TrafficRecorderBase::nextFilename()
+bool
+TrafficRecorder::nextFilename()
 {
   auto & Clock = Bsp::getInstance().getClock();
-  FilenameType & Buffer = m_FilenameBuffer;
+  FilenameType & Buffer = FilenameBuffer;
 
-  if(Clock.getDay() != m_LastDay)
+  if(Clock.getDay() != LastDay)
   {
     initFilename();
   }
@@ -138,29 +192,31 @@ TrafficRecorderBase::nextFilename()
     Buffer[7] += 1;
   }
 
-  return Buffer;
+  return Buffer[0] != 0;
 }
 
 void
-TrafficRecorderBase::startRecording()
+TrafficRecorder::start()
 {
-  TrafficRecorder & Recorder = reinterpret_cast<TrafficRecorder &>(*this);
+  if(STATE_READY == getState())
   {
-    auto & Record = Recorder.getFirstRingEvent();
+    auto & record = RecordBuffer.back();
 
-    Record.m_Type = Record.TYPE_PARAMETERS;
-    Record.m_Data.Parameters.LengthCorrectionL = g_Parameters.LengthCorrectionL;
-    Record.m_Data.Parameters.LengthCorrectionR = g_Parameters.LengthCorrectionR;
+    record.m_Type = record.TYPE_PARAMETERS;
+    record.m_Data.Parameters.LengthCorrectionL = g_Parameters.LengthCorrectionL;
+    record.m_Data.Parameters.LengthCorrectionR = g_Parameters.LengthCorrectionR;
 
-    Recorder.recordEventForced(Record);
+    RecordBuffer.pushForced();
+
+    FileRecorder::start();
   }
-  m_Count = 0;
+
 }
 
-const TrafficRecorderBase::RecordStringType &
-TrafficRecorderBase::formatRecord(const RecordType & Record)
+void
+TrafficRecorder::formatRecord(const RecordType & Record)
 {
-  RecordStringType & Buffer = m_RecordString;
+  RecordStringType & Buffer = RecordString;
 
 
   if(Record.m_Type == Record.TYPE_TRAFFIC)
@@ -173,7 +229,7 @@ TrafficRecorderBase::formatRecord(const RecordType & Record)
 
     String::formatUnsigned(&(Buffer[4]), 3, Traffic.getIndex());
 
-    Traffic.getTimestamp().formatUTCTime(&(Buffer[8]));
+    formatDateTime(Traffic.getTimestamp(), *reinterpret_cast<char(*)[19]>(&(Buffer[8])));
 
     Buffer[29] = s_Direction[Traffic.getDirection()];
 
@@ -201,7 +257,5 @@ TrafficRecorderBase::formatRecord(const RecordType & Record)
     s_ParametersRecordFormat.read(Buffer);
     memset(&(Buffer[0]),' ', 39);
   }
-
-  return Buffer;
 }
 

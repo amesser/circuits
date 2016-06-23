@@ -36,13 +36,17 @@
 #include "bsp.hpp"
 #include "ui.hpp"
 
-uint8_t
+uint16_t
 Ui::calculateLength()
 {
-  const uint8_t  Speed        = m_LastSpeed;
   const uint16_t Duration1ms = m_LastDuration;
 
+#if defined(DIAGFIRMWARE)
+  return Duration1ms;
+#else
   int8_t Length1m;
+  const uint8_t  Speed        = m_LastSpeed;
+
   uint32_t Calculate;
 
   //Length1m = ((uint32_t)Duration1ms * Speed) / 3600;
@@ -81,8 +85,8 @@ Ui::calculateLength()
     }
   }
 
-
   return Length1m;
+#endif
 }
 
 void Ui::poll(uint8_t Ticks)
@@ -147,23 +151,24 @@ void Ui::poll(uint8_t Ticks)
   if (State == STATE_RECORDING || State == STATE_CNFSTOP)
   {
 #if defined(DIAGFIRMWARE)
-    const auto & Event = g_Globals.Recorder.getFirstRingEvent();
+    const auto & Event = g_Globals.Recorder.getLastRecord();
 
-    if(m_LastDuration != Event.m_Idx)
+    if (Event.NPhase > 0)
     {
-      if (m_LastDirection == TrafficRecord::LEFT)
-      {
-        m_LastDirection = TrafficRecord::RIGHT;
-      }
-      else
-      {
-        m_LastDirection = TrafficRecord::LEFT;
-      }
-
-      m_LastDuration = Event.m_Idx;
+      m_LastDirection = TrafficRecord::RIGHT;
+    }
+    else if (Event.NPhase < 0)
+    {
+      m_LastDirection = TrafficRecord::LEFT;
+    }
+    else
+    {
+      m_LastDirection = TrafficRecord::UNKOWN;
     }
 
-    m_LastSpeed = Event.m_Speed;
+    m_LastSpeed = Event.Id;
+    m_LastDuration = g_Globals.Recorder.getFilesize() % 512;
+
 #else
     const auto & Event = g_Globals.Recorder.getLastTrafficRecord();
 
@@ -215,22 +220,14 @@ void Ui::poll(uint8_t Ticks)
     }
     else if(KeyLong == KEY_OK)
     {
-      Date d = Bsp.getClock().getDate();
-      auto Year = d.getYear();
+      Bsp::DateTimeType::DateType d = Bsp.getClock();
 
-      Year = Year + KeyAdd;
-
-      if(Year < 2000)
+      if (d.add({1,0,0}))
       {
-        Year = 2000;
-      }
-      else if (Year > 9999)
-      {
-        Year = 0;
+        d = {2000,d.getMonth(),d.getDay()};
       }
 
-      d.setYear(Year);
-      Bsp.getClock().setDate(d);
+      Bsp.setDate(d);
     }
     break;
   case STATE_CONFIGMONTH:
@@ -240,19 +237,18 @@ void Ui::poll(uint8_t Ticks)
     }
     else if(KeyLong == KEY_OK)
     {
-      Date d = Bsp.getClock().getDate();
-      auto Month = d.getMonth();
+      Bsp::DateTimeType::DateType d = Bsp.getClock();
 
-      if(Month < d.getMonthsPerYear())
+      if(d.getMonth() < 11)
       {
-        d.setMonth(Month+1);
+        d.add({0,1,0});
       }
       else
       {
-        d.setMonth(1);
+        d = {d.getYear(), 0, d.getDay()};
       }
 
-      Bsp.getClock().setDate(d);
+      Bsp.setDate(d);
     }
     break;
   case STATE_CONFIGDAY:
@@ -262,19 +258,18 @@ void Ui::poll(uint8_t Ticks)
     }
     else if(KeyLong == KEY_OK)
     {
-      Date d = Bsp.getClock().getDate();
-      auto Day = d.getDay();
+      Bsp::DateTimeType::DateType d = Bsp.getClock();
 
-      if(Day < d.getDaysPerMonth())
+      if(d.getDay() < (d.getDaysInMonth() - 1))
       {
-        d.setDay(Day + 1);
+        d.add({0,0,1});
       }
       else
       {
-        d.setDay(1);
+        d = {d.getYear(), d.getMonth(), 0};
       }
 
-      Bsp.getClock().setDate(d);
+      Bsp.setDate(d);
     }
     break;
   case STATE_CONFIGHOUR:
@@ -284,18 +279,10 @@ void Ui::poll(uint8_t Ticks)
     }
     else if(KeyLong == KEY_OK)
     {
-      Time t = Bsp.getClock().getTime();
+      Bsp::DateTimeType::TimeType t = Bsp.getClock();
 
-      if(t.getHour() < (t.getHoursPerDay() - 1))
-      {
-        t.setHour(t.getHour() + 1);
-      }
-      else
-      {
-        t.setHour(0);
-      }
-
-      Bsp.getClock().setTime(t);
+      t.add({1,0,0});
+      Bsp.setTime(t);
     }
     break;
   case STATE_CONFIGMINUTE:
@@ -305,18 +292,18 @@ void Ui::poll(uint8_t Ticks)
     }
     else if(KeyLong == KEY_OK)
     {
-      Time t = Bsp.getClock().getTime();
+      Bsp::DateTimeType::TimeType t = Bsp.getClock();
 
-      if(t.getMinute() < (t.getMinutesPerHour() - 1))
+      if(t.getMinute() < 59)
       {
-        t.setMinute(t.getMinute() + 1);
+        t.add({0,1,0});
       }
       else
       {
-        t.setMinute(0);
+        t = {t.getHour(), 0, 0};
       }
 
-      Bsp.getClock().setTime(t);
+      Bsp.setTime(t);
     }
     break;
   case STATE_STARTREC:
@@ -326,6 +313,10 @@ void Ui::poll(uint8_t Ticks)
     }
     else if(KeyDown == KEY_OK)
     {
+      m_LastSpeed     = 0;
+      m_LastDirection = 0;
+      m_LastDuration  = 0;
+
       State = STATE_CHECKSD;
     }
     break;
@@ -357,7 +348,7 @@ void Ui::poll(uint8_t Ticks)
       {
         if(KeyDown == KEY_NEXT)
         {
-          Recorder.openLogfile();
+          Recorder.openFile();
         }
         else if(KeyDown == KEY_OK)
         {
@@ -398,7 +389,7 @@ void Ui::poll(uint8_t Ticks)
 
       if(Recorder.STATE_MOUNTED == RecorderState)
       {
-        Recorder.openLogfile();
+        Recorder.openFile();
         State = STATE_CHECKSD;
       }
       else if (Recorder.STATE_FORMAT != RecorderState)
@@ -439,7 +430,7 @@ void Ui::poll(uint8_t Ticks)
       if(KeyDown == KEY_NEXT)
       {
         State = STATE_RECORDING;
-        Recorder.startRecording();
+        Recorder.start();
       }
       else if(KeyDown == KEY_OK)
       {
@@ -471,7 +462,7 @@ void Ui::poll(uint8_t Ticks)
       else if(KeyDown == KEY_OK)
       {
         State = STATE_STOPPING;
-        Recorder.close();
+        Recorder.finish();
         Bsp.disableRadar();
       }
     }
@@ -506,7 +497,7 @@ void Ui::poll(uint8_t Ticks)
     {
       auto & Recorder = g_Globals.Recorder;
 
-      Recorder.close();
+      Recorder.finish();
       Bsp.disableRadar();
 
       if(KeyDown == KEY_NEXT)
@@ -524,7 +515,6 @@ void Ui::poll(uint8_t Ticks)
   }
 }
 
-constexpr FlashVariable<char,16> s_Time            PROGMEM = "DD-MM-YYYY HH:MM";
 constexpr FlashVariable<char,16> s_StartRecord     PROGMEM = "Aufzeichnung    ";
 constexpr FlashVariable<char,16> s_Cancel          PROGMEM = "Abgebrochen     ";
 constexpr FlashVariable<char,16> s_NoSDCard        PROGMEM = "Keine SD-Karte  ";
@@ -532,9 +522,11 @@ constexpr FlashVariable<char,16> s_CheckingSDCard  PROGMEM = "Prüfe SD-Karte  "
 constexpr FlashVariable<char,16> s_FormatSD        PROGMEM = "SD formatieren? ";
 constexpr FlashVariable<char,16> s_Confirm         PROGMEM = "Wirklich?       ";
 constexpr FlashVariable<char,16> s_Formating       PROGMEM = "Formatiere...   ";
-constexpr FlashVariable<char,16> s_SDError         PROGMEM = "   SD Fehler    ";
+constexpr FlashVariable<char,16> s_SDError         PROGMEM = "  SD Fehler XX  ";
 constexpr FlashVariable<char,16> s_SDFull          PROGMEM = "   SD voll      ";
 constexpr FlashVariable<char,16> s_Event           PROGMEM = "X  XX m XXX km/h";
+
+constexpr FlashVariable<char,16> s_Diag            PROGMEM = "X       XXXXX Hz";
 
 
 constexpr FlashVariable<char,16> s_Next    PROGMEM = "[W]             ";
@@ -565,21 +557,22 @@ constexpr FlashVariable<char,3>  s_Direction PROGMEM       = " <>";
 void
 Ui::formatTime(FramebufferType::RowBufferType & Buffer)
 {
-  auto & Bsp = Bsp::getInstance();
+  auto       & Bsp = Bsp::getInstance();
   auto const & Clock = Bsp.getClock();
 
-  s_Time.read(Buffer);
+  ecpp::formatDate(Clock, *reinterpret_cast<char (*)[10]>(&(Buffer[0])));
+  Buffer[10] = ' ';
 
-  String::formatUnsigned(&(Buffer[0]), 2, Clock.getDay(), '0');
-  String::formatUnsigned(&(Buffer[3]), 2, Clock.getMonth(), '0');
-  String::formatUnsigned(&(Buffer[6]), 4, Clock.getYear(), '0');
-
-  String::formatUnsigned(&(Buffer[11]), 2, Clock.getHour(), '0');
-  String::formatUnsigned(&(Buffer[14]), 2, Clock.getMinute(), '0');
+  String::convertToDecimal(&(Buffer[11]), 2, Clock.getHour());
+  String::convertToDecimal(&(Buffer[14]), 2, Clock.getMinute());
 
   if(Clock.getSecond() % 2 == 1)
   {
     Buffer[13] = ' ';
+  }
+  else
+  {
+    Buffer[13] = ':';
   }
 }
 
@@ -647,7 +640,7 @@ Ui::updateDisplay()
       s_Event.read(Row);
 
       String::formatUnsigned(&(Row[0]), 2, g_Parameters.LengthCorrectionL);
-      String::formatUnsigned(&(Row[3]), 2, calculateLength());
+      String::formatUnsigned(&(Row[2]), 3, calculateLength());
       String::formatUnsigned(&(Row[8]), 3, m_LastSpeed);
     }
     break;
@@ -656,16 +649,28 @@ Ui::updateDisplay()
       s_Event.read(Row);
 
       String::formatUnsigned(&(Row[0]), 2, g_Parameters.LengthCorrectionR);
-      String::formatUnsigned(&(Row[3]), 2, calculateLength());
+      String::formatUnsigned(&(Row[2]), 3, calculateLength());
       String::formatUnsigned(&(Row[8]), 3, m_LastSpeed);
     }
     break;
   case STATE_RECORDING:
     {
+#if defined(DIAGFIRMWARE)
+      s_Diag.read(Row);
+
+      if (Bsp.FREQCNT_RUN == Bsp.getFreqCntState())
+      {
+        Row[0] = g_Globals.Recorder.LastPhase;
+        String::formatUnsigned(&(Row[8]), 5, g_Globals.Recorder.LastFreq);
+      }
+#else
       s_Event.read(Row);
+
+
       Row[0] = s_Direction[m_LastDirection];
-      String::formatUnsigned(&(Row[3]), 2, calculateLength());
+      String::formatUnsigned(&(Row[2]), 3, calculateLength());
       String::formatUnsigned(&(Row[8]), 3, m_LastSpeed);
+#endif
     }
     break;
   case STATE_CNFSTOP:
@@ -684,9 +689,10 @@ Ui::updateDisplay()
       {
         s_SDFull.read(Row);
       }
-      else if(Recorder.STATE_ERROR == RecState)
+      else if(Recorder.STATE_ERROR <= RecState)
       {
         s_SDError.read(Row);
+        String::formatUnsigned(&(Row[12]), 2, RecState - Recorder.STATE_ERROR);
       }
     }
     break;

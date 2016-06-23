@@ -102,7 +102,7 @@ private:
 
   static void formatTime(FramebufferType::RowBufferType & Buffer);
 
-  uint8_t calculateLength();
+  uint16_t calculateLength();
 public:
   enum State getState() const
   {
