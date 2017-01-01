@@ -1,0 +1,3 @@
+[submodule "board/kicadlib"]
+	path = board/kicadlib
+	url = https://github.com/amesser/kicadlib.git
