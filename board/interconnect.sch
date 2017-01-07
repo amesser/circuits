@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:data-logger-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -29,14 +30,14 @@ LIBS:atmel
 LIBS:contrib
 LIBS:valves
 LIBS:stm32
-LIBS:amesser_altera_fpga
-LIBS:amesser_atmel_sam
 LIBS:Oscillators
 LIBS:amesser_miscic
 LIBS:amesser-conn
 LIBS:amesser_misc
 LIBS:amesser_pmic
 LIBS:amesser_linear
+LIBS:amesser_altera_fpga
+LIBS:amesser_atmel_sam
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END
@@ -53,9 +54,11 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L 10M08DCF256 U?
+L 10M08DCF256-RESCUE-data-logger U?
 U 1 1 5864DFF8
 P 2000 4700
+AR Path="/5864DFF8" Ref="U?"  Part="1" 
+AR Path="/5864D98F/5864DFF8" Ref="U?"  Part="1" 
 F 0 "U?" H 2000 4900 60  0000 C CNN
 F 1 "10M08DCF256" H 1900 3800 60  0000 C CNN
 F 2 "" H 2000 3500 60  0001 C CNN
@@ -74,51 +77,51 @@ F 3 "" H 5200 1300 60  0001 C CNN
 	2    4350 2400
 	1    0    0    -1  
 $EndComp
-Text Label 4850 3400 0    60   ~ 0
+Text Label 6000 3400 0    60   ~ 0
 SMC_D8
-Text Label 4850 3500 0    60   ~ 0
+Text Label 6000 3500 0    60   ~ 0
 SMC_D9
-Text Label 4850 3600 0    60   ~ 0
+Text Label 6000 3600 0    60   ~ 0
 SMC_D10
-Text Label 4850 3700 0    60   ~ 0
+Text Label 6000 3700 0    60   ~ 0
 SMC_D11
-Text Label 4850 3800 0    60   ~ 0
+Text Label 6000 3800 0    60   ~ 0
 SMC_D12
-Text Label 4850 3900 0    60   ~ 0
+Text Label 6000 3900 0    60   ~ 0
 SMC_D13
-Text Label 4850 4000 0    60   ~ 0
+Text Label 6000 4000 0    60   ~ 0
 SMC_D14
-Text Label 4850 1500 0    60   ~ 0
+Text Label 6000 1500 0    60   ~ 0
 SMC_D15
-Text Label 4850 1800 0    60   ~ 0
+Text Label 6000 1800 0    60   ~ 0
 SMC_D0
-Text Label 4850 1900 0    60   ~ 0
+Text Label 6000 1900 0    60   ~ 0
 SMC_D1
-Text Label 4850 2000 0    60   ~ 0
+Text Label 6000 2000 0    60   ~ 0
 SMC_D2
-Text Label 4850 2100 0    60   ~ 0
+Text Label 6000 2100 0    60   ~ 0
 SMC_D3
-Text Label 4850 2200 0    60   ~ 0
+Text Label 6000 2200 0    60   ~ 0
 SMC_D4
-Text Label 4850 2300 0    60   ~ 0
+Text Label 6000 2300 0    60   ~ 0
 SMC_D5
-Text Label 4850 2400 0    60   ~ 0
+Text Label 6000 2400 0    60   ~ 0
 SMC_D6
-Text Label 4850 2500 0    60   ~ 0
+Text Label 6000 2500 0    60   ~ 0
 SMC_D7
-Text Label 4850 1700 0    60   ~ 0
+Text Label 6000 1700 0    60   ~ 0
 SMC_A1
-Text Label 4850 4100 0    60   ~ 0
+Text Label 6000 4100 0    60   ~ 0
 SMC_A2
-Text Label 4850 4200 0    60   ~ 0
+Text Label 6000 4200 0    60   ~ 0
 SMC_A3
-Text Label 4850 4300 0    60   ~ 0
+Text Label 6000 4300 0    60   ~ 0
 SMC_A4
-Text Label 4850 4400 0    60   ~ 0
+Text Label 6000 4400 0    60   ~ 0
 SMC_A5
-Text Label 4850 4500 0    60   ~ 0
+Text Label 6000 4500 0    60   ~ 0
 SMC_A6
-Text Label 4850 4600 0    60   ~ 0
+Text Label 6000 4600 0    60   ~ 0
 SMC_A7
 $Comp
 L SAM3U1EB-CU U?
@@ -131,38 +134,40 @@ F 3 "" H 5200 4500 60  0001 C CNN
 	3    4350 5600
 	1    0    0    -1  
 $EndComp
-Text Label 4850 4700 0    60   ~ 0
+Text Label 6000 4700 0    60   ~ 0
 SMC_A8
-Text Label 4850 4800 0    60   ~ 0
+Text Label 6000 4800 0    60   ~ 0
 SMC_A9
-Text Label 4850 4900 0    60   ~ 0
+Text Label 6000 4900 0    60   ~ 0
 SMC_A10
-Text Label 4850 5000 0    60   ~ 0
+Text Label 6000 5000 0    60   ~ 0
 SMC_A11
-Text Label 4850 5100 0    60   ~ 0
+Text Label 6000 5300 0    60   ~ 0
 SMC_A12
-Text Label 4850 5200 0    60   ~ 0
+Text Label 6000 5400 0    60   ~ 0
 SMC_A13
-Text Label 4850 6100 0    60   ~ 0
+Text Label 6000 6100 0    60   ~ 0
 SMC_A14
-Text Label 4850 6200 0    60   ~ 0
+Text Label 6000 6200 0    60   ~ 0
 SMC_A15
-Text Label 4850 2900 0    60   ~ 0
+Text Label 6000 2900 0    60   ~ 0
 SMC_NCS0
-Text Label 4850 1600 0    60   ~ 0
+Text Label 6000 1600 0    60   ~ 0
 SMC_NBS0
-Text Label 4850 2800 0    60   ~ 0
+Text Label 6000 2800 0    60   ~ 0
 SMC_NRD
-Text Label 4850 3200 0    60   ~ 0
+Text Label 6000 3200 0    60   ~ 0
 SMC_NWE
-Text Label 4850 5600 0    60   ~ 0
+Text Label 6000 5600 0    60   ~ 0
 SMC_NBS1
-Text Label 4850 5700 0    60   ~ 0
+Text Label 6000 5800 0    60   ~ 0
 SMC_NCS2
 $Comp
-L 10M08DCF256 U?
+L 10M08DCF256-RESCUE-data-logger U?
 U 9 1 5864DB9C
 P 2000 2400
+AR Path="/5864DB9C" Ref="U?"  Part="9" 
+AR Path="/5864D98F/5864DB9C" Ref="U?"  Part="9" 
 F 0 "U?" H 2000 2600 60  0000 C CNN
 F 1 "10M08DCF256" H 2000 550 60  0000 C CNN
 F 2 "" H 2000 1200 60  0001 C CNN
@@ -312,33 +317,33 @@ F 3 "" H 1000 4450 50  0000 C CNN
 $EndComp
 Text Label 2600 2200 0    60   ~ 0
 FPGA_DEV_OE
-Text Label 4850 3100 0    60   ~ 0
+Text Label 6000 3100 0    60   ~ 0
 FPGA_DEV_OE
 Text Label 2600 3900 0    60   ~ 0
 FPGA_CONFIG_SEL
-Text Label 4850 5900 0    60   ~ 0
+Text Label 6000 6000 0    60   ~ 0
 FPGA_CONFIG_SEL
 Text Label 2600 3400 0    60   ~ 0
 ~FPGA_STATUS~
 Text Label 650  4000 0    60   ~ 0
 VCCIO_MCU
-Text Label 4850 2700 0    60   ~ 0
+Text Label 6000 2700 0    60   ~ 0
 ~FPGA_STATUS~
 Text Label 650  3900 0    60   ~ 0
 ~FPGA_CONFIG~
-Text Label 4850 2600 0    60   ~ 0
+Text Label 6000 2600 0    60   ~ 0
 ~FPGA_CONFIG~
 Text Label 2600 3300 0    60   ~ 0
 FPGA_CONF_DONE
-Text Label 4850 5800 0    60   ~ 0
+Text Label 6000 5900 0    60   ~ 0
 FPGA_CONF_DONE
 Text Label 2600 2900 0    60   ~ 0
 FPGA_CRC_ERROR
-Text Label 4850 5500 0    60   ~ 0
+Text Label 6000 5500 0    60   ~ 0
 FPGA_CRC_ERROR
 Text Label 2600 1700 0    60   ~ 0
 ~FPGA_CLR~
-Text Label 4850 3000 0    60   ~ 0
+Text Label 6000 3000 0    60   ~ 0
 ~FPGA_CLR~
 Text GLabel 1250 7200 0    60   Input ~ 0
 VCCIO_MCU
@@ -498,100 +503,100 @@ Entry Wire Line
 Entry Wire Line
 	3400 5700 3500 5800
 Entry Wire Line
-	6300 1500 6400 1600
+	6800 1500 6900 1600
 Entry Wire Line
-	6300 1600 6400 1700
+	6800 1600 6900 1700
 Entry Wire Line
-	6300 1700 6400 1800
+	6800 1700 6900 1800
 Entry Wire Line
-	6300 1800 6400 1900
+	6800 1800 6900 1900
 Entry Wire Line
-	6300 1900 6400 2000
+	6800 1900 6900 2000
 Entry Wire Line
-	6300 2000 6400 2100
+	6800 2000 6900 2100
 Entry Wire Line
-	6300 2100 6400 2200
+	6800 2100 6900 2200
 Entry Wire Line
-	6300 2200 6400 2300
+	6800 2200 6900 2300
 Entry Wire Line
-	6300 2300 6400 2400
+	6800 2300 6900 2400
 Entry Wire Line
-	6300 2400 6400 2500
+	6800 2400 6900 2500
 Entry Wire Line
-	6300 2500 6400 2600
+	6800 2500 6900 2600
 Entry Wire Line
-	6300 2600 6400 2700
+	6800 2600 6900 2700
 Entry Wire Line
-	6300 2700 6400 2800
+	6800 2700 6900 2800
 Entry Wire Line
-	6300 2800 6400 2900
+	6800 2800 6900 2900
 Entry Wire Line
-	6300 2900 6400 3000
+	6800 2900 6900 3000
 Entry Wire Line
-	6300 3000 6400 3100
+	6800 3000 6900 3100
 Entry Wire Line
-	6300 3100 6400 3200
+	6800 3100 6900 3200
 Entry Wire Line
-	6300 3200 6400 3300
+	6800 3200 6900 3300
 Entry Wire Line
-	6300 3400 6400 3500
+	6800 3400 6900 3500
 Entry Wire Line
-	6300 3500 6400 3600
+	6800 3500 6900 3600
 Entry Wire Line
-	6300 3600 6400 3700
+	6800 3600 6900 3700
 Entry Wire Line
-	6300 3700 6400 3800
+	6800 3700 6900 3800
 Entry Wire Line
-	6300 3800 6400 3900
+	6800 3800 6900 3900
 Entry Wire Line
-	6300 3900 6400 4000
+	6800 3900 6900 4000
 Entry Wire Line
-	6300 4000 6400 4100
+	6800 4000 6900 4100
 Entry Wire Line
-	6300 4100 6400 4200
+	6800 4100 6900 4200
 Entry Wire Line
-	6300 4200 6400 4300
+	6800 4200 6900 4300
 Entry Wire Line
-	6300 4300 6400 4400
+	6800 4300 6900 4400
 Entry Wire Line
-	6300 4400 6400 4500
+	6800 4400 6900 4500
 Entry Wire Line
-	6300 4500 6400 4600
+	6800 4500 6900 4600
 Entry Wire Line
-	6300 4600 6400 4700
+	6800 4600 6900 4700
 Entry Wire Line
-	6300 4700 6400 4800
+	6800 4700 6900 4800
 Entry Wire Line
-	6300 4800 6400 4900
+	6800 4800 6900 4900
 Entry Wire Line
-	6300 4900 6400 5000
+	6800 4900 6900 5000
 Entry Wire Line
-	6300 5000 6400 5100
+	6800 5000 6900 5100
 Entry Wire Line
-	6300 5100 6400 5200
+	6800 5300 6900 5400
 Entry Wire Line
-	6300 5200 6400 5300
+	6800 5400 6900 5500
 Entry Wire Line
-	6300 5800 6400 5900
+	6800 5800 6900 5900
 Entry Wire Line
-	6300 5500 6400 5600
+	6800 5500 6900 5600
 Entry Wire Line
-	6300 5600 6400 5700
+	6800 5600 6900 5700
 Entry Wire Line
-	6300 5900 6400 6000
+	6800 5900 6900 6000
 Entry Wire Line
-	6300 6100 6400 6200
+	6800 6100 6900 6200
 Entry Wire Line
-	6300 6200 6400 6300
-Text GLabel 5750 3300 2    60   Output ~ 0
+	6800 6200 6900 6300
+Text GLabel 6400 3300 2    50   Output ~ 0
 MCU_PCK1
-Text GLabel 5700 6000 2    50   Output ~ 0
+Text GLabel 5700 6700 2    50   Output ~ 0
 MCU_FPGA_TCK
 Text GLabel 5700 6600 2    50   Output ~ 0
 MCU_FPGA_TMS
-Text GLabel 5700 5300 2    50   Output ~ 0
+Text GLabel 5700 6800 2    50   Output ~ 0
 MCU_FPGA_TDI
-Text GLabel 5700 5400 2    50   Input ~ 0
+Text GLabel 5700 6900 2    50   Input ~ 0
 MCU_FPGA_TDO
 Entry Wire Line
 	3400 1000 3500 1100
@@ -605,18 +610,18 @@ Text Label 2600 3700 0    60   ~ 0
 SMC_A17
 Text Label 2600 3800 0    60   ~ 0
 SMC_A18
-Text Label 4850 6300 0    60   ~ 0
+Text Label 6000 6300 0    60   ~ 0
 SMC_A16
-Text Label 4850 6400 0    60   ~ 0
+Text Label 6000 6400 0    60   ~ 0
 SMC_A17
-Text Label 4850 6500 0    60   ~ 0
+Text Label 6000 6500 0    60   ~ 0
 SMC_A18
 Entry Wire Line
-	6300 6300 6400 6400
+	6800 6300 6900 6400
 Entry Wire Line
-	6300 6400 6400 6500
+	6800 6400 6900 6500
 Entry Wire Line
-	6300 6500 6400 6600
+	6800 6500 6900 6600
 Wire Wire Line
 	1350 1100 1400 1100
 Wire Wire Line
@@ -658,80 +663,6 @@ Connection ~ 1200 4000
 Wire Wire Line
 	1350 4100 1350 4000
 Connection ~ 1350 4000
-Wire Wire Line
-	4850 1500 6300 1500
-Wire Wire Line
-	4850 1600 6300 1600
-Wire Wire Line
-	4850 1700 6300 1700
-Wire Wire Line
-	4850 1800 6300 1800
-Wire Wire Line
-	4850 1900 6300 1900
-Wire Wire Line
-	4850 2000 6300 2000
-Wire Wire Line
-	4850 2100 6300 2100
-Wire Wire Line
-	4850 2200 6300 2200
-Wire Wire Line
-	4850 2300 6300 2300
-Wire Wire Line
-	4850 2400 6300 2400
-Wire Wire Line
-	4850 2500 6300 2500
-Wire Wire Line
-	4850 2800 6300 2800
-Wire Wire Line
-	4850 2900 6300 2900
-Wire Wire Line
-	4850 3100 6300 3100
-Wire Wire Line
-	4850 3200 6300 3200
-Wire Wire Line
-	4850 3400 6300 3400
-Wire Wire Line
-	4850 3500 6300 3500
-Wire Wire Line
-	4850 3600 6300 3600
-Wire Wire Line
-	4850 3700 6300 3700
-Wire Wire Line
-	4850 3800 6300 3800
-Wire Wire Line
-	4850 3900 6300 3900
-Wire Wire Line
-	4850 4000 6300 4000
-Wire Wire Line
-	4850 4100 6300 4100
-Wire Wire Line
-	4850 4200 6300 4200
-Wire Wire Line
-	4850 4300 6300 4300
-Wire Wire Line
-	4850 4400 6300 4400
-Wire Wire Line
-	4850 4500 6300 4500
-Wire Wire Line
-	4850 4600 6300 4600
-Wire Wire Line
-	4850 4700 6300 4700
-Wire Wire Line
-	4850 4800 6300 4800
-Wire Wire Line
-	4850 4900 6300 4900
-Wire Wire Line
-	4850 5000 6300 5000
-Wire Wire Line
-	4850 5100 6300 5100
-Wire Wire Line
-	4850 5200 6300 5200
-Wire Wire Line
-	4850 5600 6300 5600
-Wire Wire Line
-	4850 6100 6300 6100
-Wire Wire Line
-	4850 6200 6300 6200
 Wire Wire Line
 	2600 1000 3400 1000
 Wire Wire Line
@@ -825,16 +756,6 @@ Wire Wire Line
 Wire Wire Line
 	1750 7200 1250 7200
 Wire Wire Line
-	4850 5900 6300 5900
-Wire Wire Line
-	4850 5500 6300 5500
-Wire Wire Line
-	4850 3000 6300 3000
-Wire Wire Line
-	4850 2700 6300 2700
-Wire Wire Line
-	4850 2600 6300 2600
-Wire Wire Line
 	1350 5900 1900 5900
 Wire Wire Line
 	1850 5900 1850 6400
@@ -878,11 +799,9 @@ Wire Wire Line
 Wire Bus Line
 	3500 1100 3500 7500
 Wire Bus Line
-	3500 7500 6400 7500
+	3500 7500 6900 7500
 Wire Bus Line
-	6400 7500 6400 1600
-Wire Wire Line
-	5750 3300 4850 3300
+	6900 7500 6900 1600
 Wire Wire Line
 	4850 900  5000 900 
 Wire Wire Line
@@ -897,24 +816,8 @@ Wire Wire Line
 	2600 1500 3400 1500
 Wire Wire Line
 	2600 1800 3400 1800
-Wire Wire Line
-	4850 6300 6300 6300
-Wire Wire Line
-	4850 6400 6300 6400
-Wire Wire Line
-	4850 6500 6300 6500
-Wire Wire Line
-	4850 5800 6300 5800
-Wire Wire Line
-	5700 5300 4850 5300
-Wire Wire Line
-	5700 5400 4850 5400
-Wire Wire Line
-	5700 6000 4850 6000
-Wire Wire Line
-	4850 5700 6300 5700
 Entry Wire Line
-	6300 5700 6400 5800
+	6800 6000 6900 6100
 Wire Wire Line
 	5700 6600 4850 6600
 $Comp
@@ -1003,20 +906,382 @@ Text Label 4850 5400 0    60   ~ 0
 MCU_RXD3
 Text Label 4850 6000 0    60   ~ 0
 MCU_SCK3
-Text GLabel 5700 6900 2    50   Input ~ 0
+Text GLabel 4900 6900 2    50   Input ~ 0
 MCU_AD4
 Wire Wire Line
-	5700 6900 4850 6900
-Text GLabel 5700 7000 2    50   Input ~ 0
+	4900 6900 4850 6900
+Text GLabel 4900 7000 2    50   Input ~ 0
 MCU_AD5
-Text GLabel 5700 7100 2    50   Input ~ 0
+Text GLabel 4900 7100 2    50   Input ~ 0
 MCU_AD6
-Text GLabel 5700 7200 2    50   Input ~ 0
+Text GLabel 4900 7200 2    50   Input ~ 0
 MCU_AD7
 Wire Wire Line
-	5700 7000 4850 7000
+	4900 7000 4850 7000
 Wire Wire Line
-	4850 7100 5700 7100
+	4850 7100 4900 7100
 Wire Wire Line
-	5700 7200 4850 7200
+	4900 7200 4850 7200
+$Comp
+L R_PACK4 RP?
+U 1 1 587111E3
+P 5800 6550
+F 0 "RP?" H 5800 7000 50  0000 C CNN
+F 1 "22 Ohm" H 5800 6500 50  0000 C CNN
+F 2 "" H 5800 6550 50  0000 C CNN
+F 3 "" H 5800 6550 50  0000 C CNN
+	1    5800 6550
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 5871199B
+P 5800 1850
+F 0 "RP?" H 5800 2300 50  0000 C CNN
+F 1 "22 Ohm" H 5800 1800 50  0000 C CNN
+F 2 "" H 5800 1850 50  0000 C CNN
+F 3 "" H 5800 1850 50  0000 C CNN
+	1    5800 1850
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 58711A4C
+P 5800 2250
+F 0 "RP?" H 5800 2700 50  0000 C CNN
+F 1 "22 Ohm" H 5800 2200 50  0000 C CNN
+F 2 "" H 5800 2250 50  0000 C CNN
+F 3 "" H 5800 2250 50  0000 C CNN
+	1    5800 2250
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 58711AB2
+P 5800 2650
+F 0 "RP?" H 5800 3100 50  0000 C CNN
+F 1 "22 Ohm" H 5800 2600 50  0000 C CNN
+F 2 "" H 5800 2650 50  0000 C CNN
+F 3 "" H 5800 2650 50  0000 C CNN
+	1    5800 2650
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 58711B1F
+P 5800 3050
+F 0 "RP?" H 5800 3500 50  0000 C CNN
+F 1 "22 Ohm" H 5800 3000 50  0000 C CNN
+F 2 "" H 5800 3050 50  0000 C CNN
+F 3 "" H 5800 3050 50  0000 C CNN
+	1    5800 3050
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 58711BCB
+P 5800 3450
+F 0 "RP?" H 5800 3900 50  0000 C CNN
+F 1 "22 Ohm" H 5800 3400 50  0000 C CNN
+F 2 "" H 5800 3450 50  0000 C CNN
+F 3 "" H 5800 3450 50  0000 C CNN
+	1    5800 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 58711CA4
+P 5800 3850
+F 0 "RP?" H 5800 4300 50  0000 C CNN
+F 1 "22 Ohm" H 5800 3800 50  0000 C CNN
+F 2 "" H 5800 3850 50  0000 C CNN
+F 3 "" H 5800 3850 50  0000 C CNN
+	1    5800 3850
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 58711D64
+P 5800 4250
+F 0 "RP?" H 5800 4700 50  0000 C CNN
+F 1 "22 Ohm" H 5800 4200 50  0000 C CNN
+F 2 "" H 5800 4250 50  0000 C CNN
+F 3 "" H 5800 4250 50  0000 C CNN
+	1    5800 4250
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 58711E07
+P 5800 4650
+F 0 "RP?" H 5800 5100 50  0000 C CNN
+F 1 "22 Ohm" H 5800 4600 50  0000 C CNN
+F 2 "" H 5800 4650 50  0000 C CNN
+F 3 "" H 5800 4650 50  0000 C CNN
+	1    5800 4650
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 58711E89
+P 5800 5050
+F 0 "RP?" H 5800 5500 50  0000 C CNN
+F 1 "22 Ohm" H 5800 5000 50  0000 C CNN
+F 2 "" H 5800 5050 50  0000 C CNN
+F 3 "" H 5800 5050 50  0000 C CNN
+	1    5800 5050
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 58711F87
+P 5800 5650
+F 0 "RP?" H 5800 6100 50  0000 C CNN
+F 1 "22 Ohm" H 5800 5600 50  0000 C CNN
+F 2 "" H 5800 5650 50  0000 C CNN
+F 3 "" H 5800 5650 50  0000 C CNN
+	1    5800 5650
+	1    0    0    -1  
+$EndComp
+$Comp
+L R_PACK4 RP?
+U 1 1 587124C7
+P 5800 6150
+F 0 "RP?" H 5800 6600 50  0000 C CNN
+F 1 "22 Ohm" H 5800 6100 50  0000 C CNN
+F 2 "" H 5800 6150 50  0000 C CNN
+F 3 "" H 5800 6150 50  0000 C CNN
+	1    5800 6150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4850 5500 5600 5500
+Wire Wire Line
+	5600 5600 4850 5600
+Wire Wire Line
+	4850 5100 5550 5100
+Wire Wire Line
+	5550 5100 5550 5300
+Wire Wire Line
+	5550 5300 5600 5300
+Wire Wire Line
+	4850 5200 5500 5200
+Wire Wire Line
+	5500 5200 5500 5400
+Wire Wire Line
+	5500 5400 5600 5400
+Wire Wire Line
+	4850 1500 5600 1500
+Wire Wire Line
+	4850 1600 5600 1600
+Wire Wire Line
+	4850 1700 5600 1700
+Wire Wire Line
+	4850 1800 5600 1800
+Wire Wire Line
+	4850 1900 5600 1900
+Wire Wire Line
+	4850 2000 5600 2000
+Wire Wire Line
+	4850 2100 5600 2100
+Wire Wire Line
+	4850 2200 5600 2200
+Wire Wire Line
+	4850 2300 5600 2300
+Wire Wire Line
+	4850 2400 5600 2400
+Wire Wire Line
+	4850 2500 5600 2500
+Wire Wire Line
+	4850 2600 5600 2600
+Wire Wire Line
+	4850 2700 5600 2700
+Wire Wire Line
+	4850 2800 5600 2800
+Wire Wire Line
+	4850 2900 5600 2900
+Wire Wire Line
+	4850 3000 5600 3000
+Wire Wire Line
+	4850 3100 5600 3100
+Wire Wire Line
+	4850 3200 5600 3200
+Wire Wire Line
+	4850 3300 5600 3300
+Wire Wire Line
+	4850 3400 5600 3400
+Wire Wire Line
+	4850 3500 5600 3500
+Wire Wire Line
+	4850 3600 5600 3600
+Wire Wire Line
+	4850 3700 5600 3700
+Wire Wire Line
+	4850 3800 5600 3800
+Wire Wire Line
+	4850 3900 5600 3900
+Wire Wire Line
+	4850 4000 5600 4000
+Wire Wire Line
+	4850 4100 5600 4100
+Wire Wire Line
+	4850 4200 5600 4200
+Wire Wire Line
+	4850 4300 5600 4300
+Wire Wire Line
+	4850 4400 5600 4400
+Wire Wire Line
+	4850 4500 5600 4500
+Wire Wire Line
+	4850 4600 5600 4600
+Wire Wire Line
+	4850 4700 5600 4700
+Wire Wire Line
+	4850 4800 5600 4800
+Wire Wire Line
+	4850 4900 5600 4900
+Wire Wire Line
+	4850 5000 5600 5000
+Wire Wire Line
+	5600 5800 5550 5800
+Wire Wire Line
+	5550 5800 5550 5700
+Wire Wire Line
+	5550 5700 4850 5700
+Wire Wire Line
+	4850 5800 5500 5800
+Wire Wire Line
+	5500 5800 5500 5900
+Wire Wire Line
+	5500 5900 5600 5900
+Wire Wire Line
+	5600 6000 5450 6000
+Wire Wire Line
+	5450 6000 5450 5900
+Wire Wire Line
+	5450 5900 4850 5900
+Wire Wire Line
+	4850 6100 5600 6100
+Wire Wire Line
+	4850 6200 5600 6200
+Wire Wire Line
+	5600 6300 4850 6300
+Wire Wire Line
+	4850 6400 5600 6400
+Wire Wire Line
+	5600 6500 4850 6500
+Wire Wire Line
+	5700 6700 4900 6700
+Wire Wire Line
+	4900 6700 4900 6000
+Wire Wire Line
+	4900 6000 4850 6000
+Wire Wire Line
+	6000 6500 6800 6500
+Wire Wire Line
+	6800 6400 6000 6400
+Wire Wire Line
+	4850 5300 5400 5300
+Wire Wire Line
+	5400 5300 5400 6800
+Wire Wire Line
+	5400 6800 5700 6800
+Wire Wire Line
+	5700 6900 5350 6900
+Wire Wire Line
+	5350 6900 5350 5400
+Wire Wire Line
+	5350 5400 4850 5400
+Wire Wire Line
+	6000 1500 6800 1500
+Wire Wire Line
+	6000 1600 6800 1600
+Wire Wire Line
+	6000 1700 6800 1700
+Wire Wire Line
+	6000 1800 6800 1800
+Wire Wire Line
+	6000 1900 6800 1900
+Wire Wire Line
+	6000 2000 6800 2000
+Wire Wire Line
+	6000 2100 6800 2100
+Wire Wire Line
+	6000 2200 6800 2200
+Wire Wire Line
+	6000 2300 6800 2300
+Wire Wire Line
+	6000 2400 6800 2400
+Wire Wire Line
+	6000 2500 6800 2500
+Wire Wire Line
+	6000 2600 6800 2600
+Wire Wire Line
+	6000 2700 6800 2700
+Wire Wire Line
+	6000 2800 6800 2800
+Wire Wire Line
+	6000 2900 6800 2900
+Wire Wire Line
+	6000 3000 6800 3000
+Wire Wire Line
+	6000 3100 6800 3100
+Wire Wire Line
+	6000 3200 6800 3200
+Wire Wire Line
+	6000 3300 6400 3300
+Wire Wire Line
+	6000 3400 6800 3400
+Wire Wire Line
+	6000 3500 6800 3500
+Wire Wire Line
+	6000 3600 6800 3600
+Wire Wire Line
+	6000 3700 6800 3700
+Wire Wire Line
+	6000 3800 6800 3800
+Wire Wire Line
+	6000 3900 6800 3900
+Wire Wire Line
+	6000 4000 6800 4000
+Wire Wire Line
+	6000 4100 6800 4100
+Wire Wire Line
+	6000 4200 6800 4200
+Wire Wire Line
+	6000 4300 6800 4300
+Wire Wire Line
+	6000 4400 6800 4400
+Wire Wire Line
+	6000 4500 6800 4500
+Wire Wire Line
+	6000 4600 6800 4600
+Wire Wire Line
+	6000 4700 6800 4700
+Wire Wire Line
+	6000 4800 6800 4800
+Wire Wire Line
+	6000 4900 6800 4900
+Wire Wire Line
+	6000 5000 6800 5000
+Wire Wire Line
+	6000 5300 6800 5300
+Wire Wire Line
+	6000 5400 6800 5400
+Wire Wire Line
+	6000 5500 6800 5500
+Wire Wire Line
+	6000 5600 6800 5600
+Wire Wire Line
+	6000 5800 6800 5800
+Wire Wire Line
+	6000 5900 6800 5900
+Wire Wire Line
+	6000 6000 6800 6000
+Wire Wire Line
+	6000 6100 6800 6100
+Wire Wire Line
+	6000 6200 6800 6200
+Wire Wire Line
+	6000 6300 6800 6300
 $EndSCHEMATC

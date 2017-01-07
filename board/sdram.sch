@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:data-logger-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -29,14 +30,14 @@ LIBS:atmel
 LIBS:contrib
 LIBS:valves
 LIBS:stm32
-LIBS:amesser_altera_fpga
-LIBS:amesser_atmel_sam
 LIBS:Oscillators
 LIBS:amesser_miscic
 LIBS:amesser-conn
 LIBS:amesser_misc
 LIBS:amesser_pmic
 LIBS:amesser_linear
+LIBS:amesser_altera_fpga
+LIBS:amesser_atmel_sam
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END
@@ -635,7 +636,7 @@ SDRAM_D30
 Text Label 10350 3250 0    60   ~ 0
 SDRAM_D31
 $Comp
-L 10M08DCF256 U?
+L 10M08DCF256-RESCUE-data-logger U?
 U 7 1 583F569F
 P 2250 3300
 F 0 "U?" H 2250 3500 60  0000 C CNN
@@ -698,7 +699,7 @@ SDRAM_D24
 Text Label 2850 3600 0    60   ~ 0
 SDRAM_D25
 $Comp
-L 10M08DCF256 U?
+L 10M08DCF256-RESCUE-data-logger U?
 U 6 1 583F5804
 P 2250 5700
 F 0 "U?" H 2250 5900 60  0000 C CNN
@@ -709,7 +710,7 @@ F 3 "" H 2250 4500 60  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 10M08DCF256 U?
+L 10M08DCF256-RESCUE-data-logger U?
 U 8 1 583F5917
 P 2250 1300
 F 0 "U?" H 2250 1500 60  0000 C CNN

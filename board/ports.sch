@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:data-logger-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -29,14 +30,14 @@ LIBS:atmel
 LIBS:contrib
 LIBS:valves
 LIBS:stm32
-LIBS:amesser_altera_fpga
-LIBS:amesser_atmel_sam
 LIBS:Oscillators
 LIBS:amesser_miscic
 LIBS:amesser-conn
 LIBS:amesser_misc
 LIBS:amesser_pmic
 LIBS:amesser_linear
+LIBS:amesser_altera_fpga
+LIBS:amesser_atmel_sam
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END
@@ -53,7 +54,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L 10M08DCF256 U?
+L 10M08DCF256-RESCUE-data-logger U?
 U 4 1 586885C6
 P 1700 3600
 F 0 "U?" H 1700 3800 60  0000 C CNN
@@ -64,7 +65,7 @@ F 3 "" H 1700 2400 60  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 10M08DCF256 U?
+L 10M08DCF256-RESCUE-data-logger U?
 U 5 1 5868865D
 P 5450 2600
 F 0 "U?" H 5450 2800 60  0000 C CNN
