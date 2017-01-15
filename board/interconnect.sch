@@ -1,5 +1,4 @@
 EESchema Schematic File Version 2
-LIBS:data-logger-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -44,11 +43,11 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 3 6
-Title ""
-Date ""
-Rev ""
-Comp ""
-Comment1 ""
+Title "Altera MAX 10 FPGA Development Board"
+Date "2017-01-14"
+Rev "1"
+Comp "Copyright (c) 2017 Andreas Messer"
+Comment1 "MAX10-SAM3U Interconnect"
 Comment2 ""
 Comment3 ""
 Comment4 ""
@@ -162,19 +161,6 @@ Text Label 5600 5600 0    60   ~ 0
 SMC_NBS1
 Text Label 5600 5700 0    60   ~ 0
 SMC_NCS2
-$Comp
-L 10M08DCF256-RESCUE-data-logger U?
-U 9 1 5864DB9C
-P 2000 2400
-AR Path="/5864DB9C" Ref="U?"  Part="9" 
-AR Path="/5864D98F/5864DB9C" Ref="U?"  Part="9" 
-F 0 "U?" H 2000 2400 60  0000 C CNN
-F 1 "10M08DCF256" H 2000 550 60  0001 C CNN
-F 2 "" H 2000 1200 60  0001 C CNN
-F 3 "" H 2000 1200 60  0001 C CNN
-	9    2000 2400
-	1    0    0    -1  
-$EndComp
 Text Label 2600 4800 0    60   ~ 0
 SMC_D8
 Text Label 2600 4900 0    60   ~ 0
@@ -940,9 +926,9 @@ Entry Wire Line
 Entry Wire Line
 	6400 5900 6500 6000
 Wire Bus Line
-	6500 7500 3500 7500
+	3500 7500 6500 7500
 Wire Bus Line
-	6500 1600 6500 7500
+	6500 7500 6500 1600
 $Comp
 L R_ARRAY_4 R?
 U 1 1 58740B74
@@ -1128,4 +1114,15 @@ Connection ~ 1000 4400
 Wire Wire Line
 	850  4050 850  4000
 Connection ~ 850  4000
+$Comp
+L 10M08DCF256 U?
+U 9 1 587BEE4F
+P 2000 2400
+F 0 "U?" H 2000 2600 60  0000 C CNN
+F 1 "10M08DCF256" H 2000 550 60  0000 C CNN
+F 2 "" H 2000 1200 60  0001 C CNN
+F 3 "" H 2000 1200 60  0001 C CNN
+	9    2000 2400
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

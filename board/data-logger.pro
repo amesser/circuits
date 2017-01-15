@@ -1,4 +1,4 @@
-update=Sa 07 Jan 2017 16:04:12 CET
+update=Sa 14 Jan 2017 16:53:29 CET
 version=1
 last_client=kicad
 [pcbnew]
@@ -25,16 +25,6 @@ version=1
 NetIExt=net
 [general]
 version=1
-[schematic_editor]
-version=1
-PageLayoutDescrFile=
-PlotDirectoryName=
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=
-SpiceForceRefPrefix=0
-SpiceUseNetNumbers=0
-LabSize=60
 [eeschema]
 version=1
 LibDir=library;kicadlib/symbols
@@ -78,3 +68,13 @@ LibName36=kicadlib/symbols/amesser_pmic
 LibName37=kicadlib/symbols/amesser_linear
 LibName38=kicadlib/symbols/amesser_altera_fpga
 LibName39=kicadlib/symbols/amesser_atmel_sam
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=/tmp/
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60

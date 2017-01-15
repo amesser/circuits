@@ -1,5 +1,4 @@
 EESchema Schematic File Version 2
-LIBS:data-logger-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -44,11 +43,11 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 2 6
-Title ""
-Date ""
-Rev ""
-Comp ""
-Comment1 ""
+Title "Altera MAX 10 FPGA Development Board"
+Date "2017-01-14"
+Rev "1"
+Comp "Copyright (c) 2017 Andreas Messer"
+Comment1 "MAX10 SDRAM"
 Comment2 ""
 Comment3 ""
 Comment4 ""
@@ -567,6 +566,8 @@ $Comp
 L 10M08DCF256-RESCUE-data-logger U?
 U 7 1 583F569F
 P 2250 3300
+AR Path="/583F569F" Ref="U?"  Part="7" 
+AR Path="/583F2DBA/583F569F" Ref="U?"  Part="7" 
 F 0 "U?" H 2250 3300 60  0000 C CNN
 F 1 "10M08DCF256" H 2250 1450 60  0001 C CNN
 F 2 "" H 2250 2100 60  0001 C CNN
@@ -588,31 +589,31 @@ Text Label 2850 1400 0    60   ~ 0
 SDRAM_D5
 Text Label 2850 1500 0    60   ~ 0
 SDRAM_D6
-Text Label 2850 1600 0    60   ~ 0
+Text Label 2850 4900 0    60   ~ 0
 SDRAM_D7
-Text Label 2850 1700 0    60   ~ 0
+Text Label 2850 5000 0    60   ~ 0
 SDRAM_D8
-Text Label 2850 1800 0    60   ~ 0
+Text Label 2850 5100 0    60   ~ 0
 SDRAM_D9
-Text Label 2850 1900 0    60   ~ 0
+Text Label 2850 5200 0    60   ~ 0
 SDRAM_D10
-Text Label 2850 2100 0    60   ~ 0
-SDRAM_D11
-Text Label 2850 2200 0    60   ~ 0
-SDRAM_D12
-Text Label 2850 2300 0    60   ~ 0
-SDRAM_D13
-Text Label 2850 2400 0    60   ~ 0
-SDRAM_D14
 Text Label 2850 2500 0    60   ~ 0
-SDRAM_D15
+SDRAM_D11
 Text Label 2850 2700 0    60   ~ 0
-SDRAM_D16
+SDRAM_D12
 Text Label 2850 2800 0    60   ~ 0
-SDRAM_D17
+SDRAM_D13
 Text Label 2850 2900 0    60   ~ 0
-SDRAM_D18
+SDRAM_D14
 Text Label 2850 3000 0    60   ~ 0
+SDRAM_D15
+Text Label 2850 5800 0    60   ~ 0
+SDRAM_D16
+Text Label 2850 5900 0    60   ~ 0
+SDRAM_D17
+Text Label 2850 6300 0    60   ~ 0
+SDRAM_D18
+Text Label 2850 6400 0    60   ~ 0
 SDRAM_D19
 Text Label 2850 3100 0    60   ~ 0
 SDRAM_D20
@@ -630,6 +631,8 @@ $Comp
 L 10M08DCF256-RESCUE-data-logger U?
 U 6 1 583F5804
 P 2250 5700
+AR Path="/583F5804" Ref="U?"  Part="6" 
+AR Path="/583F2DBA/583F5804" Ref="U?"  Part="6" 
 F 0 "U?" H 2250 5700 60  0000 C CNN
 F 1 "10M08DCF256" H 2250 4600 60  0000 C CNN
 F 2 "" H 2250 4500 60  0001 C CNN
@@ -641,6 +644,8 @@ $Comp
 L 10M08DCF256-RESCUE-data-logger U?
 U 8 1 583F5917
 P 2250 1300
+AR Path="/583F5917" Ref="U?"  Part="8" 
+AR Path="/583F2DBA/583F5917" Ref="U?"  Part="8" 
 F 0 "U?" H 2250 1300 60  0000 C CNN
 F 1 "10M08DCF256" H 1550 -400 60  0001 C CNN
 F 2 "" H 2250 100 60  0001 C CNN
@@ -662,13 +667,13 @@ Text Label 2850 4200 0    60   ~ 0
 SDRAM_D31
 Text Label 2850 4700 0    60   ~ 0
 SDRAM_A0
-Text Label 2850 4900 0    60   ~ 0
+Text Label 2850 2100 0    60   ~ 0
 SDRAM_A1
-Text Label 2850 5000 0    60   ~ 0
+Text Label 2850 2200 0    60   ~ 0
 SDRAM_A2
-Text Label 2850 5100 0    60   ~ 0
+Text Label 2850 2300 0    60   ~ 0
 SDRAM_A3
-Text Label 2850 5200 0    60   ~ 0
+Text Label 2850 2400 0    60   ~ 0
 SDRAM_A4
 Text Label 2850 5300 0    60   ~ 0
 SDRAM_A5
@@ -680,31 +685,31 @@ Text Label 2850 5600 0    60   ~ 0
 SDRAM_A8
 Text Label 2850 5700 0    60   ~ 0
 SDRAM_A9
-Text Label 2850 5800 0    60   ~ 0
+Text Label 2850 4500 0    60   ~ 0
 SDRAM_A10
-Text Label 2850 5900 0    60   ~ 0
+Text Label 2850 4600 0    60   ~ 0
 SDRAM_A11
 Text Label 2850 6000 0    60   ~ 0
 SDRAM_BA0
-Text Label 2850 4300 0    60   ~ 0
+Text Label 2850 1600 0    60   ~ 0
 SDRAM_DQM0
-Text Label 2850 4400 0    60   ~ 0
+Text Label 2850 6600 0    60   ~ 0
 SDRAM_DQM1
 Text Label 2850 6200 0    60   ~ 0
 SDRAM_DQM2
-Text Label 2850 4600 0    60   ~ 0
+Text Label 2850 6500 0    60   ~ 0
 SDRAM_DQM3
 Text Label 2850 6100 0    60   ~ 0
 SDRAM_BA1
-Text Label 2850 4500 0    60   ~ 0
+Text Label 2850 4400 0    60   ~ 0
 SDRAM_CLK
-Text Label 2850 6300 0    60   ~ 0
+Text Label 2850 4300 0    60   ~ 0
 SDRAM_CKE
-Text Label 2850 6400 0    60   ~ 0
+Text Label 2850 1900 0    60   ~ 0
 ~SDRAM_RAS~
-Text Label 2850 6500 0    60   ~ 0
+Text Label 2850 1800 0    60   ~ 0
 ~SDRAM_CAS~
-Text Label 2850 6600 0    60   ~ 0
+Text Label 2850 1700 0    60   ~ 0
 ~SDRAM_WE~
 Text Label 2850 6700 0    60   ~ 0
 ~SDRAM_CS~

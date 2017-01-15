@@ -1,5 +1,4 @@
 EESchema Schematic File Version 2
-LIBS:data-logger-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -44,11 +43,11 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 6
-Title ""
-Date ""
-Rev ""
-Comp ""
-Comment1 ""
+Title "Altera MAX 10 FPGA Development Board"
+Date "2017-01-14"
+Rev "1"
+Comp "Copyright (c) 2017 Andreas Messer"
+Comment1 "Overview"
 Comment2 ""
 Comment3 ""
 Comment4 ""
