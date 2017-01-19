@@ -1,0 +1,8 @@
+(fp_lib_table
+  (lib (name board_footprints)(type KiCad)(uri "$(KIPRJMOD)/footprints.pretty")(options "")(descr ""))
+  (lib (name AMesser_Inductors)(type KiCad)(uri "$(KIPRJMOD)/kicadlib/packages/AMesser_Inductors.pretty")(options "")(descr ""))
+  (lib (name AMesser_Connectors)(type KiCad)(uri "$(KIPRJMOD)/kicadlib/packages/AMesser_Connectors.pretty")(options "")(descr ""))
+  (lib (name AMesser_Power_Management)(type KiCad)(uri "$(KIPRJMOD)/kicadlib/packages/AMesser_Power_Management.pretty")(options "")(descr ""))
+  (lib (name amesser-special)(type Legacy)(uri "$(KIPRJMOD)/kicadlib/packages/amesser-special.mod")(options "")(descr ""))
+  (lib (name AMesser_Oscillators)(type KiCad)(uri "$(KIPRJMOD)/kicadlib/packages/AMesser_Oscillators.pretty")(options "")(descr ""))
+)
