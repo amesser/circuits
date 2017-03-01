@@ -12,7 +12,7 @@ Package
   - FBGA486, 1.00mm
   
 IO Pins
-  - CYUSB Interface 42 lines
+  - CYUSB Interface 44 lines
   - DDR3 RAM Interface
   - Data Interface: 48 lines
 
@@ -43,7 +43,7 @@ Provides USB3.1 connection to host PC. Interfaces with FPGA using
 
 
 IO Pins
-  - FPGA Interface 32 data + 9 control + 1 clock line 
+  - FPGA Interface 32 data + 11 control + 1 clock line 
 
 Power supply
   - 1.2V/200mA core 

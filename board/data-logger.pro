@@ -1,4 +1,4 @@
-update=Di 17 Jan 2017 20:20:48 CET
+update=Mi 01 Mär 2017 19:24:00 CET
 version=1
 last_client=kicad
 [pcbnew]
@@ -33,6 +33,8 @@ NetFmtName=
 SpiceForceRefPrefix=0
 SpiceUseNetNumbers=0
 LabSize=60
+[general]
+version=1
 [eeschema]
 version=1
 LibDir=library;kicadlib/symbols
@@ -75,5 +77,5 @@ LibName35=kicadlib/symbols/amesser_pmic
 LibName36=kicadlib/symbols/amesser_linear
 LibName37=kicadlib/symbols/amesser_altera_fpga
 LibName38=kicadlib/symbols/amesser_atmel_sam
-[general]
-version=1
+LibName39=kicadlib/symbols/amesser_memory
+LibName40=kicadlib/symbols/amesser_cypress_fx
