@@ -37,12 +37,14 @@ LIBS:amesser_pmic
 LIBS:amesser_linear
 LIBS:amesser_altera_fpga
 LIBS:amesser_atmel_sam
+LIBS:amesser_memory
+LIBS:amesser_cypress_fx
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 6
+Sheet 1 7
 Title "Altera MAX 10 FPGA Development Board"
 Date "2017-01-14"
 Rev "1"
@@ -81,5 +83,11 @@ S 2950 2500 850  1300
 U 586885BD
 F0 "Ports" 60
 F1 "ports.sch" 60
+$EndSheet
+$Sheet
+S 2900 750  900  1450
+U 58B8810A
+F0 "Cyclone V DDR3 ram" 60
+F1 "cyclone_v_ddr3.sch" 60
 $EndSheet
 $EndSCHEMATC
