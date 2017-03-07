@@ -1,0 +1,1226 @@
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:stm32
+LIBS:Oscillators
+LIBS:amesser_miscic
+LIBS:amesser-conn
+LIBS:amesser_misc
+LIBS:amesser_pmic
+LIBS:amesser_linear
+LIBS:amesser_altera_fpga
+LIBS:amesser_atmel_sam
+LIBS:amesser_memory
+LIBS:amesser_cypress_fx
+LIBS:data-logger-cache
+EELAYER 25 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 8 8
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L 5CEFA2F23 U?
+U 3 1 58BF1560
+P 5600 4800
+F 0 "U?" H 5100 7200 60  0000 C CNN
+F 1 "5CEFA2F23" H 5600 2500 60  0000 C CNN
+F 2 "" H 5600 4900 60  0001 C CNN
+F 3 "" H 5600 4900 60  0001 C CNN
+	3    5600 4800
+	1    0    0    -1  
+$EndComp
+$Comp
+L 5CEFA2F23 U?
+U 4 1 58BF15E3
+P 5600 2300
+F 0 "U?" H 5100 4700 60  0000 C CNN
+F 1 "5CEFA2F23" H 5600 -200 60  0000 C CNN
+F 2 "" H 5600 2400 60  0001 C CNN
+F 3 "" H 5600 2400 60  0001 C CNN
+	4    5600 2300
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 58BF1720
+P 4550 4200
+F 0 "C?" H 4575 4300 50  0000 L CNN
+F 1 "4µ7" H 4575 4100 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 4588 4050 50  0001 C CNN
+F 3 "" H 4550 4200 50  0000 C CNN
+	1    4550 4200
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 58BF17CC
+P 4350 4200
+F 0 "C?" H 4375 4300 50  0000 L CNN
+F 1 "4µ7" H 4375 4100 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 4388 4050 50  0001 C CNN
+F 3 "" H 4350 4200 50  0000 C CNN
+	1    4350 4200
+	1    0    0    -1  
+$EndComp
+Text Label 4050 4000 0    60   ~ 0
+VCCIO_FX3
+$Comp
+L GND #PWR?
+U 1 1 58BF1882
+P 4350 4450
+F 0 "#PWR?" H 4350 4200 50  0001 C CNN
+F 1 "GND" H 4350 4300 50  0001 C CNN
+F 2 "" H 4350 4450 50  0000 C CNN
+F 3 "" H 4350 4450 50  0000 C CNN
+	1    4350 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 58BF1A98
+P 4550 1000
+F 0 "C?" H 4575 1100 50  0000 L CNN
+F 1 "4µ7" H 4575 900 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 4588 850 50  0001 C CNN
+F 3 "" H 4550 1000 50  0000 C CNN
+	1    4550 1000
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 58BF1A9E
+P 4350 1000
+F 0 "C?" H 4375 1100 50  0000 L CNN
+F 1 "4µ7" H 4375 900 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 4388 850 50  0001 C CNN
+F 3 "" H 4350 1000 50  0000 C CNN
+	1    4350 1000
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 58BF1AA4
+P 4150 1000
+F 0 "C?" H 4175 1100 50  0000 L CNN
+F 1 "4µ7" H 4175 900 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 4188 850 50  0001 C CNN
+F 3 "" H 4150 1000 50  0000 C CNN
+	1    4150 1000
+	1    0    0    -1  
+$EndComp
+Text Label 4000 800  0    60   ~ 0
+VCCIO_FX3
+$Comp
+L GND #PWR?
+U 1 1 58BF1ABA
+P 4150 1250
+F 0 "#PWR?" H 4150 1000 50  0001 C CNN
+F 1 "GND" H 4150 1100 50  0000 C CNN
+F 2 "" H 4150 1250 50  0000 C CNN
+F 3 "" H 4150 1250 50  0000 C CNN
+	1    4150 1250
+	1    0    0    -1  
+$EndComp
+$Comp
+L CYUSB3012-BZXC U?
+U 4 1 58BF2440
+P 2250 1900
+F 0 "U?" H 1850 3100 60  0000 C CNN
+F 1 "CYUSB3012-BZXC" H 2300 700 60  0001 C CNN
+F 2 "" H 2250 1500 60  0001 C CNN
+F 3 "" H 2250 1500 60  0001 C CNN
+	4    2250 1900
+	1    0    0    -1  
+$EndComp
+$Comp
+L CYUSB3012-BZXC U?
+U 5 1 58BF24CE
+P 2250 3800
+F 0 "U?" H 1850 3200 60  0000 C CNN
+F 1 "CYUSB3012-BZXC" H 2300 2600 60  0001 C CNN
+F 2 "" H 2250 3400 60  0001 C CNN
+F 3 "" H 2250 3400 60  0001 C CNN
+	5    2250 3800
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 58BF25F9
+P 1300 1000
+F 0 "C?" H 1325 1100 50  0000 L CNN
+F 1 "4µ7" H 1325 900 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 1338 850 50  0001 C CNN
+F 3 "" H 1300 1000 50  0000 C CNN
+	1    1300 1000
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 58BF2714
+P 1100 1000
+F 0 "C?" H 1125 1100 50  0000 L CNN
+F 1 "4µ7" H 1125 900 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 1138 850 50  0001 C CNN
+F 3 "" H 1100 1000 50  0000 C CNN
+	1    1100 1000
+	1    0    0    -1  
+$EndComp
+Text Label 800  800  0    60   ~ 0
+VCCIO_FX3
+$Comp
+L GND #PWR?
+U 1 1 58BF2A99
+P 1100 1250
+F 0 "#PWR?" H 1100 1000 50  0001 C CNN
+F 1 "GND" H 1100 1100 50  0000 C CNN
+F 2 "" H 1100 1250 50  0000 C CNN
+F 3 "" H 1100 1250 50  0000 C CNN
+	1    1100 1250
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 58BF2B2A
+P 1300 3300
+F 0 "C?" H 1325 3400 50  0000 L CNN
+F 1 "4µ7" H 1325 3200 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 1338 3150 50  0001 C CNN
+F 3 "" H 1300 3300 50  0000 C CNN
+	1    1300 3300
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 58BF2CAE
+P 1300 3500
+F 0 "#PWR?" H 1300 3250 50  0001 C CNN
+F 1 "GND" H 1300 3350 50  0000 C CNN
+F 2 "" H 1300 3500 50  0000 C CNN
+F 3 "" H 1300 3500 50  0000 C CNN
+	1    1300 3500
+	1    0    0    -1  
+$EndComp
+Text Label 800  3100 0    60   ~ 0
+VCCIO_FX3
+Text Label 2950 800  0    60   ~ 0
+FPGA_FX3_D0
+Text Label 2950 900  0    60   ~ 0
+FPGA_FX3_D1
+Text Label 2950 1000 0    60   ~ 0
+FPGA_FX3_D2
+Text Label 2950 1100 0    60   ~ 0
+FPGA_FX3_D3
+Text Label 2950 1200 0    60   ~ 0
+FPGA_FX3_D4
+Text Label 2950 1300 0    60   ~ 0
+FPGA_FX3_D5
+Text Label 2950 1400 0    60   ~ 0
+FPGA_FX3_D6
+Text Label 2950 1500 0    60   ~ 0
+FPGA_FX3_D7
+Text Label 2950 1600 0    60   ~ 0
+FPGA_FX3_D8
+Text Label 2950 1700 0    60   ~ 0
+FPGA_FX3_D9
+Text Label 2950 1800 0    60   ~ 0
+FPGA_FX3_D10
+Text Label 2950 1900 0    60   ~ 0
+FPGA_FX3_D11
+Text Label 2950 2000 0    60   ~ 0
+FPGA_FX3_D12
+Text Label 2950 2100 0    60   ~ 0
+FPGA_FX3_D13
+Text Label 2950 2200 0    60   ~ 0
+FPGA_FX3_D14
+Text Label 2950 2300 0    60   ~ 0
+FPGA_FX3_D15
+Text Label 2950 3100 0    60   ~ 0
+FPGA_FX3_D16
+Text Label 2950 3200 0    60   ~ 0
+FPGA_FX3_D17
+Text Label 2950 3300 0    60   ~ 0
+FPGA_FX3_D18
+Text Label 2950 3400 0    60   ~ 0
+FPGA_FX3_D19
+Text Label 2950 3500 0    60   ~ 0
+FPGA_FX3_D20
+Text Label 2950 3600 0    60   ~ 0
+FPGA_FX3_D21
+Text Label 2950 3700 0    60   ~ 0
+FPGA_FX3_D22
+Text Label 2950 3800 0    60   ~ 0
+FPGA_FX3_D23
+Text Label 2950 3900 0    60   ~ 0
+FPGA_FX3_D24
+Text Label 2950 4000 0    60   ~ 0
+FPGA_FX3_D25
+Text Label 2950 4100 0    60   ~ 0
+FPGA_FX3_D26
+Text Label 2950 4200 0    60   ~ 0
+FPGA_FX3_D27
+$Comp
+L CYUSB3012-BZXC U?
+U 6 1 58BF30D0
+P 2250 4900
+F 0 "U?" H 1850 4600 60  0000 C CNN
+F 1 "CYUSB3012-BZXC" H 2250 4500 60  0000 C CNN
+F 2 "" H 2250 4500 60  0001 C CNN
+F 3 "" H 2250 4500 60  0001 C CNN
+	6    2250 4900
+	1    0    0    -1  
+$EndComp
+Text Label 2950 4500 0    60   ~ 0
+FPGA_FX3_D28
+Text Label 2950 4600 0    60   ~ 0
+FPGA_FX3_D29
+Text Label 2950 4700 0    60   ~ 0
+FPGA_FX3_D30
+Text Label 2950 4800 0    60   ~ 0
+FPGA_FX3_D31
+$Comp
+L C C?
+U 1 1 58BF3225
+P 1300 4700
+F 0 "C?" H 1325 4800 50  0000 L CNN
+F 1 "4µ7" H 1325 4600 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 1338 4550 50  0001 C CNN
+F 3 "" H 1300 4700 50  0000 C CNN
+	1    1300 4700
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 58BF322D
+P 1300 4900
+F 0 "#PWR?" H 1300 4650 50  0001 C CNN
+F 1 "GND" H 1300 4750 50  0000 C CNN
+F 2 "" H 1300 4900 50  0000 C CNN
+F 3 "" H 1300 4900 50  0000 C CNN
+	1    1300 4900
+	1    0    0    -1  
+$EndComp
+Text Label 800  4500 0    60   ~ 0
+VCCIO_FX3
+Text Label 1550 1700 2    60   ~ 0
+~FPGA_FX3_SLCS~
+Text Label 1550 1800 2    60   ~ 0
+~FPGA_FX3_SLWR~
+Text Label 1550 1900 2    60   ~ 0
+~FPGA_FX3_SLOE~
+Text Label 1550 2000 2    60   ~ 0
+~FPGA_FX3_SLRD~
+Text Label 1550 2100 2    60   ~ 0
+FPGA_FX3_PKTEND
+Text Label 1550 2500 2    60   ~ 0
+FPGA_FX3_A0
+Text Label 1550 2600 2    60   ~ 0
+FPGA_FX3_A1
+Text Label 2950 2500 0    60   ~ 0
+FPGA_FX3_FLAGA
+Text Label 2950 2600 0    60   ~ 0
+FPGA_FX3_FLAGB
+Text Label 2950 2700 0    60   ~ 0
+FPGA_FX3_FLAGC
+Text Label 2950 2800 0    60   ~ 0
+FPGA_FX3_FLAGD
+Text Label 1550 1500 2    60   ~ 0
+FPGA_FX3_CLK
+Text Label 6400 2400 0    60   ~ 0
+FPGA_FX3_D0
+Text Label 6400 3700 0    60   ~ 0
+FPGA_FX3_D1
+Text Label 6400 2300 0    60   ~ 0
+FPGA_FX3_D2
+Text Label 6400 1100 0    60   ~ 0
+FPGA_FX3_D3
+Text Label 6400 800  0    60   ~ 0
+FPGA_FX3_D4
+Text Label 6400 2600 0    60   ~ 0
+FPGA_FX3_D5
+Text Label 6400 1400 0    60   ~ 0
+FPGA_FX3_D6
+Text Label 6400 1000 0    60   ~ 0
+FPGA_FX3_D7
+Text Label 6400 2000 0    60   ~ 0
+FPGA_FX3_D8
+Text Label 6400 3500 0    60   ~ 0
+FPGA_FX3_D9
+Text Label 6400 2500 0    60   ~ 0
+FPGA_FX3_D10
+Text Label 6400 2100 0    60   ~ 0
+FPGA_FX3_D11
+Text Label 6400 1300 0    60   ~ 0
+FPGA_FX3_D12
+Text Label 6400 2700 0    60   ~ 0
+FPGA_FX3_D13
+Text Label 6400 3400 0    60   ~ 0
+FPGA_FX3_D14
+Text Label 6400 1200 0    60   ~ 0
+FPGA_FX3_D15
+Text Label 6400 2200 0    60   ~ 0
+FPGA_FX3_D16
+Text Label 6400 1500 0    60   ~ 0
+FPGA_FX3_D17
+Text Label 6400 2800 0    60   ~ 0
+FPGA_FX3_D18
+Text Label 6400 1900 0    60   ~ 0
+FPGA_FX3_D19
+Text Label 6400 1600 0    60   ~ 0
+FPGA_FX3_D20
+Text Label 6400 2900 0    60   ~ 0
+FPGA_FX3_D21
+Text Label 6400 3800 0    60   ~ 0
+FPGA_FX3_D22
+Text Label 6400 3200 0    60   ~ 0
+FPGA_FX3_D23
+Text Label 6400 3600 0    60   ~ 0
+FPGA_FX3_D24
+Text Label 6400 900  0    60   ~ 0
+FPGA_FX3_D25
+Text Label 6400 3100 0    60   ~ 0
+FPGA_FX3_D26
+Text Label 6400 1700 0    60   ~ 0
+FPGA_FX3_D27
+Text Label 6400 3300 0    60   ~ 0
+FPGA_FX3_D28
+Text Label 6400 3900 0    60   ~ 0
+FPGA_FX3_D29
+Text Label 6400 1800 0    60   ~ 0
+FPGA_FX3_D30
+Text Label 6400 3000 0    60   ~ 0
+FPGA_FX3_D31
+Text Label 6400 5300 0    60   ~ 0
+FPGA_FX3_FLAGA
+Text Label 6400 5200 0    60   ~ 0
+FPGA_FX3_FLAGB
+Text Label 6400 4800 0    60   ~ 0
+FPGA_FX3_FLAGC
+Text Label 6400 5100 0    60   ~ 0
+FPGA_FX3_FLAGD
+Text Label 6400 4400 0    60   ~ 0
+~FPGA_FX3_SLCS~
+Text Label 6400 4500 0    60   ~ 0
+~FPGA_FX3_SLWR~
+Text Label 6400 4300 0    60   ~ 0
+~FPGA_FX3_SLOE~
+Text Label 6400 4700 0    60   ~ 0
+~FPGA_FX3_SLRD~
+Text Label 6400 5000 0    60   ~ 0
+FPGA_FX3_PKTEND
+Text Label 6400 5400 0    60   ~ 0
+FPGA_FX3_A0
+Text Label 6400 5500 0    60   ~ 0
+FPGA_FX3_A1
+Text Label 6400 4600 0    60   ~ 0
+FPGA_FX3_CLK
+Entry Wire Line
+	7250 4300 7350 4200
+Entry Wire Line
+	7250 4400 7350 4300
+Entry Wire Line
+	7250 4500 7350 4400
+Entry Wire Line
+	7250 4600 7350 4500
+Entry Wire Line
+	7250 4700 7350 4600
+Entry Wire Line
+	7250 4800 7350 4700
+Entry Wire Line
+	7250 5000 7350 4900
+Entry Wire Line
+	7250 5100 7350 5000
+Entry Wire Line
+	7250 5200 7350 5100
+Entry Wire Line
+	7250 5300 7350 5200
+Entry Wire Line
+	7250 5400 7350 5300
+Entry Wire Line
+	7250 5500 7350 5400
+Entry Wire Line
+	7250 800  7350 700 
+Entry Wire Line
+	7250 900  7350 800 
+Entry Wire Line
+	7250 1000 7350 900 
+Entry Wire Line
+	7250 1100 7350 1000
+Entry Wire Line
+	7250 1200 7350 1100
+Entry Wire Line
+	7250 1300 7350 1200
+Entry Wire Line
+	7250 1400 7350 1300
+Entry Wire Line
+	7250 1500 7350 1400
+Entry Wire Line
+	7250 1600 7350 1500
+Entry Wire Line
+	7250 1700 7350 1600
+Entry Wire Line
+	7250 1800 7350 1700
+Entry Wire Line
+	7250 1900 7350 1800
+Entry Wire Line
+	7250 2000 7350 1900
+Entry Wire Line
+	7250 2100 7350 2000
+Entry Wire Line
+	7250 2200 7350 2100
+Entry Wire Line
+	7250 2300 7350 2200
+Entry Wire Line
+	7250 2400 7350 2300
+Entry Wire Line
+	7250 2500 7350 2400
+Entry Wire Line
+	7250 2600 7350 2500
+Entry Wire Line
+	7250 2700 7350 2600
+Entry Wire Line
+	7250 2800 7350 2700
+Entry Wire Line
+	7250 2900 7350 2800
+Entry Wire Line
+	7250 3000 7350 2900
+Entry Wire Line
+	7250 3100 7350 3000
+Entry Wire Line
+	7250 3200 7350 3100
+Entry Wire Line
+	7250 3300 7350 3200
+Entry Wire Line
+	7250 3400 7350 3300
+Entry Wire Line
+	7250 3500 7350 3400
+Entry Wire Line
+	7250 3600 7350 3500
+Entry Wire Line
+	7250 3700 7350 3600
+Entry Wire Line
+	7250 3800 7350 3700
+Entry Wire Line
+	7250 3900 7350 3800
+Entry Wire Line
+	3700 800  3800 700 
+Entry Wire Line
+	3700 900  3800 800 
+Entry Wire Line
+	3700 1000 3800 900 
+Entry Wire Line
+	3700 1100 3800 1000
+Entry Wire Line
+	3700 1200 3800 1100
+Entry Wire Line
+	3700 1300 3800 1200
+Entry Wire Line
+	3700 1400 3800 1300
+Entry Wire Line
+	3700 1500 3800 1400
+Entry Wire Line
+	3700 1600 3800 1500
+Entry Wire Line
+	3700 1700 3800 1600
+Entry Wire Line
+	3700 1800 3800 1700
+Entry Wire Line
+	3700 1900 3800 1800
+Entry Wire Line
+	3700 2000 3800 1900
+Entry Wire Line
+	3700 2100 3800 2000
+Entry Wire Line
+	3700 2200 3800 2100
+Entry Wire Line
+	3700 2300 3800 2200
+Entry Wire Line
+	3700 2500 3800 2400
+Entry Wire Line
+	3700 2600 3800 2500
+Entry Wire Line
+	3700 2700 3800 2600
+Entry Wire Line
+	3700 2800 3800 2700
+Entry Wire Line
+	3700 3100 3800 3000
+Entry Wire Line
+	3700 3200 3800 3100
+Entry Wire Line
+	3700 3300 3800 3200
+Entry Wire Line
+	3700 3400 3800 3300
+Entry Wire Line
+	3700 3500 3800 3400
+Entry Wire Line
+	3700 3600 3800 3500
+Entry Wire Line
+	3700 3700 3800 3600
+Entry Wire Line
+	3700 3800 3800 3700
+Entry Wire Line
+	3700 3900 3800 3800
+Entry Wire Line
+	3700 4000 3800 3900
+Entry Wire Line
+	3700 4100 3800 4000
+Entry Wire Line
+	3700 4200 3800 4100
+Entry Wire Line
+	3700 4500 3800 4400
+Entry Wire Line
+	3700 4600 3800 4500
+Entry Wire Line
+	3700 4700 3800 4600
+Entry Wire Line
+	3700 4800 3800 4700
+Entry Wire Line
+	600  1400 700  1500
+Entry Wire Line
+	600  1600 700  1700
+Entry Wire Line
+	600  1700 700  1800
+Entry Wire Line
+	600  1800 700  1900
+Entry Wire Line
+	600  1900 700  2000
+Entry Wire Line
+	600  2000 700  2100
+Entry Wire Line
+	600  2400 700  2500
+Entry Wire Line
+	600  2500 700  2600
+Entry Bus Bus
+	600  700  700  600 
+Entry Bus Bus
+	7250 600  7350 700 
+$Comp
+L CYUSB3012-BZXC U?
+U 8 1 58BF608D
+P 2250 5800
+F 0 "U?" H 1850 7000 60  0000 C CNN
+F 1 "CYUSB3012-BZXC" H 2300 4600 60  0000 C CNN
+F 2 "" H 2250 5400 60  0001 C CNN
+F 3 "" H 2250 5400 60  0001 C CNN
+	8    2250 5800
+	1    0    0    -1  
+$EndComp
+Text Label 1000 5300 0    60   ~ 0
+VCCIO_FX3
+$Comp
+L C C?
+U 1 1 58BF61DA
+P 1300 5500
+F 0 "C?" H 1325 5600 50  0000 L CNN
+F 1 "4µ7" H 1325 5400 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 1338 5350 50  0001 C CNN
+F 3 "" H 1300 5500 50  0000 C CNN
+	1    1300 5500
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 58BF6430
+P 1300 5700
+F 0 "#PWR?" H 1300 5450 50  0001 C CNN
+F 1 "GND" H 1300 5550 50  0000 C CNN
+F 2 "" H 1300 5700 50  0000 C CNN
+F 3 "" H 1300 5700 50  0000 C CNN
+	1    1300 5700
+	1    0    0    -1  
+$EndComp
+$Comp
+L CYUSB3012-BZXC U?
+U 7 1 58BF7377
+P 2250 6500
+F 0 "U?" H 1850 7700 60  0000 C CNN
+F 1 "CYUSB3012-BZXC" H 2300 5300 60  0000 C CNN
+F 2 "" H 2250 6100 60  0001 C CNN
+F 3 "" H 2250 6100 60  0001 C CNN
+	7    2250 6500
+	1    0    0    -1  
+$EndComp
+$Comp
+L 5CEFA2F23 U?
+U 10 1 58BF7881
+P 5600 6300
+F 0 "U?" H 5100 8700 60  0000 C CNN
+F 1 "5CEFA2F23" H 5600 3800 60  0000 C CNN
+F 2 "" H 5600 6400 60  0001 C CNN
+F 3 "" H 5600 6400 60  0001 C CNN
+	10   5600 6300
+	1    0    0    -1  
+$EndComp
+Text Label 1000 6300 0    60   ~ 0
+VCCIO_FX3
+$Comp
+L C C?
+U 1 1 58BF9511
+P 1300 6500
+F 0 "C?" H 1325 6600 50  0000 L CNN
+F 1 "4µ7" H 1325 6400 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 1338 6350 50  0001 C CNN
+F 3 "" H 1300 6500 50  0000 C CNN
+	1    1300 6500
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 58BF951B
+P 1300 6700
+F 0 "#PWR?" H 1300 6450 50  0001 C CNN
+F 1 "GND" H 1300 6550 50  0000 C CNN
+F 2 "" H 1300 6700 50  0000 C CNN
+F 3 "" H 1300 6700 50  0000 C CNN
+	1    1300 6700
+	1    0    0    -1  
+$EndComp
+Entry Bus Bus
+	3800 700  3900 600 
+$Comp
+L C C?
+U 1 1 58BF9D29
+P 4550 5800
+F 0 "C?" H 4575 5900 50  0000 L CNN
+F 1 "4µ7" H 4575 5700 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 4588 5650 50  0001 C CNN
+F 3 "" H 4550 5800 50  0000 C CNN
+	1    4550 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L C C?
+U 1 1 58BF9D2F
+P 4350 5800
+F 0 "C?" H 4375 5900 50  0000 L CNN
+F 1 "4µ7" H 4375 5700 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0402" H 4388 5650 50  0001 C CNN
+F 3 "" H 4350 5800 50  0000 C CNN
+	1    4350 5800
+	1    0    0    -1  
+$EndComp
+Text Label 4200 5600 0    60   ~ 0
+VCCIO_FX3
+$Comp
+L GND #PWR?
+U 1 1 58BF9D36
+P 4350 6050
+F 0 "#PWR?" H 4350 5800 50  0001 C CNN
+F 1 "GND" H 4350 5900 50  0000 C CNN
+F 2 "" H 4350 6050 50  0000 C CNN
+F 3 "" H 4350 6050 50  0000 C CNN
+	1    4350 6050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4800 4100 4750 4100
+Wire Wire Line
+	4750 4000 4750 4100
+Wire Wire Line
+	4050 4000 4800 4000
+Wire Wire Line
+	4550 4000 4550 4050
+Connection ~ 4750 4000
+Wire Wire Line
+	4350 4000 4350 4050
+Connection ~ 4550 4000
+Connection ~ 4350 4000
+Wire Wire Line
+	4550 4400 4550 4350
+Wire Wire Line
+	4350 4350 4350 4450
+Connection ~ 4350 4400
+Wire Wire Line
+	4800 900  4750 900 
+Wire Wire Line
+	4750 800  4750 1100
+Wire Wire Line
+	4000 800  4800 800 
+Wire Wire Line
+	4550 800  4550 850 
+Connection ~ 4750 800 
+Wire Wire Line
+	4350 800  4350 850 
+Connection ~ 4550 800 
+Wire Wire Line
+	4150 800  4150 850 
+Connection ~ 4350 800 
+Wire Wire Line
+	4150 1150 4150 1250
+Wire Wire Line
+	4150 1200 4550 1200
+Wire Wire Line
+	4550 1200 4550 1150
+Wire Wire Line
+	4350 1200 4350 1150
+Connection ~ 4350 1200
+Connection ~ 4150 800 
+Connection ~ 4150 1200
+Wire Wire Line
+	4750 1000 4800 1000
+Connection ~ 4750 900 
+Wire Wire Line
+	4750 1100 4800 1100
+Connection ~ 4750 1000
+Wire Wire Line
+	1100 850  1100 800 
+Wire Wire Line
+	800  800  1550 800 
+Wire Wire Line
+	1500 800  1500 900 
+Wire Wire Line
+	1500 900  1550 900 
+Connection ~ 1500 800 
+Wire Wire Line
+	1300 850  1300 800 
+Connection ~ 1300 800 
+Connection ~ 1100 800 
+Wire Wire Line
+	1100 1150 1100 1250
+Wire Wire Line
+	1100 1200 1300 1200
+Wire Wire Line
+	1300 1200 1300 1150
+Connection ~ 1100 1200
+Wire Wire Line
+	1300 3150 1300 3100
+Wire Wire Line
+	800  3100 1550 3100
+Wire Wire Line
+	1300 3450 1300 3500
+Connection ~ 1300 3100
+Wire Wire Line
+	1300 4550 1300 4500
+Wire Wire Line
+	800  4500 1550 4500
+Wire Wire Line
+	1300 4850 1300 4900
+Connection ~ 1300 4500
+Wire Wire Line
+	4350 4400 4550 4400
+Wire Wire Line
+	6400 4300 7250 4300
+Wire Wire Line
+	6400 4400 7250 4400
+Wire Wire Line
+	6400 4500 7250 4500
+Wire Wire Line
+	6400 4600 7250 4600
+Wire Wire Line
+	6400 4700 7250 4700
+Wire Wire Line
+	6400 4800 7250 4800
+Wire Wire Line
+	6400 5000 7250 5000
+Wire Wire Line
+	6400 5100 7250 5100
+Wire Wire Line
+	6400 5200 7250 5200
+Wire Wire Line
+	6400 5300 7250 5300
+Wire Wire Line
+	6400 5400 7250 5400
+Wire Wire Line
+	6400 5500 7250 5500
+Wire Wire Line
+	6400 800  7250 800 
+Wire Wire Line
+	6400 900  7250 900 
+Wire Wire Line
+	6400 1000 7250 1000
+Wire Wire Line
+	6400 1100 7250 1100
+Wire Wire Line
+	6400 1200 7250 1200
+Wire Wire Line
+	6400 1300 7250 1300
+Wire Wire Line
+	6400 1400 7250 1400
+Wire Wire Line
+	6400 1500 7250 1500
+Wire Wire Line
+	6400 1600 7250 1600
+Wire Wire Line
+	6400 1700 7250 1700
+Wire Wire Line
+	6400 1800 7250 1800
+Wire Wire Line
+	6400 1900 7250 1900
+Wire Wire Line
+	6400 2000 7250 2000
+Wire Wire Line
+	6400 2100 7250 2100
+Wire Wire Line
+	6400 2200 7250 2200
+Wire Wire Line
+	6400 2300 7250 2300
+Wire Wire Line
+	6400 2400 7250 2400
+Wire Wire Line
+	6400 2500 7250 2500
+Wire Wire Line
+	6400 2600 7250 2600
+Wire Wire Line
+	6400 2700 7250 2700
+Wire Wire Line
+	6400 2800 7250 2800
+Wire Wire Line
+	6400 2900 7250 2900
+Wire Wire Line
+	6400 3000 7250 3000
+Wire Wire Line
+	6400 3100 7250 3100
+Wire Wire Line
+	6400 3200 7250 3200
+Wire Wire Line
+	6400 3300 7250 3300
+Wire Wire Line
+	6400 3400 7250 3400
+Wire Wire Line
+	6400 3500 7250 3500
+Wire Wire Line
+	6400 3600 7250 3600
+Wire Wire Line
+	6400 3700 7250 3700
+Wire Wire Line
+	6400 3800 7250 3800
+Wire Wire Line
+	6400 3900 7250 3900
+Wire Wire Line
+	2950 2500 3700 2500
+Wire Wire Line
+	2950 2600 3700 2600
+Wire Wire Line
+	2950 2700 3700 2700
+Wire Wire Line
+	2950 2800 3700 2800
+Wire Wire Line
+	3700 800  2950 800 
+Wire Wire Line
+	3700 900  2950 900 
+Wire Wire Line
+	3700 1000 2950 1000
+Wire Wire Line
+	3700 1100 2950 1100
+Wire Wire Line
+	3700 1200 2950 1200
+Wire Wire Line
+	3700 1300 2950 1300
+Wire Wire Line
+	3700 1400 2950 1400
+Wire Wire Line
+	3700 1500 2950 1500
+Wire Wire Line
+	3700 1600 2950 1600
+Wire Wire Line
+	3700 1700 2950 1700
+Wire Wire Line
+	3700 1800 2950 1800
+Wire Wire Line
+	3700 1900 2950 1900
+Wire Wire Line
+	3700 2000 2950 2000
+Wire Wire Line
+	3700 2100 2950 2100
+Wire Wire Line
+	3700 2200 2950 2200
+Wire Wire Line
+	3700 2300 2950 2300
+Wire Wire Line
+	2950 3100 3700 3100
+Wire Wire Line
+	2950 3200 3700 3200
+Wire Wire Line
+	2950 3300 3700 3300
+Wire Wire Line
+	2950 3400 3700 3400
+Wire Wire Line
+	2950 3500 3700 3500
+Wire Wire Line
+	2950 3600 3700 3600
+Wire Wire Line
+	2950 3700 3700 3700
+Wire Wire Line
+	2950 3800 3700 3800
+Wire Wire Line
+	2950 3900 3700 3900
+Wire Wire Line
+	2950 4000 3700 4000
+Wire Wire Line
+	2950 4100 3700 4100
+Wire Wire Line
+	2950 4200 3700 4200
+Wire Wire Line
+	2950 4500 3700 4500
+Wire Wire Line
+	2950 4600 3700 4600
+Wire Wire Line
+	2950 4700 3700 4700
+Wire Wire Line
+	2950 4800 3700 4800
+Wire Wire Line
+	1550 1500 700  1500
+Wire Wire Line
+	1550 1700 700  1700
+Wire Wire Line
+	1550 1800 700  1800
+Wire Wire Line
+	1550 1900 700  1900
+Wire Wire Line
+	1550 2000 700  2000
+Wire Wire Line
+	1550 2100 700  2100
+Wire Wire Line
+	1550 2500 700  2500
+Wire Wire Line
+	1550 2600 700  2600
+Wire Bus Line
+	600  700  600  2500
+Wire Bus Line
+	3800 700  3800 4700
+Wire Bus Line
+	700  600  7450 600 
+Wire Wire Line
+	1000 5300 1550 5300
+Wire Wire Line
+	1300 5300 1300 5350
+Connection ~ 1300 5300
+Wire Wire Line
+	1300 5650 1300 5700
+Wire Wire Line
+	1000 6300 1550 6300
+Wire Wire Line
+	1300 6300 1300 6350
+Connection ~ 1300 6300
+Wire Wire Line
+	1300 6650 1300 6700
+Wire Bus Line
+	7350 700  7350 5400
+Wire Wire Line
+	4200 5600 4800 5600
+Wire Wire Line
+	4550 5600 4550 5650
+Wire Wire Line
+	4350 5600 4350 5650
+Connection ~ 4550 5600
+Connection ~ 4350 5600
+Wire Wire Line
+	4550 6000 4550 5950
+Wire Wire Line
+	4350 5950 4350 6050
+Connection ~ 4350 6000
+Wire Wire Line
+	4350 6000 4550 6000
+Wire Wire Line
+	4750 5600 4750 5800
+Wire Wire Line
+	4750 5700 4800 5700
+Connection ~ 4750 5600
+Wire Wire Line
+	4750 5800 4800 5800
+Connection ~ 4750 5700
+Text Label 4300 6900 0    60   ~ 0
+FPGA_DCLK
+Text Label 3750 5200 2    60   ~ 0
+FPGA_CONF_DONE
+Wire Wire Line
+	4300 6900 4800 6900
+$Comp
+L GND #PWR?
+U 1 1 58BFD79D
+P 4750 7050
+F 0 "#PWR?" H 4750 6800 50  0001 C CNN
+F 1 "GND" H 4750 6900 50  0000 C CNN
+F 2 "" H 4750 7050 50  0000 C CNN
+F 3 "" H 4750 7050 50  0000 C CNN
+	1    4750 7050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4800 7000 4750 7000
+Wire Wire Line
+	4750 7000 4750 7050
+Wire Wire Line
+	6400 6000 7200 6000
+Wire Wire Line
+	6400 5700 7300 5700
+Wire Wire Line
+	2950 5100 3750 5100
+Wire Wire Line
+	2950 5200 3750 5200
+Wire Wire Line
+	6400 5600 7300 5600
+Text Label 3750 5100 2    60   ~ 0
+FPGA_nSTATUS
+Text Label 7200 5700 2    60   ~ 0
+FPGA_nSTATUS
+Text Label 7200 5600 2    60   ~ 0
+FPGA_CONF_DONE
+Text Label 3500 6300 2    60   ~ 0
+FPGA_DCLK
+Wire Wire Line
+	3500 6300 2950 6300
+Text Label 3500 6600 2    60   ~ 0
+FPGA_DATA0
+Wire Wire Line
+	3500 6600 2950 6600
+Text Label 7200 6000 2    60   ~ 0
+FPGA_DATA0
+$Comp
+L R_ARRAY_4 R?
+U 2 1 58BFF376
+P 7450 5700
+F 0 "R?" V 7450 6050 60  0000 C CNN
+F 1 "10k" V 7450 5700 60  0000 C CNN
+F 2 "" H 7450 5700 60  0001 C CNN
+F 3 "" H 7450 5700 60  0001 C CNN
+	2    7450 5700
+	0    1    1    0   
+$EndComp
+$Comp
+L R_ARRAY_4 R?
+U 3 1 58BFF567
+P 7450 5800
+F 0 "R?" V 7450 6150 60  0000 C CNN
+F 1 "10k" V 7450 5800 60  0000 C CNN
+F 2 "" H 7450 5800 60  0001 C CNN
+F 3 "" H 7450 5800 60  0001 C CNN
+	3    7450 5800
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	7600 5700 7650 5700
+Text Label 3450 5900 2    60   ~ 0
+JTAG_TMS
+Text Label 3450 6000 2    60   ~ 0
+JTAG_TCK
+Wire Wire Line
+	2950 5900 3450 5900
+Wire Wire Line
+	3450 6000 2950 6000
+Text Label 4350 5300 0    60   ~ 0
+JTAG_TCK
+Text Label 4350 5200 0    60   ~ 0
+JTAG_TMS
+Text Label 4350 5100 0    60   ~ 0
+JTAG_TDO
+Wire Wire Line
+	4350 5100 4800 5100
+Text Label 3450 5600 2    60   ~ 0
+JTAG_TDI
+Wire Wire Line
+	2950 5600 3450 5600
+Wire Wire Line
+	3750 5400 4800 5400
+Text Label 3450 5800 2    60   ~ 0
+~JTAG_TRST~
+Wire Wire Line
+	3450 5800 2950 5800
+Text Label 6900 7000 2    60   ~ 0
+VCCIO_FX3
+Wire Wire Line
+	6900 7000 6400 7000
+Wire Wire Line
+	6450 6900 6400 6900
+Wire Wire Line
+	6450 6600 6450 6900
+Wire Wire Line
+	6450 6800 6400 6800
+Wire Wire Line
+	6400 6700 6600 6700
+Connection ~ 6450 6800
+Wire Wire Line
+	6400 6600 6450 6600
+Connection ~ 6450 6700
+$Comp
+L GND #PWR?
+U 1 1 58C028E3
+P 6600 6750
+F 0 "#PWR?" H 6600 6500 50  0001 C CNN
+F 1 "GND" H 6600 6600 50  0001 C CNN
+F 2 "" H 6600 6750 50  0000 C CNN
+F 3 "" H 6600 6750 50  0000 C CNN
+	1    6600 6750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6600 6700 6600 6750
+$Comp
+L R_ARRAY_4 R?
+U 1 1 58C03045
+P 7450 5600
+F 0 "R?" V 7450 5950 60  0000 C CNN
+F 1 "10k" V 7450 5600 60  0000 C CNN
+F 2 "" H 7450 5600 60  0001 C CNN
+F 3 "" H 7450 5600 60  0001 C CNN
+	1    7450 5600
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	3750 5400 3750 5700
+Wire Wire Line
+	3750 5700 2950 5700
+Text Label 7200 5800 2    60   ~ 0
+FPGA_nCONFIG
+Wire Wire Line
+	6400 5800 7300 5800
+Text Label 3750 5000 2    60   ~ 0
+FPGA_nCONFIG
+Wire Wire Line
+	2950 5000 3750 5000
+Wire Wire Line
+	7600 5600 7650 5600
+Connection ~ 7650 5700
+Wire Wire Line
+	4350 5200 4800 5200
+Wire Wire Line
+	4350 5300 4800 5300
+NoConn ~ 6400 6100
+NoConn ~ 6400 6200
+NoConn ~ 6400 6300
+NoConn ~ 6400 6400
+Wire Wire Line
+	7650 5800 7600 5800
+Wire Wire Line
+	7650 5450 7650 5800
+Text Label 7450 5450 0    60   ~ 0
+VCCIO_FX3
+Wire Wire Line
+	7450 5450 7650 5450
+Connection ~ 7650 5600
+$EndSCHEMATC

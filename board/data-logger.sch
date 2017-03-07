@@ -44,7 +44,7 @@ EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 7
+Sheet 1 8
 Title "Altera MAX 10 FPGA Development Board"
 Date "2017-01-14"
 Rev "1"
@@ -89,5 +89,11 @@ S 2900 750  900  1450
 U 58B8810A
 F0 "Cyclone V DDR3 ram" 60
 F1 "cyclone_v_ddr3.sch" 60
+$EndSheet
+$Sheet
+S 4250 750  850  1450
+U 58BF1557
+F0 "Cyclone V FX3 FIFO" 60
+F1 "cyclone_v_fx3_fifo.sch" 60
 $EndSheet
 $EndSCHEMATC

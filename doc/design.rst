@@ -51,3 +51,16 @@ Power supply
   - 1.8V Clock
   - 1.2V/60mA USB3.0
   - 3.3V USB2.0 (internal voltage regulator)
+
+Power Supply
+------------
+
+NCP51200
+  - 3A DDR VTT Regulator
+  - 2.5V VCC 1mA
+  - 1.35V DDR Powersupply
+
+MIC23450
+  -3x 2A Buck
+MIC4930
+  - 3A Buck
