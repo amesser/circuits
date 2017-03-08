@@ -19,7 +19,7 @@ IO Pins
 Power Supply
   - 1.1V/140mA Core
   - 1.35V/80mA IO
-  - 1.8V/1mA VCCPGM
+  - 2.5V/1mA VCCPGM
   - 2.5V/75mA IO PD
   - 2.5V/10mA PLL
   - 2.5V/70mA VCCAUX
@@ -47,7 +47,7 @@ IO Pins
 
 Power supply
   - 1.2V/200mA core 
-  - 1.8V IO to FPGA
+  - 2.5V IO to FPGA
   - 1.8V Clock
   - 1.2V/60mA USB3.0
   - 3.3V USB2.0 (internal voltage regulator)
