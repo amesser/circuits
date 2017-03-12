@@ -1,4 +1,4 @@
-update=Mi 01 Mär 2017 19:24:00 CET
+update=Fr 10 Mär 2017 17:23:54 CET
 version=1
 last_client=kicad
 [pcbnew]
@@ -79,3 +79,4 @@ LibName37=kicadlib/symbols/amesser_altera_fpga
 LibName38=kicadlib/symbols/amesser_atmel_sam
 LibName39=kicadlib/symbols/amesser_memory
 LibName40=kicadlib/symbols/amesser_cypress_fx
+LibName41=kicadlib/symbols/amesser_osc_crystal

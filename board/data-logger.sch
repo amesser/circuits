@@ -39,6 +39,7 @@ LIBS:amesser_altera_fpga
 LIBS:amesser_atmel_sam
 LIBS:amesser_memory
 LIBS:amesser_cypress_fx
+LIBS:amesser_osc_crystal
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END

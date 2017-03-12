@@ -52,6 +52,15 @@ Power supply
   - 1.2V/60mA USB3.0
   - 3.3V USB2.0 (internal voltage regulator)
 
+Clocking
+--------
+
+CDCE913
+  - 1.8V Powersupply
+  - 2.5/3.3 V Output
+  - 3 Clocks from one crystal
+  - Default startup configuration
+
 Power Supply
 ------------
 
