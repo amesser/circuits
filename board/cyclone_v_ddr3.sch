@@ -2219,7 +2219,7 @@ $EndComp
 Wire Wire Line
 	2300 7100 2250 7100
 Wire Wire Line
-	2250 7000 2250 7100
+	2250 7100 2250 7000
 Wire Wire Line
 	1900 7000 2300 7000
 Wire Wire Line
