@@ -5,7 +5,7 @@ USE ieee.numeric_std.all;
 
 ENTITY user_io IS
   PORT(
-    EXTCLK : IN std_logic := '0';
+    EXTCLK    : IN std_logic := '0';
     
     USER_IO_A : INOUT std_logic_vector (13 downto 0) := (others => 'Z');
     USER_IO_B : INOUT std_logic_vector (15 downto 0) := (others => 'Z');
@@ -13,6 +13,7 @@ ENTITY user_io IS
 
     DATA_OUT      : OUT std_logic_vector   (31 downto 0) := (others => '0');
     DATA_CLK      : OUT std_logic := '0';
+    DATA_ENABLE   : OUT std_logic := '1';
     
     DATA_SPACE    : IN  integer RANGE 0 TO 2**14
     );
@@ -21,9 +22,7 @@ END user_io;
 ARCHITECTURE user_io_beh OF user_io IS
   SIGNAL state : std_logic := '0';
   SIGNAL reg   : std_logic_vector(15 downto 0) := (others => '0');
-BEGIN
-  DATA_CLK <= EXTCLK;
-  
+BEGIN  
   stream_data : PROCESS
   BEGIN
     WAIT UNTIL rising_edge(EXTCLK);

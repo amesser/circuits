@@ -5,7 +5,7 @@ USE ieee.numeric_std.all;
 
 ENTITY data_fifo IS
   PORT(
-    data_write        : IN  std_logic_vector(31 downto 0);
+    data_write     : IN  std_logic_vector(31 downto 0);
     clk_write      : IN  std_logic := '0';
     write_enable   : IN  std_logic := '0';
     

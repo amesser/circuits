@@ -1,0 +1,149 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 1991-2016 Altera Corporation. All rights reserved.
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, the Altera Quartus Prime License Agreement,
+the Altera MegaCore Function License Agreement, or other 
+applicable license agreement, including, without limitation, 
+that your use is for the sole purpose of programming logic 
+devices manufactured by Altera and sold by Altera or its 
+authorized distributors.  Please refer to the applicable 
+agreement for further details.
+*/
+(header "symbol" (version "1.2"))
+(symbol
+	(rect 32 32 576 448)
+	(text "dram_buffer" (rect 37 32 205 54)(font "Arial" ))
+	(text "inst" (rect 56 384 117 406)(font "Arial" ))
+	(port
+		(pt 0 88)
+		(input)
+		(text "data_in[31..0]" (rect 0 32 214 54)(font "Arial" ))
+		(text "data_in[31..0]" (rect 21 83 235 105)(font "Arial" ))
+		(line (pt 0 88)(pt 16 88)(line_width 3))
+	)
+	(port
+		(pt 0 104)
+		(input)
+		(text "level_in[14..0]" (rect 0 32 230 54)(font "Arial" ))
+		(text "level_in[14..0]" (rect 21 99 251 121)(font "Arial" ))
+		(line (pt 0 104)(pt 16 104)(line_width 3))
+	)
+	(port
+		(pt 0 256)
+		(input)
+		(text "space_out[14..0]" (rect 0 32 245 54)(font "Arial" ))
+		(text "space_out[14..0]" (rect 24 248 269 270)(font "Arial" ))
+		(line (pt 0 256)(pt 16 256)(line_width 3))
+	)
+	(port
+		(pt 544 56)
+		(input)
+		(text "emif_avl_write_ready" (rect 32 32 338 54)(font "Arial" ))
+		(text "emif_avl_write_ready" (rect 351 48 657 70)(font "Arial" ))
+		(line (pt 528 56)(pt 544 56))
+	)
+	(port
+		(pt 544 304)
+		(input)
+		(text "emif_avl_read_data[31..0]" (rect 32 32 415 54)(font "Arial" ))
+		(text "emif_avl_read_data[31..0]" (rect 175 296 558 318)(font "Arial" ))
+		(line (pt 528 304)(pt 544 304)(line_width 3))
+	)
+	(port
+		(pt 544 288)
+		(input)
+		(text "emif_avl_read_ready" (rect 32 32 323 54)(font "Arial" ))
+		(text "emif_avl_read_ready" (rect 248 280 539 302)(font "Arial" ))
+		(line (pt 528 288)(pt 544 288))
+	)
+	(port
+		(pt 0 368)
+		(input)
+		(text "emif_avl_clk" (rect 0 32 184 54)(font "Arial" ))
+		(text "emif_avl_clk" (rect 56 360 240 382)(font "Arial" ))
+		(line (pt 0 368)(pt 16 368))
+	)
+	(port
+		(pt 0 72)
+		(output)
+		(text "clk_in" (rect 200 32 292 54)(font "Arial" ))
+		(text "clk_in" (rect 24 64 116 86)(font "Arial" ))
+		(line (pt 16 72)(pt 0 72))
+	)
+	(port
+		(pt 0 120)
+		(output)
+		(text "enable_in" (rect 200 32 338 54)(font "Arial" ))
+		(text "enable_in" (rect 24 112 162 134)(font "Arial" ))
+		(line (pt 16 120)(pt 0 120))
+	)
+	(port
+		(pt 0 240)
+		(output)
+		(text "data_out[31..0]" (rect 200 32 430 54)(font "Arial" ))
+		(text "data_out[31..0]" (rect 24 232 254 254)(font "Arial" ))
+		(line (pt 16 240)(pt 0 240)(line_width 3))
+	)
+	(port
+		(pt 0 224)
+		(output)
+		(text "clk_out" (rect 200 32 307 54)(font "Arial" ))
+		(text "clk_out" (rect 24 216 131 238)(font "Arial" ))
+		(line (pt 16 224)(pt 0 224))
+	)
+	(port
+		(pt 0 272)
+		(output)
+		(text "enable_out" (rect 200 32 353 54)(font "Arial" ))
+		(text "enable_out" (rect 24 264 177 286)(font "Arial" ))
+		(line (pt 16 272)(pt 0 272))
+	)
+	(port
+		(pt 544 88)
+		(output)
+		(text "emif_avl_write_addr[26..0]" (rect 232 32 630 54)(font "Arial" ))
+		(text "emif_avl_write_addr[26..0]" (rect 319 80 656 102)(font "Arial" ))
+		(line (pt 544 88)(pt 528 88)(line_width 3))
+	)
+	(port
+		(pt 544 136)
+		(output)
+		(text "emif_avl_write_data[31..0]" (rect 232 32 630 54)(font "Arial" ))
+		(text "emif_avl_write_data[31..0]" (rect 303 128 640 150)(font "Arial" ))
+		(line (pt 544 136)(pt 528 136)(line_width 3))
+	)
+	(port
+		(pt 544 184)
+		(output)
+		(text "emif_avl_write_req" (rect 232 32 508 54)(font "Arial" ))
+		(text "emif_avl_write_req" (rect 303 176 536 198)(font "Arial" ))
+		(line (pt 544 184)(pt 528 184))
+	)
+	(port
+		(pt 544 272)
+		(output)
+		(text "emif_avl_read_addr[26..0]" (rect 232 32 615 54)(font "Arial" ))
+		(text "emif_avl_read_addr[26..0]" (rect 271 264 595 286)(font "Arial" ))
+		(line (pt 544 272)(pt 528 272)(line_width 3))
+	)
+	(port
+		(pt 544 368)
+		(output)
+		(text "emif_avl_read_req" (rect 232 32 492 54)(font "Arial" ))
+		(text "emif_avl_read_req" (rect 303 363 523 385)(font "Arial" ))
+		(line (pt 544 368)(pt 528 368))
+	)
+	(drawing
+		(rectangle (rect 48 48 504 384))
+	)
+)

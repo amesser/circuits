@@ -1,0 +1,86 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 1991-2016 Altera Corporation. All rights reserved.
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, the Altera Quartus Prime License Agreement,
+the Altera MegaCore Function License Agreement, or other 
+applicable license agreement, including, without limitation, 
+that your use is for the sole purpose of programming logic 
+devices manufactured by Altera and sold by Altera or its 
+authorized distributors.  Please refer to the applicable 
+agreement for further details.
+*/
+(header "symbol" (version "1.2"))
+(symbol
+	(rect 56 56 424 216)
+	(text "data_fifo" (rect 13 8 151 30)(font "Arial" ))
+	(text "inst" (rect 16 136 77 158)(font "Arial" ))
+	(port
+		(pt 0 48)
+		(input)
+		(text "data_write[31..0]" (rect 0 8 260 30)(font "Arial" ))
+		(text "data_write[31..0]" (rect 21 43 281 65)(font "Arial" ))
+		(line (pt 0 48)(pt 16 48)(line_width 3))
+	)
+	(port
+		(pt 0 32)
+		(input)
+		(text "clk_write" (rect 0 8 138 30)(font "Arial" ))
+		(text "clk_write" (rect 21 27 159 49)(font "Arial" ))
+		(line (pt 0 32)(pt 16 32))
+	)
+	(port
+		(pt 0 80)
+		(input)
+		(text "write_enable" (rect 0 8 184 30)(font "Arial" ))
+		(text "write_enable" (rect 21 75 205 97)(font "Arial" ))
+		(line (pt 0 80)(pt 16 80))
+	)
+	(port
+		(pt 368 32)
+		(input)
+		(text "clk_read" (rect 0 8 122 30)(font "Arial" ))
+		(text "clk_read" (rect 221 24 343 46)(font "Arial" ))
+		(line (pt 352 32)(pt 368 32))
+	)
+	(port
+		(pt 368 80)
+		(input)
+		(text "read_enable" (rect 136 8 304 30)(font "Arial" ))
+		(text "read_enable" (rect 176 72 344 94)(font "Arial" ))
+		(line (pt 352 80)(pt 368 80))
+	)
+	(port
+		(pt 368 48)
+		(output)
+		(text "data_read[31..0]" (rect 136 8 381 30)(font "Arial" ))
+		(text "data_read[31..0]" (rect 191 40 398 62)(font "Arial" ))
+		(line (pt 368 48)(pt 352 48)(line_width 3))
+	)
+	(port
+		(pt 368 64)
+		(output)
+		(text "level[14..0]" (rect 136 8 320 30)(font "Arial" ))
+		(text "level[14..0]" (rect 192 59 347 81)(font "Arial" ))
+		(line (pt 368 64)(pt 352 64)(line_width 3))
+	)
+	(port
+		(pt 0 64)
+		(output)
+		(text "space[14..0]" (rect 136 8 320 30)(font "Arial" ))
+		(text "space[14..0]" (rect 24 56 208 78)(font "Arial" ))
+		(line (pt 16 64)(pt 0 64)(line_width 3))
+	)
+	(drawing
+		(rectangle (rect 24 24 344 136))
+	)
+)

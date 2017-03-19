@@ -16,39 +16,28 @@ ENTITY cypress_slave_fifo IS
     SLOEn  : OUT   std_logic := '1';
     
     CLK           : IN    std_logic := '0';
-    AVL_RDATA     : IN    std_logic_vector(31 downto 0) := (others => '0'); 
-    AVL_WDATA     : OUT   std_logic_vector(31 downto 0) := (others => '0'); 
-    AVL_READ_REQ  : OUT   std_logic := '0';
-    AVL_WRITE_REQ : OUT   std_logic := '0';
-    AVL_ADDR      : OUT   std_logic_vector(26 downto 0) := (others => '0')
+    STREAM_CLK    : OUT    std_logic := '0';
+    STREAM_DATA   : IN    std_logic_vector(31 downto 0) := (others => '0'); 
+    STREAM_LEVEL  : IN    integer range 0 to (2**14); 
+    STREAM_ENABLE : OUT   std_logic := '0'
   );
 END cypress_slave_fifo;
 
-ARCHITECTURE beh of cypress_slave_fifo IS
-  SUBTYPE fifo_addr IS integer range 0 to  2**(26-1);
-  TYPE fifo_addrs IS array (0 TO 3) of fifo_addr;
-  
-  SIGNAL avalon_addr: fifo_addrs := (0,0,0,0);
+ARCHITECTURE beh of cypress_slave_fifo IS  
   SIGNAL selector   : integer range 0 to 3 := 0;
   SIGNAL state      : integer range 0 to 4 := 0;
   SIGNAL read_req   : boolean := true;
 BEGIN
 
-  PCLK <= CLK;
-  
-  PROCESS (selector)
-  BEGIN
-    read_req <= (selector mod 2) = 0;
-  END PROCESS;
-  
+  PCLK       <= CLK;
+  STREAM_CLK <= CLK;
+    
   sched: PROCESS
   BEGIN
     WAIT until rising_edge(CLK);
-    
-    AVL_ADDR <= std_logic_vector(to_unsigned(avalon_addr(selector), AVL_ADDR'length));
-    
+        
     IF state = 0 THEN
-      IF flag(selector) = '1' THEN
+      IF (flag(selector) = '1') and STREAM_LEVEL > 512 THEN
         state <=  1;
         SLCSn <= '0';
         A     <= std_logic_vector(to_unsigned(selector, A'length));
@@ -61,7 +50,6 @@ BEGIN
       IF read_req THEN
         SLRDn        <= '0';
         SLOEn        <= '0';
-        AVL_READ_REQ <= '1';
       ELSE
         SLWRn <= '0';
       END IF;
@@ -69,21 +57,10 @@ BEGIN
       state    <= 2;
     ELSIF state = 2 THEN
       IF flag(selector) = '1' THEN
-        IF read_req THEN
-          AVL_WDATA     <= D;
-          AVL_WRITE_REQ <= '1';
-        ELSE
-          D <= AVL_RDATA;
-        END IF;
-        
-        IF avalon_addr(selector) < avalon_addr(selector)'high THEN
-          avalon_addr(selector) <= avalon_addr(selector) + 1;
-        ELSE
-          avalon_addr(selector) <= 0;
-        END IF;
+        STREAM_ENABLE <= '1';
+        D <= STREAM_DATA;
       ELSE
-        AVL_WRITE_REQ <= '0';
-        AVL_READ_REQ <= '0';
+        STREAM_ENABLE <= '0';
         SLWRn <= '1';
         SLRDn <= '1';
         SLOEn <= '1';
