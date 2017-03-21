@@ -391,8 +391,6 @@ Text Label 3200 3300 0    60   ~ 0
 FPGA_DDR3_DM1
 Text Label 2200 3900 2    60   ~ 0
 FPGA_DDR3_ODT
-Text Label 4600 1800 0    60   ~ 0
-VREF_DDR3
 Text Label 8000 2400 0    60   ~ 0
 VREF_DDR3
 $Comp
@@ -796,8 +794,6 @@ Connection ~ 4650 1300
 Connection ~ 4450 900 
 Connection ~ 7850 1300
 Connection ~ 4450 1300
-Wire Wire Line
-	5100 1800 4600 1800
 Wire Wire Line
 	8500 2400 8000 2400
 Wire Wire Line
@@ -2331,4 +2327,5 @@ F 3 "" H 1800 7000 50  0000 C CNN
 $EndComp
 Wire Wire Line
 	1300 7000 1700 7000
+NoConn ~ 5100 1800
 $EndSCHEMATC

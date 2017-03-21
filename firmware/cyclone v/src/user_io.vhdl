@@ -7,9 +7,9 @@ ENTITY user_io IS
   PORT(
     EXTCLK    : IN std_logic := '0';
     
-    USER_IO_A : INOUT std_logic_vector (13 downto 0) := (others => 'Z');
+    USER_IO_A : INOUT std_logic_vector (15 downto 0) := (others => 'Z');
     USER_IO_B : INOUT std_logic_vector (15 downto 0) := (others => 'Z');
-    USER_IO_C : INOUT std_logic_vector (13 downto 0) := (others => 'Z');
+    USER_IO_C : INOUT std_logic_vector (15 downto 0) := (others => 'Z');
 
     DATA_OUT      : OUT std_logic_vector   (31 downto 0) := (others => '0');
     DATA_CLK      : OUT std_logic := '0';
@@ -38,8 +38,8 @@ BEGIN
     END IF;
     
     IF DATA_SPACE > 0 THEN
-      USER_IO_A  <= USER_IO_B(13 downto 0);
-      USER_IO_C  <= USER_IO_B(15 downto 2);
+      USER_IO_A  <= USER_IO_B;
+      USER_IO_C  <= USER_IO_B;
     ELSE
       USER_IO_A  <= (others => '0');
       USER_IO_C  <= (others => '1');

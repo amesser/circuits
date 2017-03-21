@@ -5,16 +5,16 @@ USE ieee.numeric_std.all;
 
 ENTITY data_fifo IS
   PORT(
-    data_write     : IN  std_logic_vector(31 downto 0);
-    clk_write      : IN  std_logic := '0';
-    write_enable   : IN  std_logic := '0';
+    data_write      : IN  std_logic_vector(31 downto 0);
+    clk_write       : IN  std_logic := '0';
+    write_enable    : IN  std_logic := '0';
     
-    data_read       : OUT std_logic_vector(31 downto 0) := (others => 'Z');
-    clk_read       : IN  std_logic := '0';
-    read_enable    : IN  std_logic := '0';
+    data_read       : OUT std_logic_vector(31 downto 0) := (others => '0');
+    clk_read        : IN  std_logic := '0';
+    read_enable     : IN  std_logic := '0';
     
-    level          : OUT integer RANGE 0 TO (2**14) := 0;
-    space          : OUT integer RANGE 0 TO (2**14) := 2**14
+    level           : OUT integer RANGE 0 TO (2**14) := 0;
+    space           : OUT integer RANGE 0 TO (2**14) := 2**14
   );
 END data_fifo;
 
@@ -51,7 +51,7 @@ BEGIN
         fifo_space <= write_offset - read_offset;
       END IF;
     ELSE
-        fifo_space <= write_offset - read_offset;
+      fifo_space <= write_offset - read_offset;
     END IF;
   END PROCESS;
 
@@ -59,10 +59,10 @@ BEGIN
   BEGIN
     WAIT UNTIL rising_edge(clk_read);
     
+    data_read <= fifo_buffer(read_offset mod fifo_buffer'length);
+    
     IF read_enable = '1' THEN
       IF fifo_level > 0 THEN
-        data_read <= fifo_buffer(read_offset mod fifo_buffer'length);
-        
         IF read_offset < read_offset'high THEN
           read_offset <= read_offset + 1;
         ELSE
@@ -72,7 +72,6 @@ BEGIN
         fifo_level <= write_offset - read_offset - 1;
       ELSE
         fifo_level <= write_offset - read_offset;
-        data_read <= (others => '0');
       END IF;
     ELSE
       fifo_level <= write_offset - read_offset;

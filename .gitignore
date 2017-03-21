@@ -1,2 +1,6 @@
 board/*.bak
 board/*-cache.lib
+firmware/**/*.bak
+firmware/**/*.swp
+firmware/cyclone v/db
+firmware/cyclone v/incremental db
