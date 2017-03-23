@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:data-logger-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -40,12 +41,13 @@ LIBS:amesser_atmel_sam
 LIBS:amesser_memory
 LIBS:amesser_cypress_fx
 LIBS:amesser_osc_crystal
+LIBS:amesser_diodes
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 8 8
+Sheet 8 9
 Title ""
 Date ""
 Rev ""

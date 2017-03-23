@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:data-logger-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -40,12 +41,13 @@ LIBS:amesser_atmel_sam
 LIBS:amesser_memory
 LIBS:amesser_cypress_fx
 LIBS:amesser_osc_crystal
+LIBS:amesser_diodes
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 8
+Sheet 1 9
 Title "Altera MAX 10 FPGA Development Board"
 Date "2017-01-14"
 Rev "1"
@@ -96,5 +98,11 @@ S 4250 750  850  1450
 U 58BF1557
 F0 "Cyclone V FX3 FIFO" 60
 F1 "cyclone_v_fx3_fifo.sch" 60
+$EndSheet
+$Sheet
+S 4250 2500 850  1300
+U 58D4ADB5
+F0 "Cypress FX3 USB" 60
+F1 "fx3_usb.sch" 60
 $EndSheet
 $EndSCHEMATC

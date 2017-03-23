@@ -61,6 +61,16 @@ CDCE913
   - 3 Clocks from one crystal
   - Default startup configuration
 
+Measurement Adapters
+--------------------
+
+ADC Adapter
+~~~~~~~~~~~
+
+LTC2325-16 4 Channel 16 Bit 5MSPS
+  - 3.3 or 5V Analog Powersupply
+  - 1.8 to 2.5 V Digital Power Supply
+
 Power Supply
 ------------
 
