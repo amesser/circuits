@@ -1,23 +1,25 @@
 
-Hardware
-========
+Hardware Design
+===============
 
+Parts
+-----
 
-5CEFA2F23
----------
+Altera Cyclone V FPGA
+`````````````````````
 
-Altera FPGA
-
-Package
-  - FBGA486, 1.00mm
-  
-IO Pins
-  - CYUSB Interface 44 lines
+Required IO Resources
+  - Cypress FX3 Interface: 44 i/o pins
   - DDR3 RAM Interface
-  - Data Interface: 48 lines
+  - User IO Ports: 3x16 i/o pins with configurable io voltage
+  - Extra IO Port for Leds, Display, Buttons: 16 i/o pins, fixed to 3.3V
 
-Power Supply
-  - 1.1V/140mA Core
+Device
+  - 5CEFA2F23 in FBGA486 Package, 1.00mm pitch
+
+Power Supply Requirements
+  Simulated with quartus and example project
+  - 1.1V/140mA Core +-30mV
   - 1.35V/80mA IO
   - 2.5V/1mA VCCPGM
   - 2.5V/75mA IO PD
@@ -33,7 +35,7 @@ Package
   - 96-BGA, 0.80mm
 
 Power Supply
-  - 1.35V/250 mA
+  - 1.35V 3%/250 mA
 
 CYUSB3012-BZXC
 --------------
@@ -79,7 +81,48 @@ NCP51200
   - 2.5V VCC 1mA
   - 1.35V DDR Powersupply
 
+
+Power Supply
+----------------
+
+Power requirements
+``````````````````
+      |               | 1.10 | 1.20 | 1.35 | 1.80 |  2.50  | 3.30 | VUSB
+FPGA  | Core (VDD)    |  180 |      |      |      |        | 
+      | PLL           |      |      |      |      |    15  |
+      | JTAG/PGM      |      |      |      |      |     1  |
+      | BAT           |      |    0 |      |      |        |
+      | AUX           |      |      |      |      |    65  |
+      | IO DDR3       |      |      |   75 |      |    70  | 
+      | IO FX3        |      |      |      |      |    50  | 
+      | IO USER       |      |      |      |      |   150  |  150
+      | IO EXT        |      |      |      |      |    20  |   50
+      | (Peak)        |      |      |      |      | (1000) |
+DDR3  | RAM           |      |      |  250 |      |        |
+      | VTT           |      |      |  350 |      |     1  |
+      | Clock         |      |      |      |      |    30  |
+FX3   | Core + Analog |      |  200 |      |      |        |
+      | IO            |      |      |      |      |   100  |
+      | USB           |      |      |      |      |        |      | 60
+      | Clock         |      |      |      |    x |        |
+Clock | CDCE          |      |      |      |   15 |    40  | 
+------+---------------+------+------+------+------+--------+------+-----
+Sum   |               | 2000 |  250 |  800 |   50 |   800  |  200 | 60
+
+
+
+MIC23050: 600mA, 4MHz: 1.2V, 3.3V
+NCP6332B: 1.2A, 3MHz: 1.35V, 2.5V
+NCP6324B: 2A, 3MHz: 1.1V
+
+
 MIC23450
   -3x 2A Buck
 MIC4930
   - 3A Buck
+
+TLV62084 2 A   Buck: 1.1
+TLV62080 1.2 A Buck: 1.35, 2.50
+MCP1602  0.5A  Buck: 1.20, 3.30
+
+EV1320QI
