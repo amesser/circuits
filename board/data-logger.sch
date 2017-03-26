@@ -47,7 +47,7 @@ EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 9
+Sheet 1 6
 Title "Altera MAX 10 FPGA Development Board"
 Date "2017-01-14"
 Rev "1"
@@ -58,51 +58,33 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Sheet
-S 800  750  900  1450
-U 583F2DBA
-F0 "SDRAM" 60
-F1 "sdram.sch" 60
-$EndSheet
-$Sheet
-S 1800 750  850  1450
-U 5864D98F
-F0 "InterConnect" 60
-F1 "interconnect.sch" 60
-$EndSheet
-$Sheet
 S 800  2500 900  1300
 U 5865ACEE
-F0 "Power Supply" 60
-F1 "power-supply.sch" 60
+F0 "FX3 USB & Power Supply" 60
+F1 "FX3 USB Power Supply.sch" 60
 $EndSheet
 $Sheet
-S 1800 2500 850  1300
-U 5865C338
-F0 "Misc" 60
-F1 "misc.sch" 60
-$EndSheet
-$Sheet
-S 2950 2500 850  1300
+S 2350 750  850  1300
 U 586885BD
-F0 "Ports" 60
-F1 "ports.sch" 60
+F0 "Cyclone V User IO" 60
+F1 "Cyclone V User IO.sch" 60
 $EndSheet
 $Sheet
-S 2900 750  900  1450
+S 800  750  900  1450
 U 58B8810A
-F0 "Cyclone V DDR3 ram" 60
-F1 "cyclone_v_ddr3.sch" 60
+F0 "Cyclone V DDR3 RAM" 60
+F1 "Cyclone V DDR3 RAM.sch" 60
 $EndSheet
 $Sheet
 S 4250 750  850  1450
 U 58BF1557
 F0 "Cyclone V FX3 FIFO" 60
-F1 "cyclone_v_fx3_fifo.sch" 60
+F1 "Cyclone V FX3 FIFO.sch" 60
 $EndSheet
 $Sheet
 S 4250 2500 850  1300
 U 58D4ADB5
-F0 "Cypress FX3 USB" 60
-F1 "fx3_usb.sch" 60
+F0 "Cyclone C Power" 60
+F1 "Cyclone V Power.sch" 60
 $EndSheet
 $EndSCHEMATC
