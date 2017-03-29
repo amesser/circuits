@@ -48,8 +48,8 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 6
-Title "Altera MAX 10 FPGA Development Board"
-Date "2017-01-14"
+Title "Cyclone V Evaluation Board"
+Date "2017-03-29"
 Rev "1"
 Comp "Copyright (c) 2017 Andreas Messer"
 Comment1 "Overview"
@@ -84,7 +84,7 @@ $EndSheet
 $Sheet
 S 4250 2500 850  1300
 U 58D4ADB5
-F0 "Cyclone C Power" 60
+F0 "Cyclone V Power" 60
 F1 "Cyclone V Power.sch" 60
 $EndSheet
 $EndSCHEMATC

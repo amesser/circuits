@@ -47,12 +47,12 @@ EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 8 6
-Title ""
-Date ""
-Rev ""
-Comp ""
-Comment1 ""
+Sheet 5 6
+Title "Cyclone V Evaluation Board"
+Date "2017-03-29"
+Rev "1"
+Comp "Copyright (c) 2017 Andreas Messer"
+Comment1 "Cyclone V FX3 Slave FIFO Interface, Configuration & Clock"
 Comment2 ""
 Comment3 ""
 Comment4 ""
@@ -1389,7 +1389,7 @@ $EndComp
 Wire Wire Line
 	4800 4100 4750 4100
 Wire Wire Line
-	4750 4000 4750 4100
+	4750 4100 4750 4000
 Wire Wire Line
 	4050 4000 4800 4000
 Wire Wire Line
@@ -1927,9 +1927,9 @@ Wire Wire Line
 Wire Wire Line
 	10900 2000 11100 2000
 Wire Wire Line
-	11100 1300 11100 2000
+	11100 2000 11100 1300
 Wire Wire Line
-	9150 1300 11100 1300
+	11100 1300 9150 1300
 Wire Wire Line
 	10900 1900 11050 1900
 Wire Wire Line
@@ -1945,9 +1945,9 @@ Wire Wire Line
 Wire Wire Line
 	10900 1700 10950 1700
 Wire Wire Line
-	10950 1600 10950 1700
+	10950 1700 10950 1600
 Wire Wire Line
-	9150 1600 10950 1600
+	10950 1600 9150 1600
 Wire Wire Line
 	9150 1700 9700 1700
 Wire Wire Line

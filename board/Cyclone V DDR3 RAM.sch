@@ -48,11 +48,11 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 4 6
-Title ""
-Date ""
-Rev ""
-Comp ""
-Comment1 ""
+Title "Cyclone V Evaluation Board"
+Date "2017-03-29"
+Rev "1"
+Comp "Copyright (c) 2017 Andreas Messer"
+Comment1 "Cyclone V DDR3 Ram"
 Comment2 ""
 Comment3 ""
 Comment4 ""

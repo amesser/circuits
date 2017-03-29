@@ -48,11 +48,11 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 3 6
-Title "Altera MAX 10 FPGA Development Board"
-Date "2017-01-14"
+Title "Cyclone V Evaluation Board"
+Date "2017-03-29"
 Rev "1"
 Comp "Copyright (c) 2017 Andreas Messer"
-Comment1 "Extension Ports"
+Comment1 "User I/O Ports"
 Comment2 ""
 Comment3 ""
 Comment4 ""
