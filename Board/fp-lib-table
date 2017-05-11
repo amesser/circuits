@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name AMesser_Led)(type KiCad)(uri "$(KIPRJMOD)/kicadlib/packages/AMesser_Led.pretty")(options "")(descr ""))
+)

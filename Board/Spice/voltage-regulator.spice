@@ -1,0 +1,22 @@
+Simple voltage regulator
+
+.INCLUDE BC847.prm
+
+R1 100 1  2Meg
+R2   5 2  1K
+
+*    C B E
+Q1 100 5 2 QBC847
+Q2 100 1 5 QBC847
+Q3   1 2 3 QBC847
+
+.model D1N4148  D(IS=35p RS=64m N=1.24 TT=5n CJO=4p M=0.285 VJ=0.6 BV=75)
+D1   3 4 D1N4148
+D2   4 0 D1N4148
+
+CP   2 0 100n
+
+VSUPPLY   100  0 12V
+ILOAD       2  0 SIN(5mAOFF 5mAPEAK 1KHZ)
+
+.END

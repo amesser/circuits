@@ -1,0 +1,4 @@
+Board/*.bak
+Board/*-bak
+Board/*-cache.lib
+Board/Spice/*.prm
