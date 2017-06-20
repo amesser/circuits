@@ -42,6 +42,7 @@ LIBS:amesser_memory
 LIBS:amesser_cypress_fx
 LIBS:amesser_osc_crystal
 LIBS:amesser_diodes
+LIBS:switches
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END

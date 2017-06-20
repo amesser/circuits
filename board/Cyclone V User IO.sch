@@ -42,6 +42,7 @@ LIBS:amesser_memory
 LIBS:amesser_cypress_fx
 LIBS:amesser_osc_crystal
 LIBS:amesser_diodes
+LIBS:switches
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END
@@ -1211,7 +1212,7 @@ FPGA_B39_N
 Text Label 6900 1600 0    60   ~ 0
 FPGA_B32_P
 Text Label 6900 1000 0    60   ~ 0
-FPGA_B26_N
+FPGA_B26_P
 Text Label 6900 1100 0    60   ~ 0
 FPGA_B27_P
 Text Label 6900 1200 0    60   ~ 0
@@ -2532,4 +2533,34 @@ Wire Wire Line
 Wire Wire Line
 	3350 800  3350 850 
 NoConn ~ 2950 900 
+NoConn ~ 2950 2400
+NoConn ~ 2950 2500
+NoConn ~ 2950 2600
+NoConn ~ 2950 2700
+NoConn ~ 2950 2800
+NoConn ~ 2950 2900
+NoConn ~ 2950 3000
+NoConn ~ 2950 3100
+NoConn ~ 2950 3200
+NoConn ~ 2950 3300
+NoConn ~ 2950 3400
+NoConn ~ 2950 3500
+NoConn ~ 2950 3800
+NoConn ~ 2950 3900
+NoConn ~ 2950 4000
+NoConn ~ 2950 4100
+NoConn ~ 2950 4200
+NoConn ~ 2950 4300
+NoConn ~ 2950 4400
+NoConn ~ 2950 4500
+NoConn ~ 2950 4600
+NoConn ~ 2950 4700
+NoConn ~ 2950 4800
+NoConn ~ 2950 4900
+NoConn ~ 2950 5000
+NoConn ~ 2950 5100
+NoConn ~ 2950 5200
+NoConn ~ 2950 5300
+NoConn ~ 2950 5400
+NoConn ~ 2950 5500
 $EndSCHEMATC

@@ -1,4 +1,4 @@
-update=Do 23 Mär 2017 20:54:36 CET
+update=So 28 Mai 2017 19:22:30 CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -23,16 +23,6 @@ ModuleOutlineThickness=0.150000000000
 [cvpcb]
 version=1
 NetIExt=net
-[schematic_editor]
-version=1
-PageLayoutDescrFile=
-PlotDirectoryName=/tmp/
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=
-SpiceForceRefPrefix=0
-SpiceUseNetNumbers=0
-LabSize=60
 [general]
 version=1
 [eeschema]
@@ -82,3 +72,14 @@ LibName40=kicadlib/symbols/amesser_memory
 LibName41=kicadlib/symbols/amesser_cypress_fx
 LibName42=kicadlib/symbols/amesser_osc_crystal
 LibName43=kicadlib/symbols/amesser_diodes
+LibName44=switches
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=/tmp/
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
