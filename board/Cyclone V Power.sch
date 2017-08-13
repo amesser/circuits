@@ -126,13 +126,13 @@ Text Label 3600 5950 2    60   ~ 0
 EXT_IO0
 Text Label 3600 6050 2    60   ~ 0
 EXT_IO1
-Text Label 3600 6150 2    60   ~ 0
-EXT_IO2
-Text Label 3600 6250 2    60   ~ 0
-EXT_IO3
 Text Label 3600 6350 2    60   ~ 0
-EXT_IO4
+EXT_IO2
 Text Label 3600 6450 2    60   ~ 0
+EXT_IO3
+Text Label 3600 6150 2    60   ~ 0
+EXT_IO4
+Text Label 3600 6250 2    60   ~ 0
 EXT_IO5
 Text Label 3600 6550 2    60   ~ 0
 EXT_IO6

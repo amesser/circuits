@@ -1,0 +1,27 @@
+
+- https://portal.multi-circuit-boards.eu
+
+  - 6 Layer 100x60 mm
+  - Width/Spacing >= 100µm
+  - Drill >= 0.2mm
+  - 35 µm copper
+  - Stackup: 
+    - 35µm Cu
+    - 160µm FR4 
+    - 35µm Cu
+    - 550µm FR4 
+    - 35µm Cu
+    - 160µm FR4 
+    - 35µm Cu
+    - 550µm FR4 
+    - 35µm Cu
+    - 160µm FR4 
+    - 35µm Cu
+  - Inner Layer Impedance: 
+    - 50Ohm  -> 0.2mm Track Width
+    - 50Ohm  -> 0.2mm Width
+    - 74Ohm  -> 0.1mm Width
+    - 100Ohm differential 0.3mm Width 0.4mm Spacing
+    - 108Ohm differential 0.3mm Width 0.3mm Spacing
+    - 156Ohm differential 0.1mm Width 0.4mm Spacing
+    - 164Ohm differential 0.1mm Width 0.3mm Spacing
