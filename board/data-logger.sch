@@ -43,12 +43,13 @@ LIBS:amesser_cypress_fx
 LIBS:amesser_osc_crystal
 LIBS:amesser_diodes
 LIBS:switches
+LIBS:amesser_transistors
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 6
+Sheet 1 7
 Title "Cyclone V Evaluation Board"
 Date "2017-03-29"
 Rev "1"
@@ -83,9 +84,15 @@ F0 "Cyclone V FX3 FIFO" 60
 F1 "Cyclone V FX3 FIFO.sch" 60
 $EndSheet
 $Sheet
-S 4250 2500 850  1300
+S 2350 2450 850  1300
 U 58D4ADB5
 F0 "Cyclone V Power" 60
 F1 "Cyclone V Power.sch" 60
+$EndSheet
+$Sheet
+S 4250 2450 850  1300
+U 59971C12
+F0 "FX3 Peripherals" 60
+F1 "FX3 Peripherals.sch" 60
 $EndSheet
 $EndSCHEMATC
