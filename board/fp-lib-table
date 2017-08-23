@@ -6,4 +6,5 @@
   (lib (name amesser-special)(type Legacy)(uri "$(KIPRJMOD)/kicadlib/packages/amesser-special.mod")(options "")(descr ""))
   (lib (name AMesser_Oscillators)(type KiCad)(uri "$(KIPRJMOD)/kicadlib/packages/AMesser_Oscillators.pretty")(options "")(descr ""))
   (lib (name AMesser_Misc)(type KiCad)(uri "$(KIPRJMOD)/kicadlib/packages/AMesser_Misc.pretty")(options "")(descr ""))
+  (lib (name AMesser_Transistors)(type KiCad)(uri "$(KIPRJMOD)/kicadlib/packages/AMesser_Transistors.pretty")(options "")(descr ""))
 )
