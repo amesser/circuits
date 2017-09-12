@@ -44,6 +44,7 @@ LIBS:amesser_osc_crystal
 LIBS:amesser_diodes
 LIBS:switches
 LIBS:amesser_transistors
+LIBS:amesser_microcontroller
 LIBS:data-logger-cache
 EELAYER 25 0
 EELAYER END

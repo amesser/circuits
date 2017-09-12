@@ -1,4 +1,4 @@
-update=Mi 16 Aug 2017 12:08:50 CEST
+update=Fr 08 Sep 2017 14:16:20 CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -25,16 +25,6 @@ version=1
 NetIExt=net
 [general]
 version=1
-[schematic_editor]
-version=1
-PageLayoutDescrFile=
-PlotDirectoryName=/tmp/
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=
-SpiceForceRefPrefix=0
-SpiceUseNetNumbers=0
-LabSize=60
 [eeschema]
 version=1
 LibDir=library;kicadlib/symbols
@@ -84,3 +74,14 @@ LibName42=kicadlib/symbols/amesser_osc_crystal
 LibName43=kicadlib/symbols/amesser_diodes
 LibName44=switches
 LibName45=kicadlib/symbols/amesser_transistors
+LibName46=kicadlib/symbols/amesser_microcontroller
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=/tmp/
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
