@@ -990,7 +990,7 @@ F 3 "" H 4950 2700 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3850 950  3850 1950
+	3850 900  3850 1950
 Wire Wire Line
 	1400 900  4400 900 
 Connection ~ 3850 900 

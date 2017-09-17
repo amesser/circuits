@@ -1422,8 +1422,6 @@ NoConn ~ 2950 5000
 NoConn ~ 2950 5100
 NoConn ~ 2950 5200
 NoConn ~ 2950 5300
-NoConn ~ 2950 5400
-NoConn ~ 2950 5500
 $Comp
 L R R308
 U 1 1 595DEC25
@@ -1958,4 +1956,12 @@ Text Label 3500 1200 2    60   ~ 0
 IO_A1_N
 Text Label 3500 1000 2    60   ~ 0
 IO_A0_N
+Text GLabel 3100 5400 2    50   BiDi ~ 0
+FX3_I2C_SCL
+Text GLabel 3100 5500 2    50   Input ~ 0
+FX3_I2C_SDA
+Wire Wire Line
+	2950 5400 3100 5400
+Wire Wire Line
+	3100 5500 2950 5500
 $EndSCHEMATC
