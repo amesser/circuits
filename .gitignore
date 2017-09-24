@@ -1,4 +1,5 @@
 board/*.bak
+board/*-bak
 board/*-cache.lib
 firmware/**/*.bak
 firmware/**/*.swp

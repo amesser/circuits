@@ -1189,13 +1189,9 @@ F 3 "" H 900 3800 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2000 3800 2050 3800
-Wire Wire Line
 	800  3750 1000 3750
 Wire Wire Line
 	2800 3450 2750 3450
-Wire Wire Line
-	2150 3500 2000 3500
 Wire Wire Line
 	800  3750 800  3700
 Wire Wire Line
@@ -1208,8 +1204,6 @@ Wire Wire Line
 Wire Wire Line
 	950  3450 1000 3450
 Connection ~ 950  3250
-Wire Wire Line
-	2050 3800 2050 3300
 Connection ~ 800  3250
 NoConn ~ 4200 3250
 NoConn ~ 4200 3450

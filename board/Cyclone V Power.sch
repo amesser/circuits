@@ -197,17 +197,6 @@ Text GLabel 1350 7050 0    60   Input ~ 0
 VCC_2V50_FPGA
 Text Label 2100 7050 2    60   ~ 0
 VCC_2V50_FPGA
-$Comp
-L L_Small L601
-U 1 1 58DC6483
-P 6200 5600
-F 0 "L601" H 6230 5640 50  0000 L CNN
-F 1 "BLM18KG" V 6100 5450 50  0000 L CNN
-F 2 "Resistors_SMD:R_0603" H 6200 5600 50  0001 C CNN
-F 3 "" H 6200 5600 50  0000 C CNN
-	1    6200 5600
-	0    -1   -1   0   
-$EndComp
 Text Label 5650 4200 0    60   ~ 0
 VCCPD_B5A
 Text Label 5650 4300 0    60   ~ 0
@@ -817,7 +806,6 @@ Wire Wire Line
 	6350 5600 6350 5650
 Wire Wire Line
 	6550 5600 6550 5650
-Connection ~ 6350 5600
 Wire Wire Line
 	6350 5950 6350 6000
 Wire Wire Line
@@ -867,11 +855,7 @@ F 4 "NFM15PC105R0G3" H 6350 5800 60  0001 C CNN "Part Number"
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	6300 5600 6800 5600
-Wire Wire Line
-	6750 5600 6750 6100
-Wire Wire Line
-	6750 5000 6750 5500
+	6750 5000 6750 6100
 Wire Wire Line
 	6350 6000 6550 6000
 Wire Wire Line
@@ -940,12 +924,7 @@ Wire Wire Line
 Connection ~ 6450 5400
 Connection ~ 6750 5000
 Wire Wire Line
-	6050 4500 6050 5600
-Wire Wire Line
-	6050 5600 6100 5600
-Wire Wire Line
 	6050 5000 6100 5000
-Connection ~ 6050 5000
 Connection ~ 6750 4500
 Connection ~ 6050 4500
 Text Label 6000 3400 0    60   ~ 0
@@ -1036,4 +1015,8 @@ Wire Wire Line
 Wire Wire Line
 	4350 2050 4400 2050
 Connection ~ 4950 2650
+Wire Wire Line
+	6050 4500 6050 5000
+Wire Wire Line
+	6350 5600 6800 5600
 $EndSCHEMATC

@@ -112,8 +112,6 @@ Text Label 2950 1000 0    60   ~ 0
 FPGA_FX3_D2
 Text Label 2950 1100 0    60   ~ 0
 FPGA_FX3_D3
-Text Label 2950 1200 0    60   ~ 0
-FPGA_FX3_D4
 Text Label 2950 1300 0    60   ~ 0
 FPGA_FX3_D5
 Text Label 2950 1400 0    60   ~ 0
@@ -154,8 +152,6 @@ Text Label 2950 3800 0    60   ~ 0
 FPGA_FX3_D23
 Text Label 2950 3900 0    60   ~ 0
 FPGA_FX3_D24
-Text Label 2950 4000 0    60   ~ 0
-FPGA_FX3_D25
 Text Label 2950 4100 0    60   ~ 0
 FPGA_FX3_D26
 Text Label 2950 4200 0    60   ~ 0
@@ -641,8 +637,6 @@ Wire Wire Line
 Wire Wire Line
 	6600 5500 7450 5500
 Wire Wire Line
-	6600 800  7450 800 
-Wire Wire Line
 	6600 900  7450 900 
 Wire Wire Line
 	6600 1000 7450 1000
@@ -715,8 +709,6 @@ Wire Wire Line
 Wire Wire Line
 	3700 1100 2950 1100
 Wire Wire Line
-	3700 1200 2950 1200
-Wire Wire Line
 	3700 1300 2950 1300
 Wire Wire Line
 	3700 1400 2950 1400
@@ -756,8 +748,6 @@ Wire Wire Line
 	2950 3800 3700 3800
 Wire Wire Line
 	2950 3900 3700 3900
-Wire Wire Line
-	2950 4000 3700 4000
 Wire Wire Line
 	2950 4100 3700 4100
 Wire Wire Line
@@ -1117,71 +1107,6 @@ Wire Wire Line
 	4250 5300 4250 5450
 Wire Wire Line
 	4250 5750 4250 5800
-$Comp
-L Jumper_NC_Small JP506
-U 1 1 599A8F06
-P 10800 3600
-F 0 "JP506" H 10800 3680 50  0000 C CNN
-F 1 "~" H 10810 3540 50  0000 C CNN
-F 2 "Resistors_SMD:R_0603" H 10800 3600 50  0001 C CNN
-F 3 "" H 10800 3600 50  0000 C CNN
-	1    10800 3600
-	1    0    0    -1  
-$EndComp
-Connection ~ 10900 3600
-Connection ~ 10700 3600
-$Comp
-L Jumper_NC_Small JP507
-U 1 1 599AA895
-P 10800 3700
-F 0 "JP507" H 10800 3780 50  0000 C CNN
-F 1 "~" H 10810 3640 50  0000 C CNN
-F 2 "Resistors_SMD:R_0603" H 10800 3700 50  0001 C CNN
-F 3 "" H 10800 3700 50  0000 C CNN
-	1    10800 3700
-	1    0    0    -1  
-$EndComp
-Connection ~ 10900 3700
-Connection ~ 10700 3700
-$Comp
-L Jumper_NC_Small JP508
-U 1 1 599AAB69
-P 10800 3800
-F 0 "JP508" H 10800 3880 50  0000 C CNN
-F 1 "~" H 10810 3740 50  0000 C CNN
-F 2 "Resistors_SMD:R_0603" H 10800 3800 50  0001 C CNN
-F 3 "" H 10800 3800 50  0000 C CNN
-	1    10800 3800
-	1    0    0    -1  
-$EndComp
-$Comp
-L Jumper_NC_Small JP509
-U 1 1 599AAC48
-P 10800 3900
-F 0 "JP509" H 10800 3980 50  0000 C CNN
-F 1 "~" H 10810 3840 50  0000 C CNN
-F 2 "Resistors_SMD:R_0603" H 10800 3900 50  0001 C CNN
-F 3 "" H 10800 3900 50  0000 C CNN
-	1    10800 3900
-	1    0    0    -1  
-$EndComp
-$Comp
-L Jumper_NC_Small JP510
-U 1 1 599AAD2A
-P 10800 4000
-F 0 "JP510" H 10800 4080 50  0000 C CNN
-F 1 "~" H 10810 3940 50  0000 C CNN
-F 2 "Resistors_SMD:R_0603" H 10800 4000 50  0001 C CNN
-F 3 "" H 10800 4000 50  0000 C CNN
-	1    10800 4000
-	1    0    0    -1  
-$EndComp
-Connection ~ 10900 4000
-Connection ~ 10700 4000
-Connection ~ 10900 3900
-Connection ~ 10700 3900
-Connection ~ 10900 3800
-Connection ~ 10700 3800
 NoConn ~ 2950 4400
 $Comp
 L TEST TP501
@@ -1502,12 +1427,22 @@ Wire Wire Line
 	9450 800  10350 800 
 Text Label 4100 4000 0    60   ~ 0
 VCC_2V50_FPGA
-Text Label 750  4500 0    60   ~ 0
-VCC_2V50_FPGA
 Text Label 4200 800  0    60   ~ 0
 VCC_2V50_FPGA
 Text Label 8200 2100 0    60   ~ 0
 VCC_2V50_FPGA
 Text Label 8250 5100 0    60   ~ 0
+VCC_2V50
+Wire Wire Line
+	6600 800  7450 800 
+Text Label 2950 1200 0    60   ~ 0
+FPGA_FX3_D4
+Text Label 2950 4000 0    60   ~ 0
+FPGA_FX3_D25
+Wire Wire Line
+	3700 1200 2950 1200
+Wire Wire Line
+	2950 4000 3700 4000
+Text Label 750  4500 0    60   ~ 0
 VCC_2V50
 $EndSCHEMATC
