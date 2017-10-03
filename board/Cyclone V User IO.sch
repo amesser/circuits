@@ -1734,9 +1734,9 @@ Text Label 3800 4200 0    60   ~ 0
 VCC_2V50_FPGA
 Text Label 7750 5000 0    60   ~ 0
 VCC_2V50_FPGA
-Text Label 7350 700  0    60   ~ 0
-VCC_2V50_FPGA
 Text Label 9750 700  2    60   ~ 0
+VCC_2V50_FPGA
+Text Label 7350 700  0    60   ~ 0
 VCC_3V30_FPGA
 $Comp
 L CONN_02X11 P301
