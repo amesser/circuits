@@ -1280,9 +1280,9 @@ Entry Wire Line
 Entry Wire Line
 	6450 3900 6550 3800
 Entry Wire Line
-	3500 3600 3600 3500
+	3500 3800 3600 3700
 Entry Wire Line
-	3500 3700 3600 3600
+	3500 3900 3600 3800
 Entry Wire Line
 	3500 2200 3600 2100
 Entry Wire Line
@@ -1318,7 +1318,7 @@ Entry Bus Bus
 Wire Bus Line
 	3700 500  10200 500 
 Wire Bus Line
-	3600 600  3600 3600
+	3600 600  3600 3800
 Wire Bus Line
 	6550 600  6550 3800
 Wire Wire Line
@@ -1350,9 +1350,9 @@ Wire Wire Line
 Wire Wire Line
 	2950 2100 3500 2100
 Wire Wire Line
-	2950 3600 3500 3600
+	2950 3800 3500 3800
 Wire Wire Line
-	2950 3700 3500 3700
+	2950 3900 3500 3900
 Text Label 2100 7650 2    60   ~ 0
 VCC_2V50_FPGA
 Text Label 2100 7450 2    60   ~ 0
@@ -1406,8 +1406,6 @@ NoConn ~ 2950 3200
 NoConn ~ 2950 3300
 NoConn ~ 2950 3400
 NoConn ~ 2950 3500
-NoConn ~ 2950 3800
-NoConn ~ 2950 3900
 NoConn ~ 2950 4000
 NoConn ~ 2950 4100
 NoConn ~ 2950 4200
@@ -1924,7 +1922,7 @@ Text Label 6450 1000 2    60   ~ 0
 IO_B1_N
 Text Label 6450 800  2    60   ~ 0
 IO_B0_N
-Text Label 3500 3700 2    60   ~ 0
+Text Label 3500 3900 2    60   ~ 0
 IO_A7_P
 Text Label 3500 2300 2    60   ~ 0
 IO_A6_P
@@ -1940,7 +1938,7 @@ Text Label 3500 1300 2    60   ~ 0
 IO_A1_P
 Text Label 3500 1100 2    60   ~ 0
 IO_A0_P
-Text Label 3500 3600 2    60   ~ 0
+Text Label 3500 3800 2    60   ~ 0
 IO_A7_N
 Text Label 3500 2200 2    60   ~ 0
 IO_A6_N
@@ -1964,4 +1962,13 @@ Wire Wire Line
 	2950 5400 3100 5400
 Wire Wire Line
 	3100 5500 2950 5500
+Text GLabel 3100 3600 2    50   Input ~ 0
+FPGA_CLK2
+Wire Wire Line
+	2950 3700 3050 3700
+NoConn ~ 2950 3600
+Wire Wire Line
+	3050 3700 3050 3600
+Wire Wire Line
+	3050 3600 3100 3600
 $EndSCHEMATC

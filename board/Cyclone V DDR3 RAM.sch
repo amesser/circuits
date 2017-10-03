@@ -1096,9 +1096,9 @@ Text GLabel 1300 6350 0    60   Input ~ 0
 VCC_1V35_FPGA
 Text GLabel 1300 6450 0    60   Input ~ 0
 VCC_2V50_FPGA
-Text Label 10750 4300 2    60   ~ 0
+Text Label 10750 2700 2    60   ~ 0
 FPGA_CLK10_P
-Text Label 10750 4200 2    60   ~ 0
+Text Label 10750 2600 2    60   ~ 0
 FPGA_CLK10_N
 $Comp
 L GND #PWR065
@@ -1169,14 +1169,11 @@ NoConn ~ 10100 2000
 NoConn ~ 10100 2200
 NoConn ~ 10100 2300
 NoConn ~ 10100 2500
-NoConn ~ 10100 2600
-NoConn ~ 10100 2700
 NoConn ~ 10100 2400
 NoConn ~ 6700 900 
 NoConn ~ 6700 1000
 NoConn ~ 6700 2300
 NoConn ~ 6700 2500
-NoConn ~ 6700 2600
 NoConn ~ 6700 3300
 NoConn ~ 6700 3900
 $Comp
@@ -1904,9 +1901,9 @@ Wire Wire Line
 Wire Wire Line
 	1300 6450 2050 6450
 Wire Wire Line
-	10100 4200 10750 4200
+	10100 2600 10750 2600
 Wire Wire Line
-	10750 4300 10100 4300
+	10750 2700 10100 2700
 Wire Wire Line
 	2300 7100 2250 7100
 Wire Wire Line
@@ -2064,4 +2061,14 @@ Text Label 6100 5150 0    60   ~ 0
 VCC_1V35_FPGA
 Wire Wire Line
 	5350 6700 5400 6700
+Text GLabel 10550 4200 2    50   Input ~ 0
+FPGA_CLK1
+NoConn ~ 10100 4200
+Wire Wire Line
+	10550 4200 10450 4200
+Wire Wire Line
+	10450 4200 10450 4300
+Wire Wire Line
+	10450 4300 10100 4300
+NoConn ~ 6700 2600
 $EndSCHEMATC

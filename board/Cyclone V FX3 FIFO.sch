@@ -524,10 +524,8 @@ NoConn ~ 9950 3100
 NoConn ~ 9950 3200
 NoConn ~ 9950 3300
 NoConn ~ 9950 3400
-Text Label 7250 2100 2    60   ~ 0
-FPGA_CLK0
 Text Label 7250 3700 2    60   ~ 0
-FPGA_CLK1
+FPGA_CLK0
 $Comp
 L Crystal_SMD_4 Y501
 U 1 1 58C54D17
@@ -574,8 +572,6 @@ F 3 "" H 9200 1850 50  0000 C CNN
 $EndComp
 Text Label 10900 1100 2    60   ~ 0
 FPGA_CLK0
-Text Label 10900 1200 2    60   ~ 0
-FPGA_CLK1
 Text Label 2350 7200 2    60   ~ 0
 VCC_2V50_FPGA
 Text GLabel 1500 7200 0    60   Input ~ 0
@@ -825,8 +821,6 @@ Wire Wire Line
 Wire Wire Line
 	6600 4900 7450 4900
 Wire Wire Line
-	7250 2100 6600 2100
-Wire Wire Line
 	6600 3700 7250 3700
 Wire Wire Line
 	9050 1400 9500 1400
@@ -851,8 +845,6 @@ Wire Wire Line
 Connection ~ 8850 1800
 Connection ~ 8950 1800
 Connection ~ 9200 1800
-Wire Wire Line
-	7250 3600 6600 3600
 Wire Wire Line
 	1500 7200 2350 7200
 Wire Wire Line
@@ -975,8 +967,6 @@ Wire Wire Line
 	8600 1200 9500 1200
 Wire Wire Line
 	10300 1100 10900 1100
-Wire Wire Line
-	10300 1200 10900 1200
 Text GLabel 10350 1500 2    50   Input ~ 0
 FX3_I2C_SCL
 Text GLabel 10350 1600 2    50   BiDi ~ 0
@@ -1286,12 +1276,8 @@ Wire Wire Line
 	3100 5550 2250 5550
 Wire Wire Line
 	2250 5450 3100 5450
-Text Label 10900 1300 2    60   ~ 0
-FPGA_CLK2
 Wire Wire Line
-	10300 1300 10900 1300
-Text Label 7250 3600 2    60   ~ 0
-FPGA_CLK2
+	10300 1300 10450 1300
 Text GLabel 1250 7050 0    60   Input ~ 0
 VCC_2V50
 Text Label 2350 7050 2    60   ~ 0
@@ -1451,4 +1437,12 @@ Text Label 750  4500 0    60   ~ 0
 VCC_2V50
 Wire Wire Line
 	6600 1200 7450 1200
+Text GLabel 10450 1300 2    50   Output ~ 0
+FPGA_CLK2
+NoConn ~ 6600 3600
+Text GLabel 10450 1200 2    50   Output ~ 0
+FPGA_CLK1
+Wire Wire Line
+	10450 1200 10300 1200
+NoConn ~ 6600 2100
 $EndSCHEMATC
