@@ -1440,9 +1440,12 @@ Wire Wire Line
 Text GLabel 10450 1300 2    50   Output ~ 0
 FPGA_CLK2
 NoConn ~ 6600 3600
-Text GLabel 10450 1200 2    50   Output ~ 0
+Wire Wire Line
+	10300 1200 10900 1200
+Text Label 10900 1200 2    60   ~ 0
+FPGA_CLK1
+Text Label 7200 2100 2    60   ~ 0
 FPGA_CLK1
 Wire Wire Line
-	10450 1200 10300 1200
-NoConn ~ 6600 2100
+	7200 2100 6600 2100
 $EndSCHEMATC
