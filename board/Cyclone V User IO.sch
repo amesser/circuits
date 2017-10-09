@@ -229,7 +229,7 @@ Text Label 8000 3600 2    60   ~ 0
 IO_C1_P
 Text Label 6450 2900 2    60   ~ 0
 IO_C2_P
-Text Label 6450 3700 2    60   ~ 0
+Text Label 6450 2700 2    60   ~ 0
 IO_C3_P
 Text Label 8000 3900 2    60   ~ 0
 IO_C4_P
@@ -1074,37 +1074,37 @@ F 3 "" H 8900 4400 50  0000 C CNN
 	1    8900 4400
 	1    0    0    -1  
 $EndComp
-Text Label 6450 3900 2    60   ~ 0
-IO_C7_P
-Text Label 6450 3500 2    60   ~ 0
-IO_C6_P
-Text Label 6450 3100 2    60   ~ 0
-IO_C5_P
-Text Label 6450 2500 2    60   ~ 0
-IO_C0_P
 Text Label 6450 3300 2    60   ~ 0
+IO_C7_P
+Text Label 6450 3900 2    60   ~ 0
+IO_C6_P
+Text Label 6450 3700 2    60   ~ 0
+IO_C5_P
+Text Label 6450 3500 2    60   ~ 0
+IO_C0_P
+Text Label 6450 3100 2    60   ~ 0
 IO_C1_P
 Text Label 8000 3700 2    60   ~ 0
 IO_C2_P
 Text Label 8000 3800 2    60   ~ 0
 IO_C3_P
-Text Label 6450 2700 2    60   ~ 0
+Text Label 6450 2500 2    60   ~ 0
 IO_C4_P
-Text Label 6450 3800 2    60   ~ 0
+Text Label 6450 3200 2    60   ~ 0
 IO_C7_N
-Text Label 6450 3400 2    60   ~ 0
+Text Label 6450 3800 2    60   ~ 0
 IO_C6_N
-Text Label 6450 3000 2    60   ~ 0
-IO_C5_N
-Text Label 6450 2600 2    60   ~ 0
-IO_C4_N
 Text Label 6450 3600 2    60   ~ 0
+IO_C5_N
+Text Label 6450 2400 2    60   ~ 0
+IO_C4_N
+Text Label 6450 2600 2    60   ~ 0
 IO_C3_N
 Text Label 6450 2800 2    60   ~ 0
 IO_C2_N
-Text Label 6450 3200 2    60   ~ 0
+Text Label 6450 3000 2    60   ~ 0
 IO_C1_N
-Text Label 6450 2400 2    60   ~ 0
+Text Label 6450 3400 2    60   ~ 0
 IO_C0_N
 Text Label 6450 2300 2    60   ~ 0
 IO_B7_P
