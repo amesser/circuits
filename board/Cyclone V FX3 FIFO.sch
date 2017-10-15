@@ -205,93 +205,93 @@ Text Label 2950 2800 0    60   ~ 0
 FPGA_FX3_FLAGD
 Text Label 700  1500 0    60   ~ 0
 FPGA_FX3_CLK
-Text Label 6600 2400 0    60   ~ 0
+Text Label 6600 4800 0    60   ~ 0
 FPGA_FX3_D0
-Text Label 6600 3800 0    60   ~ 0
+Text Label 6600 5000 0    60   ~ 0
 FPGA_FX3_D1
-Text Label 6600 2300 0    60   ~ 0
-FPGA_FX3_D2
-Text Label 6600 1100 0    60   ~ 0
-FPGA_FX3_D3
-Text Label 6600 800  0    60   ~ 0
-FPGA_FX3_D4
-Text Label 6600 2600 0    60   ~ 0
-FPGA_FX3_D5
-Text Label 6600 1400 0    60   ~ 0
-FPGA_FX3_D6
 Text Label 6600 1000 0    60   ~ 0
+FPGA_FX3_D2
+Text Label 6600 4900 0    60   ~ 0
+FPGA_FX3_D3
+Text Label 6600 5400 0    60   ~ 0
+FPGA_FX3_D4
+Text Label 6600 4500 0    60   ~ 0
+FPGA_FX3_D5
+Text Label 6600 1700 0    60   ~ 0
+FPGA_FX3_D6
+Text Label 6600 4000 0    60   ~ 0
 FPGA_FX3_D7
-Text Label 6600 1800 0    60   ~ 0
+Text Label 6600 5500 0    60   ~ 0
 FPGA_FX3_D8
-Text Label 6600 3500 0    60   ~ 0
+Text Label 6600 4100 0    60   ~ 0
 FPGA_FX3_D9
-Text Label 6600 2500 0    60   ~ 0
+Text Label 6600 4200 0    60   ~ 0
 FPGA_FX3_D10
-Text Label 6600 3000 0    60   ~ 0
+Text Label 6600 900  0    60   ~ 0
 FPGA_FX3_D11
-Text Label 6600 1300 0    60   ~ 0
+Text Label 6600 4400 0    60   ~ 0
 FPGA_FX3_D12
-Text Label 6600 2700 0    60   ~ 0
+Text Label 6600 800  0    60   ~ 0
 FPGA_FX3_D13
-Text Label 6600 3400 0    60   ~ 0
+Text Label 6600 5300 0    60   ~ 0
 FPGA_FX3_D14
 Text Label 6600 1200 0    60   ~ 0
 FPGA_FX3_D15
-Text Label 6600 2200 0    60   ~ 0
+Text Label 6600 2400 0    60   ~ 0
 FPGA_FX3_D16
-Text Label 6600 1500 0    60   ~ 0
+Text Label 6600 3200 0    60   ~ 0
 FPGA_FX3_D17
-Text Label 6600 2800 0    60   ~ 0
+Text Label 6600 2900 0    60   ~ 0
 FPGA_FX3_D18
 Text Label 6600 1900 0    60   ~ 0
 FPGA_FX3_D19
-Text Label 6600 1600 0    60   ~ 0
-FPGA_FX3_D20
-Text Label 6600 2900 0    60   ~ 0
-FPGA_FX3_D21
 Text Label 6600 3900 0    60   ~ 0
+FPGA_FX3_D20
+Text Label 6600 2800 0    60   ~ 0
+FPGA_FX3_D21
+Text Label 6600 3000 0    60   ~ 0
 FPGA_FX3_D22
-Text Label 6600 3200 0    60   ~ 0
+Text Label 6600 3300 0    60   ~ 0
 FPGA_FX3_D23
-Text Label 6600 4600 0    60   ~ 0
+Text Label 6600 1800 0    60   ~ 0
 FPGA_FX3_D24
-Text Label 6600 900  0    60   ~ 0
+Text Label 6600 3500 0    60   ~ 0
 FPGA_FX3_D25
-Text Label 6600 3100 0    60   ~ 0
+Text Label 6600 3800 0    60   ~ 0
 FPGA_FX3_D26
-Text Label 6600 1700 0    60   ~ 0
+Text Label 6600 2000 0    60   ~ 0
 FPGA_FX3_D27
-Text Label 6600 4900 0    60   ~ 0
+Text Label 6600 1100 0    60   ~ 0
 FPGA_FX3_D28
-Text Label 6600 5500 0    60   ~ 0
+Text Label 6600 2600 0    60   ~ 0
 FPGA_FX3_D29
-Text Label 6600 5300 0    60   ~ 0
+Text Label 6600 3400 0    60   ~ 0
 FPGA_FX3_D30
-Text Label 6600 4100 0    60   ~ 0
+Text Label 6600 3100 0    60   ~ 0
 FPGA_FX3_D31
-Text Label 6600 4200 0    60   ~ 0
+Text Label 6600 2500 0    60   ~ 0
 FPGA_FX3_FLAGA
-Text Label 6600 4800 0    60   ~ 0
+Text Label 6600 2300 0    60   ~ 0
 FPGA_FX3_FLAGB
 Text Label 6600 4700 0    60   ~ 0
 FPGA_FX3_FLAGC
-Text Label 6600 5400 0    60   ~ 0
+Text Label 6600 2700 0    60   ~ 0
 FPGA_FX3_FLAGD
-Text Label 6600 4300 0    60   ~ 0
+Text Label 6600 4600 0    60   ~ 0
 ~FPGA_FX3_SLCS~
 Text Label 6600 5200 0    60   ~ 0
 ~FPGA_FX3_SLWR~
-Text Label 6600 5000 0    60   ~ 0
+Text Label 6600 4300 0    60   ~ 0
 ~FPGA_FX3_SLOE~
 Text Label 6600 5100 0    60   ~ 0
 ~FPGA_FX3_SLRD~
-Text Label 6600 4500 0    60   ~ 0
+Text Label 6600 1600 0    60   ~ 0
 FPGA_FX3_PKTEND
-Text Label 6600 4000 0    60   ~ 0
+Text Label 6600 2200 0    60   ~ 0
 FPGA_FX3_A0
-Text Label 6600 4400 0    60   ~ 0
+Text Label 6600 1300 0    60   ~ 0
 FPGA_FX3_A1
-Text Label 7250 3300 2    60   ~ 0
+Text Label 6600 1500 0    60   ~ 0
 FPGA_FX3_CLK
 Entry Wire Line
 	7450 4300 7550 4200
@@ -1388,7 +1388,7 @@ Wire Wire Line
 	2950 3000 3700 3000
 Entry Wire Line
 	3700 3000 3800 2900
-Text Label 6600 2000 0    60   ~ 0
+Text Label 6600 1400 0    60   ~ 0
 ~FPGA_FX3_INT~
 Entry Wire Line
 	7450 2000 7550 1900

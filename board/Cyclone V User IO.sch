@@ -227,7 +227,7 @@ Text Label 8000 3500 2    60   ~ 0
 IO_C0_P
 Text Label 8000 3600 2    60   ~ 0
 IO_C1_P
-Text Label 6450 2900 2    60   ~ 0
+Text Label 6450 3900 2    60   ~ 0
 IO_C2_P
 Text Label 6450 2700 2    60   ~ 0
 IO_C3_P
@@ -1076,9 +1076,9 @@ F 3 "" H 8900 4400 50  0000 C CNN
 $EndComp
 Text Label 6450 3300 2    60   ~ 0
 IO_C7_P
-Text Label 6450 3900 2    60   ~ 0
-IO_C6_P
 Text Label 6450 3700 2    60   ~ 0
+IO_C6_P
+Text Label 6450 2900 2    60   ~ 0
 IO_C5_P
 Text Label 6450 3500 2    60   ~ 0
 IO_C0_P
@@ -1092,15 +1092,15 @@ Text Label 6450 2500 2    60   ~ 0
 IO_C4_P
 Text Label 6450 3200 2    60   ~ 0
 IO_C7_N
-Text Label 6450 3800 2    60   ~ 0
-IO_C6_N
 Text Label 6450 3600 2    60   ~ 0
+IO_C6_N
+Text Label 6450 2800 2    60   ~ 0
 IO_C5_N
 Text Label 6450 2400 2    60   ~ 0
 IO_C4_N
 Text Label 6450 2600 2    60   ~ 0
 IO_C3_N
-Text Label 6450 2800 2    60   ~ 0
+Text Label 6450 3800 2    60   ~ 0
 IO_C2_N
 Text Label 6450 3000 2    60   ~ 0
 IO_C1_N
@@ -1110,65 +1110,65 @@ Text Label 6450 2300 2    60   ~ 0
 IO_B7_P
 Text Label 6450 2100 2    60   ~ 0
 IO_B6_P
-Text Label 6450 1900 2    60   ~ 0
-IO_B5_P
 Text Label 6450 1700 2    60   ~ 0
+IO_B5_P
+Text Label 6450 1900 2    60   ~ 0
 IO_B4_P
-Text Label 6450 1500 2    60   ~ 0
-IO_B3_P
 Text Label 6450 1300 2    60   ~ 0
+IO_B3_P
+Text Label 6450 900  2    60   ~ 0
 IO_B2_P
 Text Label 6450 1100 2    60   ~ 0
 IO_B1_P
-Text Label 6450 900  2    60   ~ 0
+Text Label 6450 1500 2    60   ~ 0
 IO_B0_P
 Text Label 6450 2200 2    60   ~ 0
 IO_B7_N
 Text Label 6450 2000 2    60   ~ 0
 IO_B6_N
-Text Label 6450 1800 2    60   ~ 0
-IO_B5_N
 Text Label 6450 1600 2    60   ~ 0
+IO_B5_N
+Text Label 6450 1800 2    60   ~ 0
 IO_B4_N
-Text Label 6450 1400 2    60   ~ 0
-IO_B3_N
 Text Label 6450 1200 2    60   ~ 0
+IO_B3_N
+Text Label 6450 800  2    60   ~ 0
 IO_B2_N
 Text Label 6450 1000 2    60   ~ 0
 IO_B1_N
-Text Label 6450 800  2    60   ~ 0
+Text Label 6450 1400 2    60   ~ 0
 IO_B0_N
-Text Label 3500 3900 2    60   ~ 0
-IO_A7_P
-Text Label 3500 2300 2    60   ~ 0
-IO_A6_P
-Text Label 3500 3300 2    60   ~ 0
-IO_A5_P
-Text Label 3500 4300 2    60   ~ 0
-IO_A4_P
-Text Label 3500 3100 2    60   ~ 0
-IO_A3_P
-Text Label 3500 4700 2    60   ~ 0
-IO_A2_P
-Text Label 3500 2500 2    60   ~ 0
-IO_A1_P
 Text Label 3500 4100 2    60   ~ 0
+IO_A7_P
+Text Label 3500 4700 2    60   ~ 0
+IO_A6_P
+Text Label 3500 4300 2    60   ~ 0
+IO_A5_P
+Text Label 3500 2500 2    60   ~ 0
+IO_A4_P
+Text Label 3500 2300 2    60   ~ 0
+IO_A3_P
+Text Label 3500 3900 2    60   ~ 0
+IO_A2_P
+Text Label 3500 3300 2    60   ~ 0
+IO_A1_P
+Text Label 3500 3100 2    60   ~ 0
 IO_A0_P
-Text Label 3500 3800 2    60   ~ 0
-IO_A7_N
-Text Label 3500 2200 2    60   ~ 0
-IO_A6_N
-Text Label 3500 3200 2    60   ~ 0
-IO_A5_N
-Text Label 3500 4200 2    60   ~ 0
-IO_A4_N
-Text Label 3500 3000 2    60   ~ 0
-IO_A3_N
-Text Label 3500 4600 2    60   ~ 0
-IO_A2_N
-Text Label 3500 2400 2    60   ~ 0
-IO_A1_N
 Text Label 3500 4000 2    60   ~ 0
+IO_A7_N
+Text Label 3500 4600 2    60   ~ 0
+IO_A6_N
+Text Label 3500 4200 2    60   ~ 0
+IO_A5_N
+Text Label 3500 2400 2    60   ~ 0
+IO_A4_N
+Text Label 3500 2200 2    60   ~ 0
+IO_A3_N
+Text Label 3500 3800 2    60   ~ 0
+IO_A2_N
+Text Label 3500 3200 2    60   ~ 0
+IO_A1_N
+Text Label 3500 3000 2    60   ~ 0
 IO_A0_N
 Text GLabel 3000 5400 2    50   BiDi ~ 0
 FX3_I2C_SCL
@@ -2049,4 +2049,14 @@ Wire Wire Line
 	8700 5250 8700 5300
 Connection ~ 9450 5250
 Connection ~ 8700 6250
+NoConn ~ 2950 1000
+NoConn ~ 2950 1100
+NoConn ~ 2950 1200
+NoConn ~ 2950 1300
+NoConn ~ 2950 1400
+NoConn ~ 2950 1500
+NoConn ~ 2950 1600
+NoConn ~ 2950 1700
+NoConn ~ 2950 1800
+NoConn ~ 2950 1900
 $EndSCHEMATC
