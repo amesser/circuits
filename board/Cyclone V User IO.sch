@@ -1112,13 +1112,13 @@ Text Label 6450 2100 2    60   ~ 0
 IO_B6_P
 Text Label 6450 1700 2    60   ~ 0
 IO_B5_P
-Text Label 6450 1900 2    60   ~ 0
+Text Label 6450 1100 2    60   ~ 0
 IO_B4_P
 Text Label 6450 1300 2    60   ~ 0
 IO_B3_P
 Text Label 6450 900  2    60   ~ 0
 IO_B2_P
-Text Label 6450 1100 2    60   ~ 0
+Text Label 6450 1900 2    60   ~ 0
 IO_B1_P
 Text Label 6450 1500 2    60   ~ 0
 IO_B0_P
@@ -1128,13 +1128,13 @@ Text Label 6450 2000 2    60   ~ 0
 IO_B6_N
 Text Label 6450 1600 2    60   ~ 0
 IO_B5_N
-Text Label 6450 1800 2    60   ~ 0
+Text Label 6450 1000 2    60   ~ 0
 IO_B4_N
 Text Label 6450 1200 2    60   ~ 0
 IO_B3_N
 Text Label 6450 800  2    60   ~ 0
 IO_B2_N
-Text Label 6450 1000 2    60   ~ 0
+Text Label 6450 1800 2    60   ~ 0
 IO_B1_N
 Text Label 6450 1400 2    60   ~ 0
 IO_B0_N
