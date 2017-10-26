@@ -1111,9 +1111,9 @@ F 3 "" H 2050 7450 50  0000 C CNN
 	1    2050 7450
 	1    0    0    -1  
 $EndComp
-Text Label 3800 7000 2    60   ~ 0
-FPGA_CLK10_N
 Text Label 3800 7200 2    60   ~ 0
+FPGA_CLK10_N
+Text Label 3800 7000 2    60   ~ 0
 FPGA_CLK10_P
 $Comp
 L R_ARRAY_4 R409
