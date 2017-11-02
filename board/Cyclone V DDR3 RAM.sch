@@ -236,33 +236,33 @@ Text Label 2200 2300 2    60   ~ 0
 FPGA_DDR3_A14
 Text Label 2200 2400 2    60   ~ 0
 FPGA_DDR3_A15
-Text Label 3200 900  0    60   ~ 0
-FPGA_DDR3_D0
-Text Label 3200 1000 0    60   ~ 0
-FPGA_DDR3_D1
 Text Label 3200 1100 0    60   ~ 0
+FPGA_DDR3_D0
+Text Label 3200 1400 0    60   ~ 0
+FPGA_DDR3_D1
+Text Label 3200 1300 0    60   ~ 0
 FPGA_DDR3_D2
 Text Label 3200 1200 0    60   ~ 0
 FPGA_DDR3_D3
-Text Label 3200 1300 0    60   ~ 0
+Text Label 3200 1600 0    60   ~ 0
 FPGA_DDR3_D4
-Text Label 3200 1400 0    60   ~ 0
+Text Label 3200 1000 0    60   ~ 0
 FPGA_DDR3_D5
 Text Label 3200 1500 0    60   ~ 0
 FPGA_DDR3_D6
-Text Label 3200 1600 0    60   ~ 0
+Text Label 3200 900  0    60   ~ 0
 FPGA_DDR3_D7
-Text Label 3200 1700 0    60   ~ 0
+Text Label 3200 2000 0    60   ~ 0
 FPGA_DDR3_D8
-Text Label 3200 1800 0    60   ~ 0
+Text Label 3200 2200 0    60   ~ 0
 FPGA_DDR3_D9
 Text Label 3200 1900 0    60   ~ 0
 FPGA_DDR3_D10
-Text Label 3200 2000 0    60   ~ 0
+Text Label 3200 1700 0    60   ~ 0
 FPGA_DDR3_D11
 Text Label 3200 2100 0    60   ~ 0
 FPGA_DDR3_D12
-Text Label 3200 2200 0    60   ~ 0
+Text Label 3200 1800 0    60   ~ 0
 FPGA_DDR3_D13
 Text Label 3200 2300 0    60   ~ 0
 FPGA_DDR3_D14
