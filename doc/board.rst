@@ -25,3 +25,39 @@
     - 108Ohm differential 0.3mm Width 0.3mm Spacing
     - 156Ohm differential 0.1mm Width 0.4mm Spacing
     - 164Ohm differential 0.1mm Width 0.3mm Spacing
+
+- Eurocircuits.com
+  - 2xPCB ~ 250 €
+  - 6 Layer 90x60 mm
+  - Width/Spacing >= 100µm
+  - Drill >= 0.15mm (Final hole)
+  - Er ~4.1
+  - Annular Ring 125µm
+  - Stackup: 
+      Thinkness | Material | Usage | 100µm | 125 µm | 150 µm | 200 µm 
+    - 30µm Cu - Low speed signals
+    - 240µm PR2116 
+    - 18µm Cu - PWR
+    - 360µm FR4 
+    - 18µm      | Cu       | Sig2  | 73    | 68.1   | 150    |  56  
+    - 240µm PR2116 
+    - 18µm Cu - GND
+    - 360µm FR4 
+    - 18µm      | Cu       | Sig1  | 73    | 68.1   | 150    |  56  
+    - 240µm PR2116 
+    - 30µm Cu - PWR
+
+  - USB3.0: 280µm Width, 125µm Spacing, 125µm Length Match ~ 110Ohm
+  - USB2.0: 150µm Width, 200µm Spacing, 1250µm Length Match
+  - Signal Layer: 250µ Width, 200µm Spacing ~ 120 Ohm Differential
+  - Inner Layer Impedance: 
+    - 50Ohm  -> 0.2mm Track Width
+    - 50Ohm  -> 0.2mm Width
+    - 74Ohm  -> 0.1mm Width
+    - 100Ohm differential 0.3mm Width 0.4mm Spacing
+    - 108Ohm differential 0.3mm Width 0.3mm Spacing
+    - 156Ohm differential 0.1mm Width 0.4mm Spacing
+    - 164Ohm differential 0.1mm Width 0.3mm Spacing
+  - Signal speed ~ 0.15mm/ps
+    - 20ps time match DDR3 -> ~3mm Length match
+    - manual package deskew because quartus does not allow board deskew of package for f < 800mhz

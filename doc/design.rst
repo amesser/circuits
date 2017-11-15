@@ -179,4 +179,4 @@ Using TLV62085 DC/DC converters, calculated using Ti WebBench
 
 NCP373
 
-
+ADC3222
