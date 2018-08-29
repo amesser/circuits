@@ -1171,7 +1171,7 @@ Wire Wire Line
 Wire Wire Line
 	3250 7000 3250 7250
 Wire Wire Line
-	4450 7100 5400 7100
+	4450 7100 6100 7100
 Wire Wire Line
 	3450 4250 3550 4250
 Wire Wire Line
@@ -1179,8 +1179,6 @@ Wire Wire Line
 Wire Wire Line
 	4250 5650 4250 6350
 Connection ~ 3250 5750
-Wire Wire Line
-	2950 7400 2950 7450
 Connection ~ 4250 6150
 Wire Wire Line
 	4250 6350 4050 6350
@@ -1320,8 +1318,6 @@ Connection ~ 4600 7100
 Wire Wire Line
 	2800 7000 2900 7000
 Wire Wire Line
-	2850 5550 3600 5550
-Wire Wire Line
 	2850 5550 2850 7200
 Connection ~ 2850 7000
 Wire Wire Line
@@ -1353,7 +1349,7 @@ Wire Wire Line
 Wire Wire Line
 	6800 1400 6800 1950
 Wire Wire Line
-	1650 1400 6800 1400
+	1650 1400 8050 1400
 Wire Wire Line
 	3150 3200 3150 3250
 Wire Wire Line
@@ -1646,4 +1642,25 @@ F 3 "" H 7900 5400 50  0001 C CNN
 	1    7900 5400
 	1    0    0    -1  
 $EndComp
+$Comp
+L R R?
+U 1 1 5B86F8C3
+P 3050 5550
+F 0 "R?" V 3130 5550 50  0000 C CNN
+F 1 "10k" V 3050 5550 50  0000 C CNN
+F 2 "" V 2980 5550 50  0001 C CNN
+F 3 "" H 3050 5550 50  0001 C CNN
+	1    3050 5550
+	0    -1   1    0   
+$EndComp
+Wire Wire Line
+	2850 5550 2900 5550
+Wire Wire Line
+	3200 5550 3600 5550
+Connection ~ 6800 1400
+Text HLabel 8050 1400 2    60   Output ~ 0
++5V
+Text HLabel 6100 7100 2    60   Output ~ 0
+CHARGED
+Connection ~ 5400 7100
 $EndSCHEMATC
