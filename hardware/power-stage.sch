@@ -201,10 +201,10 @@ F 3 "" H 6450 2300 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L D D305
+L D D304
 U 1 1 5B071AEF
 P 5950 2750
-F 0 "D305" H 5950 2850 50  0000 C CNN
+F 0 "D304" H 5950 2850 50  0000 C CNN
 F 1 "D" H 5950 2650 50  0000 C CNN
 F 2 "Diodes_ThroughHole:D_DO-35_SOD27_P7.62mm_Horizontal" H 5950 2750 50  0001 C CNN
 F 3 "" H 5950 2750 50  0001 C CNN
@@ -243,17 +243,6 @@ F 2 "Resistors_ThroughHole:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" V 6
 F 3 "" H 6350 1700 50  0001 C CNN
 	1    6350 1700
 	1    0    0    1   
-$EndComp
-$Comp
-L D_Schottky D302
-U 1 1 5B07DD22
-P 3150 3650
-F 0 "D302" H 3150 3750 50  0000 C CNN
-F 1 "D_Schottky" H 3150 3550 50  0000 C CNN
-F 2 "TO_SOT_Packages_THT:TO-220-2_Vertical" H 3150 3650 50  0001 C CNN
-F 3 "" H 3150 3650 50  0001 C CNN
-	1    3150 3650
-	0    1    1    0   
 $EndComp
 $Comp
 L R R306
@@ -421,17 +410,6 @@ F 3 "" H 3300 2500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L D_Schottky D303
-U 1 1 5B788EDD
-P 3350 3650
-F 0 "D303" H 3350 3750 50  0000 C CNN
-F 1 "D_Schottky" H 3350 3550 50  0000 C CNN
-F 2 "TO_SOT_Packages_THT:TO-220-2_Vertical" H 3350 3650 50  0001 C CNN
-F 3 "" H 3350 3650 50  0001 C CNN
-	1    3350 3650
-	0    1    1    0   
-$EndComp
-$Comp
 L CP C301
 U 1 1 5B78B631
 P 1650 3650
@@ -445,12 +423,12 @@ $EndComp
 $Comp
 L GND #PWR024
 U 1 1 5B78BF55
-P 3150 3900
-F 0 "#PWR024" H 3150 3650 50  0001 C CNN
-F 1 "GND" H 3150 3750 50  0000 C CNN
-F 2 "" H 3150 3900 50  0001 C CNN
-F 3 "" H 3150 3900 50  0001 C CNN
-	1    3150 3900
+P 3150 4000
+F 0 "#PWR024" H 3150 3750 50  0001 C CNN
+F 1 "GND" H 3150 3850 50  0000 C CNN
+F 2 "" H 3150 4000 50  0001 C CNN
+F 3 "" H 3150 4000 50  0001 C CNN
+	1    3150 4000
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -498,10 +476,10 @@ F 3 "" H 4300 2300 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L D_Zener D304
+L D_Zener D303
 U 1 1 5B79A434
 P 4500 2750
-F 0 "D304" H 4500 2850 50  0000 C CNN
+F 0 "D303" H 4500 2850 50  0000 C CNN
 F 1 "D_Zener" H 4500 2650 50  0000 C CNN
 F 2 "Diodes_ThroughHole:D_DO-41_SOD81_P7.62mm_Horizontal" H 4500 2750 50  0001 C CNN
 F 3 "" H 4500 2750 50  0001 C CNN
@@ -612,10 +590,7 @@ Wire Wire Line
 	2050 4750 3600 4750
 Wire Wire Line
 	3150 2950 3150 3500
-Wire Wire Line
-	3350 3450 3350 3500
 Connection ~ 3150 3450
-Connection ~ 3350 3450
 Wire Wire Line
 	3700 3450 3750 3450
 Wire Wire Line
@@ -630,13 +605,13 @@ Wire Wire Line
 	4650 3450 4650 3500
 Connection ~ 4450 3450
 Wire Wire Line
-	3350 3850 3350 3800
+	3250 3900 3250 3850
 Wire Wire Line
-	4450 3850 4450 3800
+	4450 3900 4450 3800
 Wire Wire Line
-	4650 3850 4650 3800
+	4650 3900 4650 3800
 Wire Wire Line
-	3150 3800 3150 3900
+	3150 3850 3150 4000
 Wire Wire Line
 	2250 3450 2250 3500
 Wire Wire Line
@@ -644,23 +619,23 @@ Wire Wire Line
 Wire Wire Line
 	2650 1500 2650 3500
 Wire Wire Line
-	2250 3850 2250 3800
+	2250 3900 2250 3800
 Wire Wire Line
-	2650 3850 2650 3800
-Connection ~ 2450 3850
+	2650 3900 2650 3800
+Connection ~ 2450 3900
 Wire Wire Line
 	4850 3450 4850 3500
 Connection ~ 4650 3450
 Wire Wire Line
 	5050 3450 5050 3500
 Connection ~ 4850 3450
-Connection ~ 4650 3850
+Connection ~ 4650 3900
 Wire Wire Line
-	5050 3850 5050 3800
-Connection ~ 4850 3850
+	5050 3900 5050 3800
+Connection ~ 4850 3900
 Wire Wire Line
-	5250 3850 5250 3800
-Connection ~ 5050 3850
+	5250 3900 5250 3800
+Connection ~ 5050 3900
 Wire Wire Line
 	5250 3450 5250 3500
 Connection ~ 5050 3450
@@ -670,16 +645,16 @@ Wire Wire Line
 	2650 2950 2700 2950
 Connection ~ 2650 3450
 Connection ~ 2450 3450
-Connection ~ 4450 3850
-Connection ~ 3350 3850
+Connection ~ 4450 3900
+Connection ~ 3250 3900
 Wire Wire Line
 	1600 3450 2700 3450
-Connection ~ 3150 3850
-Connection ~ 2650 3850
+Connection ~ 3150 3900
+Connection ~ 2650 3900
 Wire Wire Line
-	2450 3850 2450 3800
+	2450 3900 2450 3800
 Wire Wire Line
-	4850 3850 4850 3800
+	4850 3900 4850 3800
 Connection ~ 3150 2950
 Wire Wire Line
 	2900 3150 2900 3100
@@ -855,11 +830,11 @@ Wire Wire Line
 	2050 3500 2050 3450
 Connection ~ 2050 3450
 Wire Wire Line
-	2050 3850 2050 3800
-Connection ~ 2250 3850
+	2050 3900 2050 3800
+Connection ~ 2250 3900
 Wire Wire Line
-	1850 3800 1850 3850
-Connection ~ 2050 3850
+	1850 3800 1850 3900
+Connection ~ 2050 3900
 Wire Wire Line
 	1850 3500 1850 3450
 Connection ~ 1850 3450
@@ -867,8 +842,8 @@ Wire Wire Line
 	1650 3500 1650 3450
 Connection ~ 1650 3450
 Wire Wire Line
-	1650 3800 1650 3850
-Connection ~ 1850 3850
+	1650 3800 1650 3900
+Connection ~ 1850 3900
 Text Notes 1250 6450 0    60   ~ 0
 Input Ripple Current Calculation:\n\nIo=5A, Output Ripple 20%, Duty 70%: Iripple=2.5A, Cmin=330µF\nIo=20A, Output Ripple 20%, Duty 70%: Iripple=10A, Cmin=1000µF\n\n
 $Comp
@@ -896,7 +871,7 @@ $EndComp
 Text Notes 1250 6800 0    60   ~ 0
 Output Ripple Current Calculation for Capacitor\nIo=5A, Vin=21, Vout=12.0, L=100µH: Iripple=0.8A, Cmin=100µF\nIo=20A,Vin=21,Vout=12.0, L=22µH: Iripple=3.5A, Cmin=330µF
 Wire Wire Line
-	1650 3850 5250 3850
+	1650 3900 5250 3900
 $Comp
 L CP C313
 U 1 1 5B8EF487
@@ -934,4 +909,15 @@ Wire Wire Line
 	3750 3450 3800 3500
 Wire Wire Line
 	4150 3450 4100 3500
+$Comp
+L D_Schottky_AKA D302
+U 1 1 5B95200C
+P 3150 3650
+F 0 "D302" H 3150 3750 50  0000 C CNN
+F 1 "MBR4045PT" H 3150 3550 50  0000 C CNN
+F 2 "TO_SOT_Packages_THT:TO-247_TO-3P_Vertical" H 3150 3650 50  0001 C CNN
+F 3 "" H 3150 3650 50  0001 C CNN
+	1    3150 3650
+	0    1    1    0   
+$EndComp
 $EndSCHEMATC
