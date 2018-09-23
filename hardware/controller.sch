@@ -118,7 +118,7 @@ U 1 1 5B07539F
 P 6200 1750
 F 0 "R242" V 6280 1750 50  0000 C CNN
 F 1 "1M" V 6200 1750 50  0000 C CNN
-F 2 "Resistors_ThroughHole:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" V 6130 1750 50  0001 C CNN
+F 2 "Resistors_ThroughHole:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 6130 1750 50  0001 C CNN
 F 3 "" H 6200 1750 50  0001 C CNN
 	1    6200 1750
 	0    -1   -1   0   

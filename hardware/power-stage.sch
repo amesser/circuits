@@ -52,7 +52,7 @@ U 1 1 5AE213EB
 P 5000 1900
 F 0 "R313" V 5080 1900 50  0000 C CNN
 F 1 "2.2k" V 5000 1900 50  0000 C CNN
-F 2 "Resistors_ThroughHole:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" V 4930 1900 50  0001 C CNN
+F 2 "Resistors_ThroughHole:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 4930 1900 50  0001 C CNN
 F 3 "" H 5000 1900 50  0001 C CNN
 	1    5000 1900
 	1    0    0    -1  
@@ -74,7 +74,7 @@ U 1 1 5AE216ED
 P 4650 2750
 F 0 "R312" V 4730 2750 50  0000 C CNN
 F 1 "6.8k" V 4650 2750 50  0000 C CNN
-F 2 "Resistors_ThroughHole:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" V 4580 2750 50  0001 C CNN
+F 2 "Resistors_ThroughHole:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 4580 2750 50  0001 C CNN
 F 3 "" H 4650 2750 50  0001 C CNN
 	1    4650 2750
 	1    0    0    -1  
@@ -481,7 +481,7 @@ U 1 1 5B79A434
 P 4500 2750
 F 0 "D303" H 4500 2850 50  0000 C CNN
 F 1 "D_Zener" H 4500 2650 50  0000 C CNN
-F 2 "Diodes_ThroughHole:D_DO-41_SOD81_P7.62mm_Horizontal" H 4500 2750 50  0001 C CNN
+F 2 "Diodes_ThroughHole:D_DO-41_SOD81_P2.54mm_Vertical_AnodeUp" H 4500 2750 50  0001 C CNN
 F 3 "" H 4500 2750 50  0001 C CNN
 	1    4500 2750
 	0    -1   1    0   
