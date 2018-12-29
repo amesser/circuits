@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name rpi-birdcam)(type KiCad)(uri "$(KIPRJMOD)/rpi-birdcam.pretty")(options "")(descr ""))
+)

@@ -1,0 +1,14 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP LM4120
+D 2.5V ±0.2% Precision Micropower Low Dropout Voltage Reference, SOT-23-5
+K Precision Micropower Low Dropout Voltage Reference 2.5V
+F http://www.ti.com/lit/ds/symlink/lm4125.pdf
+$ENDCMP
+#
+$CMP RPI
+D Raspberry PI Connector
+F ~
+$ENDCMP
+#
+#End Doc Library
