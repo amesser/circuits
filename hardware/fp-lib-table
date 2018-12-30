@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name mpp-solar-charger)(type KiCad)(uri "$(KIPRJMOD)/mpp-solar-charger.pretty")(options "")(descr ""))
+)
