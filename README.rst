@@ -16,6 +16,8 @@ The circuit is made for 200W solar input power from
 36 cell panels and 12V Lead-Acid Battery. It can be 
 easily adapted for other input and battery voltages.
 
+More information can be found here: :doc:`documentation/index`
+
 Licenses
 --------
 
