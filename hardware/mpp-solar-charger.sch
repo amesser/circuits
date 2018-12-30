@@ -37,10 +37,10 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 3
-Title ""
-Date ""
-Rev ""
-Comp ""
+Title "MPP Solar Battery Charger"
+Date "2018-12-30"
+Rev "1"
+Comp "Copyright (c) 2018 Andreas Messer"
 Comment1 ""
 Comment2 ""
 Comment3 ""

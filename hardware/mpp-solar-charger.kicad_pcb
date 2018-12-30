@@ -13,6 +13,13 @@
   )
 
   (page A4)
+  (title_block
+    (title "MPP Solar Battery Charger")
+    (date 2018-12-30)
+    (rev 1)
+    (company "Copyright (c) 2018 Andreas Messer")
+  )
+
   (layers
     (0 F.Cu signal)
     (31 B.Cu signal)

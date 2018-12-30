@@ -37,10 +37,10 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 2 3
-Title ""
-Date ""
-Rev ""
-Comp ""
+Title "MPP Solar Battery Charger"
+Date "2018-12-30"
+Rev "1"
+Comp "Copyright (c) 2018 Andreas Messer"
 Comment1 ""
 Comment2 ""
 Comment3 ""
@@ -733,7 +733,7 @@ $Comp
 L R R235
 U 1 1 5B14B8C1
 P 5450 3800
-F 0 "R235" V 5530 3800 50  0000 C CNN
+F 0 "R235" V 5350 3800 50  0000 C CNN
 F 1 "100k" V 5450 3800 50  0000 C CNN
 F 2 "Resistors_ThroughHole:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" V 5380 3800 50  0001 C CNN
 F 3 "" H 5450 3800 50  0001 C CNN
@@ -1802,4 +1802,46 @@ Wire Notes Line
 	5300 1000 4000 1000
 Text Notes 4050 1250 0    60   ~ 0
 Added as fix to rev 1\nTo be integrated for rev 2
+Wire Notes Line
+	4300 3650 4300 6550
+Wire Notes Line
+	2700 6550 4900 6550
+Wire Notes Line
+	2700 3900 2700 7750
+Wire Notes Line
+	2700 5300 4300 5300
+Text Notes 2850 5400 0    60   ~ 0
+Voltage controller
+Text Notes 1000 6100 0    60   ~ 0
+Part values for Voltage Controller\nare not optimal. To be recalculated\nfor rev2
+Wire Notes Line
+	2700 3900 4300 3900
+Text Notes 2850 4000 0    60   ~ 0
+Current Controller
+Wire Notes Line
+	1100 1300 2700 1300
+Wire Notes Line
+	2700 1300 2700 3600
+Wire Notes Line
+	2700 3600 1100 3600
+Wire Notes Line
+	1100 3600 1100 1300
+Text Notes 1150 3550 0    60   ~ 0
+MPP Voltage\nto Max Duty
+Wire Notes Line
+	4900 6550 4900 7750
+Wire Notes Line
+	4900 7750 2700 7750
+Text Notes 3900 7700 0    60   ~ 0
+Trickle/Cycle Charge\nMode
+Wire Notes Line
+	4300 3650 6200 3650
+Wire Notes Line
+	6200 3650 6200 6550
+Wire Notes Line
+	6200 6550 4300 6550
+Text Notes 4300 3750 0    60   ~ 0
+Max Charge-Current Setpoint
+Text Notes 4350 6500 0    60   ~ 0
+Voltage controller disabled\nfor Cycle Charge
 $EndSCHEMATC
