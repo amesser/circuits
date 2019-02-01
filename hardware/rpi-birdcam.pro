@@ -1,4 +1,4 @@
-update=Do 06 Dez 2018 19:44:41 CET
+update=Fr 18 Jan 2019 17:53:13 CET
 version=1
 last_client=kicad
 [pcbnew]
@@ -67,3 +67,13 @@ LibName35=rpi-birdcam
 LibName36=mechanical
 LibName37=graphic_symbols
 LibName38=modules
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=/tmp/
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
